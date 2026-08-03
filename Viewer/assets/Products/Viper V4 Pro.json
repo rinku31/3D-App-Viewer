@@ -1,0 +1,133 @@
+{
+  "scene": {
+    "background": "#3f3f3f",
+    "environment": {
+      "hdri": "studio_small_09",
+      "intensity": 1.5,
+      "exposure": 1.2,
+      "toneMapping": "ACESFilmic"
+    }
+  },
+
+  "camera": {},
+
+  "model": {},
+
+  "lights": [],
+  
+  "settings": {
+    "line": {
+
+      "color": "#bfbfbf",
+
+      "width": 1,
+
+      "offset": {
+        "x": 0,
+        "y": 0
+      }
+
+    }
+
+  },
+  "hotspots": [
+    {
+      "id": "hotspot_1778478610537",
+      "title": "",
+      "description": "LED indicator for DPI and power",
+      "position": [
+        0.004160230515804056,
+        0.026601059226252374,
+        -3.22658717589361
+      ],
+      "panelOffset": {
+        "x": 345,
+        "y": -294
+      }
+    },
+    {
+      "id": "hotspot_1778478759130",
+      "title": "",
+      "description": "Razer™ Optical Mouse Switches Gen-4",
+      "position": [
+        -0.9086009161508204,
+        0.21571523764414358,
+        -2.5366041633084517
+      ],
+      "panelOffset": {
+        "x": -639,
+        "y": -368
+      }
+    },
+    {
+      "id": "hotspot_1778478787552",
+      "title": "",
+      "description": "Razer™ Optical Scroll Wheel",
+      "position": [
+        0.014487491243838337,
+        0.996673355009617,
+        -1.5550765148898176
+      ],
+      "panelOffset": {
+        "x": -643,
+        "y": -128
+      }
+    },
+    {
+      "id": "hotspot_1778478816177",
+      "title": "",
+      "description": " 49 g / 50 g Ultra-Lightweight Design",
+      "position": [
+        0.9523258712583187,
+        0.9062442497630064,
+        1.4217579174113542
+      ],
+      "panelOffset": {
+        "x": 391,
+        "y": 27
+      }
+    },
+    {
+      "id": "hotspot_1778478854903",
+      "title": "",
+      "description": "Razer™ HyperSpeed Wireless Gen-2",
+      "position": [
+        0.010442664361433375,
+        -0.33493490337758464,
+        -2.977503512763616
+      ],
+      "panelOffset": {
+        "x": 373,
+        "y": -383
+      }
+    },
+    {
+      "id": "hotspot_1778478894983",
+      "title": "",
+      "description": "Up To 180 Hours of Battery Life",
+      "position": [
+        -0.6006759480640834,
+        -0.8722636758976856,
+        1.6229119027958658
+      ],
+      "panelOffset": {
+        "x": 399,
+        "y": 233
+      }
+    },
+    {
+      "id": "hotspot_1778479000449",
+      "title": "",
+      "description": "Razer™ Focus Pro 50K Optical Sensor Gen-3",
+      "position": [
+        0.22580528084625143,
+        -0.8860108665472032,
+        0.19215305426294504
+      ],
+      "panelOffset": {
+        "x": -667,
+        "y": 0
+      }
+    }
+  ]
+}

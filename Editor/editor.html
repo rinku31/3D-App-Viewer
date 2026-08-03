@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotspot Editor</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+</head>
+
+<body>
+
+<div id="app">
+
+<div id="sidebarContainer">
+
+<div id="viewport">
+
+<button id="toggleSidebarBtn">
+☰
+</button>
+
+<div id="overlay">
+<svg id="hotspotLines"></svg>
+</div>
+
+</div>
+
+<div id="sidebar">
+<div class="section">
+<h3>Model</h3>
+<input id="modelInput" type="file" accept=".glb">
+</div>
+
+<div class="section">
+<h3>JSON</h3>
+
+<button id="importJsonBtn" class="secondary">
+Import JSON
+</button>
+
+<input
+id="jsonInput"
+type="file"
+accept=".json"
+style="display:none"
+>
+
+<button id="exportBtn">
+Export JSON
+</button>
+
+</div>
+
+<div class="section">
+
+<h3>Scene</h3>
+
+<label>Background</label>
+
+<input
+id="backgroundColor"
+type="color"
+value="#3f3f3f">
+
+</div>
+
+<div class="section">
+
+<h3>Lights</h3>
+
+<button id="addDirectionalLightBtn">
+➕ Directional Light
+</button>
+
+<button
+id="deleteLightBtn"
+class="secondary">
+🗑 Delete Light
+</button>
+
+<hr>
+
+<h4>Selected Light</h4>
+
+<label>Color</label>
+<input
+id="lightColor"
+type="color"
+value="#ffffff">
+
+<label>Intensity</label>
+<input
+id="lightIntensity"
+type="range"
+min="0"
+max="10"
+step="0.1"
+value="2">
+
+<label>Position</label>
+
+<input id="lightPosX" type="number" step="0.1">
+<input id="lightPosY" type="number" step="0.1">
+<input id="lightPosZ" type="number" step="0.1">
+
+<label>Target</label>
+
+<input id="targetPosX" type="number" step="0.1">
+<input id="targetPosY" type="number" step="0.1">
+<input id="targetPosZ" type="number" step="0.1">
+
+<label>
+
+<input
+id="castShadow"
+type="checkbox">
+
+Cast Shadows
+
+</label>
+
+</div>
+
+<div class="section">
+
+<h3>Hotspot Actions</h3>
+
+<button id="addBtn">
+Add Hotspot
+</button>
+
+<!-- <button id="finalizeBtn" class="secondary">
+Finalize Placement
+</button>
+
+<button id="editBtn" class="secondary">
+Edit Position
+</button> -->
+
+<button id="deleteBtn" class="secondary">
+Delete Selected
+</button>
+
+</div>
+
+<div class="section">
+
+<h3>Selected Hotspot</h3>
+
+<input id="titleInput" placeholder="Title">
+
+<textarea
+id="descInput"
+placeholder="Description"
+></textarea>
+
+<label>Panel Offset X</label>
+<input id="panelX" type="number">
+
+<label>Panel Offset Y</label>
+<input id="panelY" type="number">
+
+</div>
+
+</div>
+
+</div>
+
+<script type="module" src="editor.js"></script>
+
+</body>
+</html>
