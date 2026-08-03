@@ -4,11 +4,11 @@ import { state } from "../state/state.js";
 import { buildHotspot, removeHotspot } from "../hotspots/hotspots.js";
 import { frameModel } from "../render/render.js";
 
-function importModel(loader, file) {
-
-return new Promise(async(resolve)=>{
+async function importModel(loader, file) {
 
 const url = URL.createObjectURL(file);
+
+try {
 const gltf = await loader.loadAsync(url);
 
 if(state.currentModel){
@@ -26,19 +26,22 @@ obj.material.envMapIntensity = 2.5;
 
 frameModel(state.currentModel);
 
-resolve(state.currentModel);
-
-});
+return state.currentModel;
+} finally {
+URL.revokeObjectURL(url);
+}
 
 }
 
-function importJson(file){
-
-return new Promise(async(resolve)=>{
+async function importJson(file){
 
 state.importedJsonFileName = file.name;
 const text = await file.text();
 const data = JSON.parse(text);
+
+if(!Array.isArray(data.hotspots)){
+throw new Error("The selected JSON file must contain a hotspots array.");
+}
 
 if(data.scene){
 Object.assign(state.sceneSettings, data.scene);
@@ -68,9 +71,7 @@ state.hotspots.push(hotspot);
 buildHotspot(hotspot);
 });
 
-resolve(data);
-
-});
+return data;
 
 }
 
@@ -106,7 +107,12 @@ document.getElementById("jsonInput").click();
 document.getElementById("jsonInput").addEventListener("change", async(e)=>{
 const file = e.target.files[0];
 if(!file) return;
+try{
 await importJson(file);
+}catch(error){
+console.error("Unable to import hotspot JSON.", error);
+alert("Unable to import the hotspot JSON. Check that it is valid and includes a hotspots array.");
+}
 });
 
 document.getElementById("exportBtn").onclick = ()=>{
@@ -116,7 +122,12 @@ exportJson();
 document.getElementById("modelInput").addEventListener("change", async(e)=>{
 const file = e.target.files[0];
 if(!file) return;
+try{
 await importModel(loader, file);
+}catch(error){
+console.error("Unable to import model.", error);
+alert("Unable to import the GLB model.");
+}
 });
 }
 

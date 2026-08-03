@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { state } from "../state/state.js";
+import { clearSelection, setSelection, state } from "../state/state.js";
 
 const lightTexture =
 new THREE.TextureLoader().load(
@@ -141,7 +141,18 @@ return lightData;
 
 function selectLight(lightData){
 
-state.selectedLight = lightData;
+setSelection("light", lightData);
+
+document.querySelectorAll(
+".hotspot"
+).forEach((el)=>{
+el.classList.remove("selected");
+});
+
+document.getElementById("titleInput").value = "";
+document.getElementById("descInput").value = "";
+document.getElementById("panelX").value = "";
+document.getElementById("panelY").value = "";
 
 state.lights.forEach(l=>{
 
@@ -185,6 +196,24 @@ castShadowInput.checked = lightData.castShadow;
 
 }
 
+function deselectLight(){
+
+clearSelection("light");
+
+state.lights.forEach(l=>{
+
+l.lightSprite.material.color.set(
+0xffff00
+);
+
+l.targetSprite.material.color.set(
+0x00ffff
+);
+
+});
+
+}
+
 function deleteSelectedLight(){
 
 if(!state.selectedLight)
@@ -205,7 +234,7 @@ if(index !== -1){
 state.lights.splice(index,1);
 }
 
-state.selectedLight = null;
+deselectLight();
 
 }
 
@@ -295,6 +324,7 @@ export {
 bindLightUI,
 createDirectionalLight,
 deleteSelectedLight,
+deselectLight,
 selectLight,
 updateLights,
 updateSelectedLight

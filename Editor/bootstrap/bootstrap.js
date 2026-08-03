@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { state } from "../state/state.js";
+import { clearSelection, state } from "../state/state.js";
 import {
   createHotspot,
   deselectHotspot,
@@ -10,6 +10,7 @@ import {
 } from "../hotspots/hotspots.js";
 import {
   bindLightUI,
+  deselectLight,
   selectLight,
   updateLights
 } from "../lights/lights.js";
@@ -35,8 +36,7 @@ function initializeEditor(loader) {
 
   state.hotspots = state.hotspots || [];
   state.lights = state.lights || [];
-  state.selected = null;
-  state.selectedLight = null;
+  clearSelection();
   state.addMode = false;
   state.currentMode = "idle";
   state.draggingHotspot = false;
@@ -111,6 +111,7 @@ function initializeEditor(loader) {
 
     if (intersects.length === 0) {
       deselectHotspot();
+      deselectLight();
     }
   });
 
@@ -143,10 +144,6 @@ function initializeEditor(loader) {
 
     removeHotspot(state.selected);
     state.selected = null;
-  };
-
-  document.getElementById("importJsonBtn").onclick = () => {
-    document.getElementById("jsonInput").click();
   };
 
   function animateFrame() {

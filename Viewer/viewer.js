@@ -21,6 +21,20 @@ document.getElementById("overlay");
 const svg =
 document.getElementById("svg");
 
+function setPanelContent(panel, hotspot){
+
+const title = document.createElement("div");
+title.style.fontWeight = "bold";
+title.style.marginBottom = "8px";
+title.textContent = hotspot.title;
+
+const description = document.createElement("div");
+description.textContent = hotspot.description;
+
+panel.replaceChildren(title, description);
+
+}
+
 const scene =
 new THREE.Scene();
 
@@ -234,18 +248,7 @@ document.createElement("div");
 
 panel.className = "panel";
 
-panel.innerHTML = `
-<div style="
-font-weight:bold;
-margin-bottom:8px;
-">
-${h.title}
-</div>
-
-<div>
-${h.description}
-</div>
-`;
+setPanelContent(panel, h);
 
 const line =
 document.createElementNS(
@@ -354,7 +357,7 @@ controls.target.copy(center);
 
 controls.update();
 
-const ASSET_BASE = "/Viewer/assets/products";
+const ASSET_BASE = "/Viewer/assets/Products";
 
 const modelName =
 file.name.replace(/\.glb$/i,"");
@@ -426,13 +429,17 @@ h.position[2]
 const projected =
 pos.clone().project(camera);
 
+const viewportRect = renderer.domElement.getBoundingClientRect();
+
 const x =
-(projected.x * .5 + .5)
-* window.innerWidth;
+viewportRect.left +
+((projected.x * .5 + .5)
+* viewportRect.width);
 
 const y =
-(-projected.y * .5 + .5)
-* window.innerHeight;
+viewportRect.top +
+((-projected.y * .5 + .5)
+* viewportRect.height);
 
 // transform instead of left/top
 
@@ -443,11 +450,13 @@ h.dot.style.top =
 `${y}px`;
 
 const panelX =
-(window.innerWidth * .5) +
+viewportRect.left +
+(viewportRect.width * .5) +
 (h.panelOffset?.x || 0);
 
 const panelY =
-(window.innerHeight * .5) +
+viewportRect.top +
+(viewportRect.height * .5) +
 (h.panelOffset?.y || 0);
 
 h.panel.style.transform =

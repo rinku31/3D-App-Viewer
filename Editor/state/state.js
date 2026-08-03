@@ -17,8 +17,9 @@ const state = {
   lights: [],
 
   selection: {
-    hotspot: null,
-    light: null,
+    type: null,
+    object: null,
+    target: null,
   },
 
   currentTool: "hotspot",
@@ -38,23 +39,53 @@ const state = {
   },
 };
 
+function setSelection(type, object, target = null) {
+  state.selection.type = type;
+  state.selection.object = object;
+  state.selection.target = target;
+}
+
+function clearSelection(type = null) {
+  if (type && state.selection.type !== type) return;
+
+  setSelection(null, null, null);
+}
+
 Object.defineProperties(state, {
   selected: {
     get() {
-      return this.selection.hotspot;
+      return this.selection.type === "hotspot"
+        ? this.selection.object
+        : null;
     },
     set(value) {
-      this.selection.hotspot = value;
+      if (value) {
+        setSelection("hotspot", value);
+        return;
+      }
+
+      clearSelection("hotspot");
     },
   },
   selectedLight: {
     get() {
-      return this.selection.light;
+      return this.selection.type === "light"
+        ? this.selection.object
+        : null;
     },
     set(value) {
-      this.selection.light = value;
+      if (value) {
+        setSelection("light", value);
+        return;
+      }
+
+      clearSelection("light");
     },
   },
 });
 
-export { state };
+export {
+  clearSelection,
+  setSelection,
+  state
+};

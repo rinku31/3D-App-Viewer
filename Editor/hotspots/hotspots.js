@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { state } from "../state/state.js";
+import { clearSelection, setSelection, state } from "../state/state.js";
 
 function createHotspot(point){
 
@@ -80,18 +80,15 @@ h.line = line;
 
 function updatePanelHTML(h,panel){
 
-panel.innerHTML = `
-<div style="
-font-weight:bold;
-margin-bottom:8px;
-">
-${h.title}
-</div>
+const title = document.createElement("div");
+title.style.fontWeight = "bold";
+title.style.marginBottom = "8px";
+title.textContent = h.title;
 
-<div>
-${h.description}
-</div>
-`;
+const description = document.createElement("div");
+description.textContent = h.description;
+
+panel.replaceChildren(title, description);
 
 }
 
@@ -181,12 +178,14 @@ window.addEventListener(
 
 if(!dragging) return;
 
+const viewportRect = state.viewport.getBoundingClientRect();
+
 state.mouse.x =
-(e.clientX / state.viewport.clientWidth)
+((e.clientX - viewportRect.left) / viewportRect.width)
 * 2 - 1;
 
 state.mouse.y =
--(e.clientY / state.viewport.clientHeight)
+-((e.clientY - viewportRect.top) / viewportRect.height)
 * 2 + 1;
 
 state.raycaster.setFromCamera(state.mouse,state.camera);
@@ -251,12 +250,24 @@ state.controls.enabled = false;
 
 function selectHotspot(h){
 
-state.selected = h;
+setSelection("hotspot", h);
 
 document.querySelectorAll(
 ".hotspot"
 ).forEach((el)=>{
 el.classList.remove("selected");
+});
+
+state.lights.forEach((l)=>{
+
+l.lightSprite.material.color.set(
+0xffff00
+);
+
+l.targetSprite.material.color.set(
+0x00ffff
+);
+
 });
 
 h.dot.classList.add("selected");
@@ -283,7 +294,7 @@ h.panelOffset.y;
 
 function deselectHotspot(){
 
-state.selected = null;
+clearSelection("hotspot");
 
 document.querySelectorAll(
 ".hotspot"
@@ -389,11 +400,11 @@ h.dot.style.top =
 `${y}px`;
 
 const panelX =
-(window.innerWidth * .5)
+(state.viewport.clientWidth * .5)
 + h.panelOffset.x;
 
 const panelY =
-(window.innerHeight * .5)
+(state.viewport.clientHeight * .5)
 + h.panelOffset.y;
 
 h.panel.style.left =
@@ -430,7 +441,8 @@ state.hotspots.splice(index,1);
 }
 
 if(state.selected === h){
-state.selected = null;
+clearSelection("hotspot");
+deselectHotspot();
 }
 
 }
