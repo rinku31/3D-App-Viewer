@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { clearSelection, setSelection, state } from "../state/state.js";
+import { clearSelection, notifySelectionChanged, setSelection, state } from "../state/state.js";
 
 function createHotspot(point){
 
@@ -140,19 +140,9 @@ hotspot.panelOffset.y =
 e.clientY - offsetY
 ) - (window.innerHeight * .5);
 
-document.getElementById(
-"panelX"
-).value =
-Math.round(
-hotspot.panelOffset.x
-);
-
-document.getElementById(
-"panelY"
-).value =
-Math.round(
-hotspot.panelOffset.y
-);
+if(state.selected === hotspot){
+notifySelectionChanged();
+}
 
 }
 );
@@ -252,6 +242,10 @@ function selectHotspot(h){
 
 setSelection("hotspot", h);
 
+if (typeof window !== "undefined") {
+  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
+}
+
 document.querySelectorAll(
 ".hotspot"
 ).forEach((el)=>{
@@ -272,40 +266,21 @@ l.targetSprite.material.color.set(
 
 h.dot.classList.add("selected");
 
-document.getElementById(
-"titleInput"
-).value = h.title;
-
-document.getElementById(
-"descInput"
-).value = h.description;
-
-document.getElementById(
-"panelX"
-).value =
-h.panelOffset.x;
-
-document.getElementById(
-"panelY"
-).value =
-h.panelOffset.y;
-
 }
 
 function deselectHotspot(){
 
 clearSelection("hotspot");
 
+if (typeof window !== "undefined") {
+  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
+}
+
 document.querySelectorAll(
 ".hotspot"
 ).forEach((el)=>{
 el.classList.remove("selected");
 });
-
-document.getElementById("titleInput").value = "";
-document.getElementById("descInput").value = "";
-document.getElementById("panelX").value = "";
-document.getElementById("panelY").value = "";
 
 }
 

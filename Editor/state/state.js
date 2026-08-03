@@ -43,12 +43,34 @@ function setSelection(type, object, target = null) {
   state.selection.type = type;
   state.selection.object = object;
   state.selection.target = target;
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("editorselectionchange", {
+      detail: state.selection,
+    }));
+  }
+}
+
+function notifySelectionChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("editorselectionchange", {
+      detail: state.selection,
+    }));
+  }
 }
 
 function clearSelection(type = null) {
   if (type && state.selection.type !== type) return;
 
-  setSelection(null, null, null);
+  state.selection.type = null;
+  state.selection.object = null;
+  state.selection.target = null;
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("editorselectionchange", {
+      detail: state.selection,
+    }));
+  }
 }
 
 Object.defineProperties(state, {
@@ -86,6 +108,7 @@ Object.defineProperties(state, {
 
 export {
   clearSelection,
+  notifySelectionChanged,
   setSelection,
   state
 };

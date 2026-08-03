@@ -27,7 +27,7 @@
 <div id="viewport">
 
 <button id="toggleSidebarBtn">
-☰
+&#9776;
 </button>
 
 <div id="overlay">
@@ -37,6 +37,32 @@
 </div>
 
 <div id="sidebar">
+
+<div class="sidebar-tabs">
+<button
+id="sceneTabBtn"
+class="sidebar-tab active"
+type="button"
+data-tab="scene"
+>
+Scene
+</button>
+
+<button
+id="propertiesTabBtn"
+class="sidebar-tab"
+type="button"
+data-tab="properties"
+>
+Properties
+</button>
+</div>
+
+<div
+id="sceneTab"
+class="sidebar-tab-panel active"
+>
+
 <div class="section">
 <h3>Model</h3>
 <input id="modelInput" type="file" accept=".glb">
@@ -77,21 +103,59 @@ value="#3f3f3f">
 
 <div class="section">
 
+<h3>Hotspots</h3>
+
+<button id="addBtn">
+Add Hotspot
+</button>
+
+<!-- <button id="finalizeBtn" class="secondary">
+Finalize Placement
+</button>
+
+<button id="editBtn" class="secondary">
+Edit Position
+</button> -->
+
+</div>
+
+<div class="section">
+
 <h3>Lights</h3>
 
 <button id="addDirectionalLightBtn">
-➕ Directional Light
+&#10133; Directional Light
 </button>
+
+</div>
+
+</div>
+
+<div
+id="propertiesTab"
+class="sidebar-tab-panel"
+>
+
+<div
+id="nothingSelectedInspector"
+class="section inspector-placeholder"
+>
+<h3>Nothing Selected</h3>
+<p>Select a hotspot or light to edit its properties.</p>
+</div>
+
+<div
+id="lightInspector"
+class="section"
+>
+
+<h4>Selected Light</h4>
 
 <button
 id="deleteLightBtn"
 class="secondary">
-🗑 Delete Light
+&#128465; Delete Light
 </button>
-
-<hr>
-
-<h4>Selected Light</h4>
 
 <label>Color</label>
 <input
@@ -132,31 +196,16 @@ Cast Shadows
 
 </div>
 
-<div class="section">
+<div
+id="hotspotInspector"
+class="section"
+>
 
-<h3>Hotspot Actions</h3>
-
-<button id="addBtn">
-Add Hotspot
-</button>
-
-<!-- <button id="finalizeBtn" class="secondary">
-Finalize Placement
-</button>
-
-<button id="editBtn" class="secondary">
-Edit Position
-</button> -->
+<h3>Selected Hotspot</h3>
 
 <button id="deleteBtn" class="secondary">
 Delete Selected
 </button>
-
-</div>
-
-<div class="section">
-
-<h3>Selected Hotspot</h3>
 
 <input id="titleInput" placeholder="Title">
 
@@ -170,6 +219,8 @@ placeholder="Description"
 
 <label>Panel Offset Y</label>
 <input id="panelY" type="number">
+
+</div>
 
 </div>
 

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { state } from "../state/state.js";
+import { clearSelection, state } from "../state/state.js";
 import { buildHotspot, removeHotspot } from "../hotspots/hotspots.js";
 import { frameModel } from "../render/render.js";
 
@@ -53,7 +53,9 @@ document.getElementById("backgroundColor").value = state.sceneSettings.backgroun
 }
 }
 
-state.hotspots.forEach((h)=>{
+clearSelection("hotspot");
+
+[...state.hotspots].forEach((h)=>{
 removeHotspot(h);
 });
 

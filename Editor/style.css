@@ -72,6 +72,31 @@ pointer-events:none;
 margin-bottom:22px;
 }
 
+.sidebar-tabs{
+display:flex;
+gap:8px;
+margin-bottom:18px;
+}
+
+.sidebar-tab{
+flex:1;
+margin-bottom:0;
+}
+
+.sidebar-tab-panel{
+display:none;
+}
+
+.sidebar-tab-panel.active{
+display:block;
+}
+
+.inspector-placeholder p{
+margin:0;
+color:#aaa;
+line-height:1.4;
+}
+
 input,textarea,button{
 width:100%;
 margin-bottom:10px;
@@ -92,6 +117,16 @@ font-weight:bold;
 button.secondary{
 background:#444;
 color:white;
+}
+
+.sidebar-tab{
+background:#444;
+color:white;
+}
+
+.sidebar-tab.active{
+background:#44D62C;
+color:black;
 }
 
 #overlay{

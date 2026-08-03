@@ -143,16 +143,15 @@ function selectLight(lightData){
 
 setSelection("light", lightData);
 
+if (typeof window !== "undefined") {
+  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
+}
+
 document.querySelectorAll(
 ".hotspot"
 ).forEach((el)=>{
 el.classList.remove("selected");
 });
-
-document.getElementById("titleInput").value = "";
-document.getElementById("descInput").value = "";
-document.getElementById("panelX").value = "";
-document.getElementById("panelY").value = "";
 
 state.lights.forEach(l=>{
 
@@ -174,31 +173,15 @@ lightData.targetSprite.material.color.set(
 0xff0000
 );
 
-const lightColorInput = document.getElementById("lightColor");
-const lightIntensityInput = document.getElementById("lightIntensity");
-const lightPosXInput = document.getElementById("lightPosX");
-const lightPosYInput = document.getElementById("lightPosY");
-const lightPosZInput = document.getElementById("lightPosZ");
-const targetPosXInput = document.getElementById("targetPosX");
-const targetPosYInput = document.getElementById("targetPosY");
-const targetPosZInput = document.getElementById("targetPosZ");
-const castShadowInput = document.getElementById("castShadow");
-
-lightColorInput.value = lightData.color;
-lightIntensityInput.value = lightData.intensity;
-lightPosXInput.value = lightData.light.position.x.toFixed(2);
-lightPosYInput.value = lightData.light.position.y.toFixed(2);
-lightPosZInput.value = lightData.light.position.z.toFixed(2);
-targetPosXInput.value = lightData.target.position.x.toFixed(2);
-targetPosYInput.value = lightData.target.position.y.toFixed(2);
-targetPosZInput.value = lightData.target.position.z.toFixed(2);
-castShadowInput.checked = lightData.castShadow;
-
 }
 
 function deselectLight(){
 
 clearSelection("light");
+
+if (typeof window !== "undefined") {
+  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
+}
 
 state.lights.forEach(l=>{
 
