@@ -1,6 +1,8 @@
 import * as THREE from "three";
 
 import { clearSelection, notifySelectionChanged, setSelection, state } from "../state/state.js";
+import { select, deselect } from "../selection/selection.js";
+import { updateGizmoAnchorPosition } from "../gizmo/gizmo.js";
 
 function createHotspot(point){
 
@@ -196,6 +198,9 @@ point.y,
 point.z
 ];
 
+updateGizmoAnchorPosition(point.x, point.y, point.z);
+notifySelectionChanged();
+
 }
 
 }
@@ -239,49 +244,11 @@ state.controls.enabled = false;
 }
 
 function selectHotspot(h){
-
-setSelection("hotspot", h);
-
-if (typeof window !== "undefined") {
-  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
-}
-
-document.querySelectorAll(
-".hotspot"
-).forEach((el)=>{
-el.classList.remove("selected");
-});
-
-state.lights.forEach((l)=>{
-
-l.lightSprite.material.color.set(
-0xffff00
-);
-
-l.targetSprite.material.color.set(
-0x00ffff
-);
-
-});
-
-h.dot.classList.add("selected");
-
+select("hotspot", h);
 }
 
 function deselectHotspot(){
-
-clearSelection("hotspot");
-
-if (typeof window !== "undefined") {
-  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
-}
-
-document.querySelectorAll(
-".hotspot"
-).forEach((el)=>{
-el.classList.remove("selected");
-});
-
+deselect("hotspot");
 }
 
 function updateHotspots(){

@@ -8,14 +8,14 @@ The foundation establishes the minimum useful authoring-to-viewing loop: import 
 
 Delivered capabilities include model framing, hotspot placement and dragging, hotspot import/export, editor directional lights, Viewer overlays, and visibility checks.
 
-## Phase 2 — Editor Maturity
+## Phase 2 — Editor Maturity ✔ Completed
 
-This phase makes the Editor feel like a dependable scene-authoring tool. The current interaction model is hotspot-focused; broader, consistent object interaction is needed before more scene types are introduced.
+This phase makes the Editor feel like a dependable scene-authoring tool. The interaction model supports broad, consistent object interaction across all scene elements.
 
-- **Universal Selection** — select hotspots, lights, models, and future scene objects through one predictable system.
-- **Blender-style Transform Gizmos** — provide visual translate, rotate, and scale controls so users can edit spatial data accurately.
-- **Generic Inspector** — centralize property editing instead of adding one-off control panels per object type.
-- **Scene Hierarchy** — expose the scene structure and make object relationships discoverable.
+- **Universal Selection** — select hotspots, lights, models, meshes, cameras, and scene root through one predictable system with unified event dispatching and visual highlight state.
+- **Blender-style Transform Gizmos** — full Three.js `TransformControls` integration with visual translate, rotate, and scale modes, world/local coordinate spaces, snapping toggles, hotkeys (G, R, S, W, E, X), and dedicated viewport toolbar controls.
+- **Generic Inspector** — centralized, dynamic property inspector that dynamically inspects and edits any selected entity (hotspot offsets & annotations, light color & intensity & shadows & positions, model transforms & geometry statistics, mesh material roughness/metalness/wireframe/visibility, camera FOV & lookAt targets, and scene environment parameters) with live bidirectional sync.
+- **Scene Hierarchy (Outliner)** — full interactive tree view of the scene graph (Scene Root, Camera, Model meshes with vertex counts, Lights, and Hotspots) with instant search filtering, expand/collapse toggles, visibility controls, framing actions, and deletion.
 
 ## Phase 3 — Scene System
 

@@ -28,6 +28,17 @@ const state = {
   draggingHotspot: false,
   importedJsonFileName: "hotspots.json",
 
+  gizmo: {
+    mode: "translate", // "translate" | "rotate" | "scale"
+    space: "world",    // "world" | "local"
+    snap: false,
+    visible: true,
+  },
+
+  defaultAmbientLight: null,
+  defaultDirectionalLight: null,
+  transformControls: null,
+
   sceneSettings: {
     background: "#3f3f3f",
     environment: {

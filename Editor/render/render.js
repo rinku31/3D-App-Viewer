@@ -74,12 +74,12 @@ controls.maxPolarAngle = Infinity;
 controls.minAzimuthAngle = -Infinity;
 controls.maxAzimuthAngle = Infinity;
 
-scene.add(
-new THREE.AmbientLight(
+const ambientLight = new THREE.AmbientLight(
 0xffffff,
 0.7
-)
 );
+scene.add(ambientLight);
+state.defaultAmbientLight = ambientLight;
 
 const light =
 new THREE.DirectionalLight(
@@ -90,6 +90,7 @@ new THREE.DirectionalLight(
 light.position.set(5,10,5);
 
 scene.add(light);
+state.defaultDirectionalLight = light;
 
 const pmrem =
 new THREE.PMREMGenerator(renderer);

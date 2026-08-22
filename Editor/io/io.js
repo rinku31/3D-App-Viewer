@@ -1,8 +1,9 @@
 import * as THREE from "three";
 
-import { clearSelection, state } from "../state/state.js";
+import { clearSelection, notifySelectionChanged, state } from "../state/state.js";
 import { buildHotspot, removeHotspot } from "../hotspots/hotspots.js";
 import { frameModel } from "../render/render.js";
+import { select } from "../selection/selection.js";
 
 async function importModel(loader, file) {
 
@@ -16,6 +17,7 @@ state.scene.remove(state.currentModel);
 }
 
 state.currentModel = gltf.scene;
+state.currentModel.name = file.name.replace(/\.[^/.]+$/, "");
 state.scene.add(state.currentModel);
 
 state.currentModel.traverse((obj)=>{
@@ -25,6 +27,7 @@ obj.material.envMapIntensity = 2.5;
 });
 
 frameModel(state.currentModel);
+select("model", state.currentModel);
 
 return state.currentModel;
 } finally {

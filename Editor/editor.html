@@ -26,9 +26,23 @@
 
 <div id="viewport">
 
-<button id="toggleSidebarBtn">
+<button id="toggleSidebarBtn" title="Toggle Sidebar">
 &#9776;
 </button>
+
+<div id="gizmoToolbar">
+  <div class="gizmo-btn-group">
+    <button id="gizmoTranslateBtn" class="gizmo-btn active" title="Translate Mode (G / W)">&#10021; Move</button>
+    <button id="gizmoRotateBtn" class="gizmo-btn" title="Rotate Mode (R / E)">&#8635; Rotate</button>
+    <button id="gizmoScaleBtn" class="gizmo-btn" title="Scale Mode (S)">&#8690; Scale</button>
+  </div>
+  <div class="gizmo-divider"></div>
+  <div class="gizmo-btn-group">
+    <button id="gizmoSpaceBtn" class="gizmo-btn" title="Toggle World / Local Space">WORLD</button>
+    <button id="gizmoSnapBtn" class="gizmo-btn" title="Toggle Snapping (0.25m / 15°)">SNAP</button>
+    <button id="gizmoHideBtn" class="gizmo-btn" title="Toggle Gizmo Visibility (X)">GIZMO</button>
+  </div>
+</div>
 
 <div id="overlay">
 <svg id="hotspotLines"></svg>
@@ -45,7 +59,7 @@ class="sidebar-tab active"
 type="button"
 data-tab="scene"
 >
-Scene
+Hierarchy &amp; Scene
 </button>
 
 <button
@@ -54,7 +68,7 @@ class="sidebar-tab"
 type="button"
 data-tab="properties"
 >
-Properties
+Inspector
 </button>
 </div>
 
@@ -63,13 +77,40 @@ id="sceneTab"
 class="sidebar-tab-panel active"
 >
 
+<div class="section hierarchy-section">
+  <div class="section-header">
+    <h3>Scene Hierarchy</h3>
+    <span class="hierarchy-badge">Outliner</span>
+  </div>
+  
+  <div class="hierarchy-search-bar">
+    <input id="hierarchySearchInput" type="text" placeholder="Filter objects in scene...">
+  </div>
+
+  <div id="sceneHierarchyTree" class="hierarchy-tree-container">
+    <!-- Rendered dynamically by hierarchy.js -->
+  </div>
+</div>
+
 <div class="section">
-<h3>Model</h3>
+<h3>Quick Create</h3>
+<div class="button-grid">
+  <button id="addBtn" class="primary-btn">
+    Add Hotspot
+  </button>
+  <button id="addDirectionalLightBtn" class="secondary">
+    &#10133; Directional Light
+  </button>
+</div>
+</div>
+
+<div class="section">
+<h3>Model Import</h3>
 <input id="modelInput" type="file" accept=".glb">
 </div>
 
 <div class="section">
-<h3>JSON</h3>
+<h3>JSON Annotations</h3>
 
 <button id="importJsonBtn" class="secondary">
 Import JSON
@@ -90,42 +131,15 @@ Export JSON
 
 <div class="section">
 
-<h3>Scene</h3>
+<h3>Scene Environment</h3>
 
-<label>Background</label>
-
-<input
-id="backgroundColor"
-type="color"
-value="#3f3f3f">
-
+<div class="param-row-flex">
+  <label>Background Color</label>
+  <input
+  id="backgroundColor"
+  type="color"
+  value="#3f3f3f">
 </div>
-
-<div class="section">
-
-<h3>Hotspots</h3>
-
-<button id="addBtn">
-Add Hotspot
-</button>
-
-<!-- <button id="finalizeBtn" class="secondary">
-Finalize Placement
-</button>
-
-<button id="editBtn" class="secondary">
-Edit Position
-</button> -->
-
-</div>
-
-<div class="section">
-
-<h3>Lights</h3>
-
-<button id="addDirectionalLightBtn">
-&#10133; Directional Light
-</button>
 
 </div>
 
@@ -135,93 +149,7 @@ Edit Position
 id="propertiesTab"
 class="sidebar-tab-panel"
 >
-
-<div
-id="nothingSelectedInspector"
-class="section inspector-placeholder"
->
-<h3>Nothing Selected</h3>
-<p>Select a hotspot or light to edit its properties.</p>
-</div>
-
-<div
-id="lightInspector"
-class="section"
->
-
-<h4>Selected Light</h4>
-
-<button
-id="deleteLightBtn"
-class="secondary">
-&#128465; Delete Light
-</button>
-
-<label>Color</label>
-<input
-id="lightColor"
-type="color"
-value="#ffffff">
-
-<label>Intensity</label>
-<input
-id="lightIntensity"
-type="range"
-min="0"
-max="10"
-step="0.1"
-value="2">
-
-<label>Position</label>
-
-<input id="lightPosX" type="number" step="0.1">
-<input id="lightPosY" type="number" step="0.1">
-<input id="lightPosZ" type="number" step="0.1">
-
-<label>Target</label>
-
-<input id="targetPosX" type="number" step="0.1">
-<input id="targetPosY" type="number" step="0.1">
-<input id="targetPosZ" type="number" step="0.1">
-
-<label>
-
-<input
-id="castShadow"
-type="checkbox">
-
-Cast Shadows
-
-</label>
-
-</div>
-
-<div
-id="hotspotInspector"
-class="section"
->
-
-<h3>Selected Hotspot</h3>
-
-<button id="deleteBtn" class="secondary">
-Delete Selected
-</button>
-
-<input id="titleInput" placeholder="Title">
-
-<textarea
-id="descInput"
-placeholder="Description"
-></textarea>
-
-<label>Panel Offset X</label>
-<input id="panelX" type="number">
-
-<label>Panel Offset Y</label>
-<input id="panelY" type="number">
-
-</div>
-
+  <!-- Rendered dynamically by inspector.js -->
 </div>
 
 </div>

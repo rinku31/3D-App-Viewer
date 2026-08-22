@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { clearSelection, setSelection, state } from "../state/state.js";
+import { select, deselect } from "../selection/selection.js";
 
 const lightTexture =
 new THREE.TextureLoader().load(
@@ -140,61 +141,11 @@ return lightData;
 }
 
 function selectLight(lightData){
-
-setSelection("light", lightData);
-
-if (typeof window !== "undefined") {
-  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
-}
-
-document.querySelectorAll(
-".hotspot"
-).forEach((el)=>{
-el.classList.remove("selected");
-});
-
-state.lights.forEach(l=>{
-
-l.lightSprite.material.color.set(
-0xffff00
-);
-
-l.targetSprite.material.color.set(
-0x00ffff
-);
-
-});
-
-lightData.lightSprite.material.color.set(
-0x00ff00
-);
-
-lightData.targetSprite.material.color.set(
-0xff0000
-);
-
+select("light", lightData);
 }
 
 function deselectLight(){
-
-clearSelection("light");
-
-if (typeof window !== "undefined") {
-  window.dispatchEvent(new CustomEvent("editorselectionchange", { detail: state.selection }));
-}
-
-state.lights.forEach(l=>{
-
-l.lightSprite.material.color.set(
-0xffff00
-);
-
-l.targetSprite.material.color.set(
-0x00ffff
-);
-
-});
-
+deselect("light");
 }
 
 function deleteSelectedLight(){
