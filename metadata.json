@@ -1,0 +1,6 @@
+{
+  "name": "3D App Viewer",
+  "description": "Browser-based 3D product hotspot editor and viewer using Three.js",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

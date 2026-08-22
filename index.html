@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D App Viewer &amp; Editor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #121214;
+      color: #f1f1f3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: #1a1a1e;
+      border-bottom: 1px solid #2a2a30;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: #44D62C;
+      color: #000;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .nav-links {
+      display: flex;
+      gap: 12px;
+    }
+    .nav-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-btn-primary {
+      background: #44D62C;
+      color: #000;
+    }
+    .nav-btn-primary:hover {
+      background: #39b824;
+    }
+    .nav-btn-secondary {
+      background: #2a2a30;
+      color: #e0e0e0;
+      border: 1px solid #3a3a42;
+    }
+    .nav-btn-secondary:hover {
+      background: #35353d;
+      color: #fff;
+    }
+    main {
+      flex: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      width: 100%;
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+    .hero p {
+      font-size: 17px;
+      color: #9c9ca4;
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .app-card {
+      background: #1a1a1e;
+      border: 1px solid #2a2a30;
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .app-card:hover {
+      border-color: #44D62C;
+      transform: translateY(-2px);
+    }
+    .card-header {
+      margin-bottom: 16px;
+    }
+    .card-tag {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #44D62C;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .card-desc {
+      font-size: 15px;
+      color: #a0a0aa;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    .feature-list {
+      list-style: none;
+      margin-bottom: 24px;
+    }
+    .feature-list li {
+      font-size: 14px;
+      color: #c4c4cc;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-list li::before {
+      content: "•";
+      color: #44D62C;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .card-btn {
+      display: block;
+      text-align: center;
+      padding: 12px 20px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.15s ease;
+    }
+    .frame-container {
+      background: #1a1a1e;
+      border: 1px solid #2a2a30;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 32px;
+    }
+    .frame-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #161619;
+      padding: 12px 20px;
+      border-bottom: 1px solid #2a2a30;
+    }
+    .toolbar-tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .tab-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #8f8f98;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: #2a2a30;
+      color: #44D62C;
+    }
+    .tab-btn:hover:not(.active) {
+      color: #fff;
+    }
+    .preview-frame {
+      width: 100%;
+      height: 600px;
+      border: none;
+      background: #000;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-badge">3D</span>
+      <span class="brand-title">3D App Viewer</span>
+    </div>
+    <div class="nav-links">
+      <a href="/Editor/editor.html" class="nav-btn nav-btn-primary">Launch Editor</a>
+      <a href="/Viewer/viewer.html" class="nav-btn nav-btn-secondary">Launch Viewer</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Interactive 3D Product Experiences</h1>
+      <p>A browser-based toolset built with Three.js for authoring and presenting 3D product annotations, dynamic hotspots, custom directional lights, and tone-mapped environments.</p>
+    </div>
+
+    <div class="apps-grid">
+      <div class="app-card">
+        <div>
+          <div class="card-header">
+            <div class="card-tag">Authoring Tool</div>
+            <div class="card-title">Hotspot Editor</div>
+            <div class="card-desc">Place, select, edit, and move 3D product hotspots on imported GLB models with custom panel offsets, directional lights, and JSON export.</div>
+          </div>
+          <ul class="feature-list">
+            <li>GLB &amp; Draco model import</li>
+            <li>Interactive 3D surface placement</li>
+            <li>Directional lighting controls &amp; helpers</li>
+            <li>Live JSON import &amp; export</li>
+          </ul>
+        </div>
+        <a href="/Editor/editor.html" class="card-btn nav-btn-primary">Open Editor</a>
+      </div>
+
+      <div class="app-card">
+        <div>
+          <div class="card-header">
+            <div class="card-tag">Presentation App</div>
+            <div class="card-title">Hotspot Viewer</div>
+            <div class="card-desc">End-user interactive 3D showcase with pulsing hotspot dots, hover detail panels, connector lines, and automatic occlusion detection.</div>
+          </div>
+          <ul class="feature-list">
+            <li>Pre-configured Viper V4 Pro preset</li>
+            <li>Hover information callouts</li>
+            <li>Dynamic SVG connector lines</li>
+            <li>HDR environment &amp; ACES tone mapping</li>
+          </ul>
+        </div>
+        <a href="/Viewer/viewer.html" class="card-btn nav-btn-secondary">Open Viewer</a>
+      </div>
+    </div>
+
+    <div class="frame-container">
+      <div class="frame-toolbar">
+        <div class="toolbar-tabs">
+          <button class="tab-btn active" onclick="switchFrame('/Editor/editor.html', this)">Editor Preview</button>
+          <button class="tab-btn" onclick="switchFrame('/Viewer/viewer.html', this)">Viewer Preview</button>
+        </div>
+        <a id="externalLink" href="/Editor/editor.html" target="_blank" class="nav-btn nav-btn-secondary" style="font-size: 12px; padding: 4px 10px;">Open in Full Window ↗</a>
+      </div>
+      <iframe id="appFrame" class="preview-frame" src="/Editor/editor.html"></iframe>
+    </div>
+  </main>
+
+  <script>
+    function switchFrame(url, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const frame = document.getElementById('appFrame');
+      frame.src = url;
+      document.getElementById('externalLink').href = url;
+    }
+  </script>
+</body>
+</html>
