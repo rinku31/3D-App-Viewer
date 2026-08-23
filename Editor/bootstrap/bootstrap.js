@@ -348,6 +348,8 @@ function initializeEditor(loader) {
         yaw: camState.yaw,
         pitch: camState.pitch,
         distance: camState.distance,
+        minDistance: state.cameraRig.minDistance,
+        maxDistance: state.cameraRig.maxDistance,
         target: camState.target,
         fov: camState.fov
       };

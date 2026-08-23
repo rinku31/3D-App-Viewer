@@ -50,6 +50,8 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       target: [0, 0, 0],
       position: [0, 1.2, 4.0],
       distance: 4.0,
+      minDistance: 1.35,
+      maxDistance: 16.0,
       yaw: 0.0,
       pitch: 0.2
     },
@@ -183,6 +185,12 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
     ...base.camera,
     ...(raw.camera || {})
   };
+  if (typeof raw.camera?.minDistance === "number") {
+    camera.minDistance = Math.max(0.01, raw.camera.minDistance);
+  }
+  if (typeof raw.camera?.maxDistance === "number") {
+    camera.maxDistance = Math.max((camera.minDistance || 0.1) + 0.05, raw.camera.maxDistance);
+  }
   delete camera.viewpoints;
 
   const model = {

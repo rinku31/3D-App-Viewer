@@ -57,8 +57,9 @@ export class CameraRig {
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.0015;
     // Strictly bounded to prevent clipping inside models or zooming out to infinity
-    this.minDistance = options.minDistance || 1.35;
-    this.maxDistance = options.maxDistance || 16.0;
+    this.minDistance = typeof options.minDistance === "number" ? options.minDistance : 1.35;
+    this.maxDistance = typeof options.maxDistance === "number" ? options.maxDistance : 16.0;
+    this.hasExplicitLimits = typeof options.minDistance === "number" || typeof options.maxDistance === "number";
 
     // Auto rotate turntable
     this.autoRotate = Boolean(options.autoRotate || false);
@@ -83,7 +84,9 @@ export class CameraRig {
       yaw: this.yaw,
       pitch: this.pitch,
       distance: this.distance,
-      fov: this.fov
+      fov: this.fov,
+      minDistance: this.minDistance,
+      maxDistance: this.maxDistance
     };
 
     // Apply initial transforms
@@ -145,9 +148,12 @@ export class CameraRig {
         const boundingRadius = maxSize / 2;
 
         // Ensure minimum distance is strictly outside the outer hull of the model
-        this.minDistance = Math.max(0.6, boundingRadius * 1.15);
-        // Ensure max distance doesn't let user zoom into an empty void
-        this.maxDistance = Math.max(7.0, boundingRadius * 6.5);
+        if (!this.hasExplicitLimits) {
+          this.minDistance = Math.max(0.6, boundingRadius * 1.15);
+          this.maxDistance = Math.max(7.0, boundingRadius * 6.5);
+          this.initialState.minDistance = this.minDistance;
+          this.initialState.maxDistance = this.maxDistance;
+        }
 
         if (distance === null) {
           const fovRad = THREE.MathUtils.degToRad(this.camera.fov / 2);
@@ -185,6 +191,16 @@ export class CameraRig {
     if (typeof savedState.pitch === "number") this.initialState.pitch = savedState.pitch;
     if (typeof savedState.distance === "number") this.initialState.distance = savedState.distance;
     if (typeof savedState.fov === "number") this.initialState.fov = savedState.fov;
+    if (typeof savedState.minDistance === "number") {
+      this.initialState.minDistance = savedState.minDistance;
+      this.minDistance = savedState.minDistance;
+      this.hasExplicitLimits = true;
+    }
+    if (typeof savedState.maxDistance === "number") {
+      this.initialState.maxDistance = savedState.maxDistance;
+      this.maxDistance = savedState.maxDistance;
+      this.hasExplicitLimits = true;
+    }
   }
 
   /**
@@ -196,7 +212,9 @@ export class CameraRig {
       yaw: this.initialState.yaw,
       pitch: this.initialState.pitch,
       distance: this.initialState.distance,
-      fov: this.initialState.fov
+      fov: this.initialState.fov,
+      minDistance: typeof this.initialState.minDistance === "number" ? this.initialState.minDistance : this.minDistance,
+      maxDistance: typeof this.initialState.maxDistance === "number" ? this.initialState.maxDistance : this.maxDistance
     };
   }
 
@@ -219,7 +237,8 @@ export class CameraRig {
     const shortestPitchDiff = ((pitchDiff + Math.PI * 3) % twoPi) - Math.PI;
     this.targetPitch = this.targetPitch + shortestPitchDiff;
 
-    this.targetDistance = typeof this.initialState.distance === "number" ? this.initialState.distance : 4.0;
+    const targetDist = typeof this.initialState.distance === "number" ? this.initialState.distance : 4.0;
+    this.targetDistance = THREE.MathUtils.clamp(targetDist, this.minDistance, this.maxDistance);
     this.camera.fov = typeof this.initialState.fov === "number" ? this.initialState.fov : 45;
     this.camera.updateProjectionMatrix();
     if (typeof this.onChange === "function") this.onChange();
@@ -349,7 +368,9 @@ export class CameraRig {
       yaw: this.targetYaw,
       pitch: this.targetPitch,
       distance: this.targetDistance,
-      fov: this.camera.fov
+      fov: this.camera.fov,
+      minDistance: this.minDistance,
+      maxDistance: this.maxDistance
     };
   }
 
@@ -370,9 +391,17 @@ export class CameraRig {
       this.pitch = savedState.pitch;
       this.targetPitch = savedState.pitch;
     }
+    if (typeof savedState.minDistance === "number") {
+      this.minDistance = savedState.minDistance;
+      this.hasExplicitLimits = true;
+    }
+    if (typeof savedState.maxDistance === "number") {
+      this.maxDistance = savedState.maxDistance;
+      this.hasExplicitLimits = true;
+    }
     if (typeof savedState.distance === "number") {
-      this.distance = savedState.distance;
-      this.targetDistance = savedState.distance;
+      this.distance = THREE.MathUtils.clamp(savedState.distance, this.minDistance, this.maxDistance);
+      this.targetDistance = this.distance;
     }
     if (typeof savedState.fov === "number") {
       this.camera.fov = savedState.fov;

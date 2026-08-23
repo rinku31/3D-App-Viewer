@@ -69,6 +69,8 @@ const state = {
     fov: 45,
     near: 0.01,
     far: 1000,
+    minDistance: 1.35,
+    maxDistance: 16.0,
     viewpoints: [],
   },
 };

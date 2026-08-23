@@ -42,6 +42,8 @@ The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. I
     "fov": 45,
     "near": 0.01,
     "far": 1000,
+    "minDistance": 1.35,
+    "maxDistance": 16.0,
     "position": [0, 1.2, 4.0],
     "target": [0, 0, 0],
     "distance": 4.0,
@@ -138,6 +140,8 @@ The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. I
 ### 3.3 Camera & Viewpoints
 - `fov` (`number [5 - 140]`): Field of view in degrees.
 - `near` / `far` (`number`): Frustum clipping distances in scene units.
+- `minDistance` (`number > 0`): Nearest allowed orbit zoom limit in scene units.
+- `maxDistance` (`number > minDistance`): Farthest allowed orbit zoom limit in scene units.
 - `position` (`[number, number, number]`): Camera world position.
 - `target` (`[number, number, number]`): Orbit/lookAt focal center.
 - `viewpoints` (`Array<Viewpoint>`): Saved camera angles for guided tours or hotspot associations.

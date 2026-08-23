@@ -1,6 +1,6 @@
 /**
- * Viewer Asset Loader Module
- * Handles GLB/Draco 3D model loading, resource disposal, auto-framing via CameraRig,
+ * Embed Viewer Asset Loader Module
+ * Handles GLB/GLTF/Draco 3D model loading, resource disposal, auto-framing via CameraRig,
  * and JSON scene loading with automatic migration and schema validation.
  */
 
@@ -13,7 +13,7 @@ import { createDefaultSceneDocument, migrateSceneDocument, validateSceneDocument
 import { applyViewerSceneSettings } from "../render/render.js";
 import { syncViewerLights } from "../lights/lights.js";
 import { buildHotspotOverlays, clearHotspotOverlays } from "../overlay/overlay.js";
-import { refreshTourSteps } from "../ui/hud.js";
+import { refreshTourSteps, updateHudSceneInfo, showLoading, hideLoading } from "../ui/hud.js";
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
@@ -25,6 +25,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
  * Loads a GLB 3D model from a URL or File object.
  * @param {string | File} source - URL string or File object
  * @param {string} [modelName] - Optional name of the model
+ * @param {object | File | string} [companionJson] - Optional companion scene JSON
  */
 export async function loadViewerModel(source, modelName = "Product", companionJson = null) {
   let url = source;
@@ -35,6 +36,8 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
     isBlob = true;
     modelName = source.name.replace(/\.[^/.]+$/, "");
   }
+
+  showLoading(`Loading 3D Model...`);
 
   try {
     const gltf = await gltfLoader.loadAsync(url);
@@ -72,7 +75,7 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
         const text = await companionJson.text();
         loadViewerSceneJson(text, modelName);
         foundMatchingJson = true;
-      } else if (typeof companionJson === "object") {
+      } else if (typeof companionJson === "object" || typeof companionJson === "string") {
         loadViewerSceneJson(companionJson, modelName);
         foundMatchingJson = true;
       }
@@ -80,17 +83,22 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
       foundMatchingJson = await tryAutoLoadSceneJson(modelName);
     }
 
-    // If no matching JSON exists, initialize a clean empty scene document (no pre-generated hotspots)
+    // If no matching JSON exists, initialize a clean empty scene document
     if (!foundMatchingJson) {
       const defaultDoc = createDefaultSceneDocument(modelName);
       state.sceneDocument = defaultDoc;
       applyViewerSceneSettings();
       syncViewerLights();
       clearHotspotOverlays();
+      updateHudSceneInfo(modelName);
     }
 
     return model;
+  } catch (err) {
+    console.error("Failed to load 3D model:", err);
+    throw err;
   } finally {
+    hideLoading();
     if (isBlob && url) {
       URL.revokeObjectURL(url);
     }
@@ -143,13 +151,14 @@ export function loadViewerSceneJson(rawData, defaultModelName = "Product") {
     createProceduralProductModel(defaultModelName);
   }
 
+  updateHudSceneInfo(migrated.metadata?.title || defaultModelName);
+
   state.visibilityDirty = true;
   return migrated;
 }
 
 /**
  * Creates a procedural 3D product mesh (used when no GLB file is present)
- * with refined materials, shadows, and coordinates matching sample products.
  */
 export function createProceduralProductModel(name = "Viper V4 Pro") {
   if (state.currentModel) {
@@ -160,7 +169,7 @@ export function createProceduralProductModel(name = "Viper V4 Pro") {
   const group = new THREE.Group();
   group.name = name;
 
-  // 1. Mouse Body / Chassis (Aerodynamic Matte Polycarbonate)
+  // 1. Mouse Body / Chassis
   const bodyGeo = new THREE.CylinderGeometry(1.4, 1.85, 6.2, 32, 16);
   bodyGeo.scale(1.2, 0.45, 1.0);
   bodyGeo.rotateX(Math.PI / 2);
@@ -177,7 +186,7 @@ export function createProceduralProductModel(name = "Viper V4 Pro") {
   bodyMesh.receiveShadow = true;
   group.add(bodyMesh);
 
-  // 2. Click Buttons (Front Left & Right)
+  // 2. Click Buttons
   const btnGeo = new THREE.BoxGeometry(1.2, 0.25, 2.5);
   const btnMat = new THREE.MeshStandardMaterial({
     color: 0x1e1e24,
@@ -198,7 +207,7 @@ export function createProceduralProductModel(name = "Viper V4 Pro") {
   rightBtn.castShadow = true;
   group.add(rightBtn);
 
-  // 3. Illuminated Scroll Wheel
+  // 3. Scroll Wheel
   const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.28, 24);
   wheelGeo.rotateZ(Math.PI / 2);
   const wheelMat = new THREE.MeshStandardMaterial({
@@ -226,7 +235,7 @@ export function createProceduralProductModel(name = "Viper V4 Pro") {
   ledMesh.position.set(0, 0.48, -0.2);
   group.add(ledMesh);
 
-  // 5. PTFE Glide Skates (Underbody)
+  // 5. PTFE Glide Skates
   const skateGeo = new THREE.BoxGeometry(2.2, 0.08, 0.8);
   const skateMat = new THREE.MeshStandardMaterial({
     color: 0xf5f5f7,
@@ -266,7 +275,6 @@ function applyCameraAndModelTransforms() {
     };
 
     if (Array.isArray(camData.position) && !camData.yaw && !camData.pitch) {
-      // If position is provided from v1 camera format, focus target
       const pos = new THREE.Vector3(...camData.position);
       const tgt = new THREE.Vector3(...camState.target);
       camState.distance = pos.distanceTo(tgt) || 4.0;
@@ -297,7 +305,6 @@ function applyCameraAndModelTransforms() {
 
 /**
  * Attempts to auto-load matching scene JSON from assets folder with the same/similar model name.
- * Returns true if matching JSON was found and loaded, false otherwise.
  */
 async function tryAutoLoadSceneJson(modelName) {
   if (!modelName || modelName === "Product") return false;
@@ -309,10 +316,9 @@ async function tryAutoLoadSceneJson(modelName) {
     `/Viewer/assets/Products/${modelName.replace(/\s+/g, "_")}.json`,
     `/Viewer/assets/Products/${modelName.replace(/_/g, " ")}.json`,
     `/assets/Products/${modelName}.json`,
-    `/assets/Products/${encodeURIComponent(modelName)}.json`,
+    `./assets/Products/${modelName}.json`,
     `/assets/${modelName}.json`,
-    `/${modelName}.json`,
-    `/${encodeURIComponent(modelName)}.json`
+    `/${modelName}.json`
   ];
 
   for (const path of candidatePaths) {

@@ -31,6 +31,8 @@
     "fov": 45,
     "near": 0.01,
     "far": 1000,
+    "minDistance": 1.35,
+    "maxDistance": 16.0,
     "target": [0.0, 0.2, 0.0],
     "position": [0.0, 1.8, 4.5],
     "distance": 4.5,

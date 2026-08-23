@@ -376,6 +376,25 @@ function buildCameraInspector(camera) {
     </div>
 
     <div class="section-group">
+      <div class="section-group-title">Zoom &amp; Distance Limits</div>
+      <div class="param-row">
+        <div class="slider-header"><label>Nearest Zoom (Min Distance)</label><span class="value-badge" id="val_cam_min_dist">${(state.cameraRig?.minDistance ?? 1.35).toFixed(2)}m</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_cam_min_dist" type="range" min="0.1" max="20" step="0.1" value="${state.cameraRig?.minDistance ?? 1.35}" style="flex:1;">
+          <input id="prop_cam_min_dist_num" type="number" min="0.01" max="500" step="0.1" value="${(state.cameraRig?.minDistance ?? 1.35).toFixed(2)}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Farthest Zoom (Max Distance)</label><span class="value-badge" id="val_cam_max_dist">${(state.cameraRig?.maxDistance ?? 16.0).toFixed(1)}m</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_cam_max_dist" type="range" min="1.0" max="100" step="0.5" value="${state.cameraRig?.maxDistance ?? 16.0}" style="flex:1;">
+          <input id="prop_cam_max_dist_num" type="number" min="0.1" max="2000" step="0.5" value="${(state.cameraRig?.maxDistance ?? 16.0).toFixed(1)}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-group">
       <div class="section-group-title">Optics &amp; Clipping</div>
       <div class="param-row">
         <div class="slider-header"><label>Field of View (FOV)</label><span class="value-badge" id="val_fov">${Math.round(camera.fov)}°</span></div>
@@ -694,6 +713,10 @@ function bindInspectorEvents(type, object, target) {
     const camFov = document.getElementById("prop_cam_fov");
     const camNear = document.getElementById("prop_cam_near");
     const camFar = document.getElementById("prop_cam_far");
+    const camMinDist = document.getElementById("prop_cam_min_dist");
+    const camMinDistNum = document.getElementById("prop_cam_min_dist_num");
+    const camMaxDist = document.getElementById("prop_cam_max_dist");
+    const camMaxDistNum = document.getElementById("prop_cam_max_dist_num");
 
     const onCamTargetChange = () => {
       const tx = parseFloat(targetX?.value || 0);
@@ -746,9 +769,72 @@ function bindInspectorEvents(type, object, target) {
       if (badge) badge.textContent = `${Math.round(farVal)}m`;
     });
 
+    const updateCamMinDist = (val) => {
+      const num = Math.max(0.01, parseFloat(val) || 0.1);
+      if (state.cameraRig) {
+        state.cameraRig.minDistance = num;
+        state.cameraRig.hasExplicitLimits = true;
+        if (state.cameraRig.initialState) state.cameraRig.initialState.minDistance = num;
+        if (state.cameraRig.maxDistance < num + 0.05) {
+          state.cameraRig.maxDistance = num + 0.5;
+          if (state.cameraRig.initialState) state.cameraRig.initialState.maxDistance = state.cameraRig.maxDistance;
+          if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
+          if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
+          const maxBadge = document.getElementById("val_cam_max_dist");
+          if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
+        }
+        state.cameraRig.targetDistance = THREE.MathUtils.clamp(state.cameraRig.targetDistance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
+        state.cameraRig.distance = THREE.MathUtils.clamp(state.cameraRig.distance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
+      }
+      if (state.cameraSettings) state.cameraSettings.minDistance = num;
+      if (!state.sceneDocument) state.sceneDocument = {};
+      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
+      state.sceneDocument.camera.minDistance = num;
+      if (state.cameraRig?.maxDistance) state.sceneDocument.camera.maxDistance = state.cameraRig.maxDistance;
+
+      if (camMinDist && parseFloat(camMinDist.value) !== num && num <= 20) camMinDist.value = num;
+      if (camMinDistNum && parseFloat(camMinDistNum.value) !== num) camMinDistNum.value = num.toFixed(2);
+      const badge = document.getElementById("val_cam_min_dist");
+      if (badge) badge.textContent = `${num.toFixed(2)}m`;
+    };
+
+    const updateCamMaxDist = (val) => {
+      const minVal = state.cameraRig?.minDistance ?? 0.1;
+      const num = Math.max(minVal + 0.05, parseFloat(val) || (minVal + 1));
+      if (state.cameraRig) {
+        state.cameraRig.maxDistance = num;
+        state.cameraRig.hasExplicitLimits = true;
+        if (state.cameraRig.initialState) state.cameraRig.initialState.maxDistance = num;
+        state.cameraRig.targetDistance = THREE.MathUtils.clamp(state.cameraRig.targetDistance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
+        state.cameraRig.distance = THREE.MathUtils.clamp(state.cameraRig.distance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
+      }
+      if (state.cameraSettings) state.cameraSettings.maxDistance = num;
+      if (!state.sceneDocument) state.sceneDocument = {};
+      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
+      state.sceneDocument.camera.maxDistance = num;
+
+      if (camMaxDist && parseFloat(camMaxDist.value) !== num && num <= 100) camMaxDist.value = num;
+      if (camMaxDistNum && parseFloat(camMaxDistNum.value) !== num) camMaxDistNum.value = num.toFixed(1);
+      const badge = document.getElementById("val_cam_max_dist");
+      if (badge) badge.textContent = `${num.toFixed(1)}m`;
+    };
+
+    camMinDist?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
+    camMinDistNum?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
+    camMaxDist?.addEventListener("input", (e) => updateCamMaxDist(e.target.value));
+    camMaxDistNum?.addEventListener("input", (e) => updateCamMaxDist(e.target.value));
+
     document.getElementById("btnFrameModelFromCam")?.addEventListener("click", () => {
       if (state.cameraRig && state.currentModel) {
         state.cameraRig.focus(state.currentModel);
+        const minBadge = document.getElementById("val_cam_min_dist");
+        if (minBadge) minBadge.textContent = `${state.cameraRig.minDistance.toFixed(2)}m`;
+        if (camMinDist) camMinDist.value = state.cameraRig.minDistance;
+        if (camMinDistNum) camMinDistNum.value = state.cameraRig.minDistance.toFixed(2);
+        const maxBadge = document.getElementById("val_cam_max_dist");
+        if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
+        if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
+        if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
       }
     });
 
@@ -761,6 +847,8 @@ function bindInspectorEvents(type, object, target) {
           yaw: camState.yaw,
           pitch: camState.pitch,
           distance: camState.distance,
+          minDistance: state.cameraRig.minDistance,
+          maxDistance: state.cameraRig.maxDistance,
           target: camState.target,
           fov: camState.fov
         };
@@ -776,6 +864,14 @@ function bindInspectorEvents(type, object, target) {
     document.getElementById("btnResetDefaultCamInspector")?.addEventListener("click", () => {
       if (state.cameraRig) {
         state.cameraRig.reset();
+        const minBadge = document.getElementById("val_cam_min_dist");
+        if (minBadge) minBadge.textContent = `${state.cameraRig.minDistance.toFixed(2)}m`;
+        if (camMinDist) camMinDist.value = state.cameraRig.minDistance;
+        if (camMinDistNum) camMinDistNum.value = state.cameraRig.minDistance.toFixed(2);
+        const maxBadge = document.getElementById("val_cam_max_dist");
+        if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
+        if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
+        if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
       }
     });
 

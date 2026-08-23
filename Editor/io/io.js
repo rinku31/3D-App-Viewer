@@ -189,11 +189,15 @@ async function importJsonData(rawData, fileName = "scene.json") {
       yaw: typeof data.camera.yaw === "number" ? data.camera.yaw : 0.0,
       pitch: typeof data.camera.pitch === "number" ? data.camera.pitch : 0.2,
       distance: typeof data.camera.distance === "number" ? data.camera.distance : 4.0,
-      fov: typeof data.camera.fov === "number" ? data.camera.fov : 45
+      fov: typeof data.camera.fov === "number" ? data.camera.fov : 45,
+      minDistance: typeof data.camera.minDistance === "number" ? data.camera.minDistance : undefined,
+      maxDistance: typeof data.camera.maxDistance === "number" ? data.camera.maxDistance : undefined
     };
     state.cameraRig.setDefaultState(camState);
     state.cameraRig.setState(camState);
     state.cameraSettings.fov = camState.fov;
+    if (typeof camState.minDistance === "number") state.cameraSettings.minDistance = camState.minDistance;
+    if (typeof camState.maxDistance === "number") state.cameraSettings.maxDistance = camState.maxDistance;
   }
 
   // 3. Restore Model Transforms
@@ -325,6 +329,18 @@ async function exportJson() {
   const rawTitle = state.sceneDocument?.metadata?.title || modelName;
   const cleanTitle = rawTitle.replace(/\s+Scene$/i, "").trim() || modelName;
 
+  const minDistance = typeof state.cameraRig?.minDistance === "number"
+    ? state.cameraRig.minDistance
+    : (typeof state.cameraSettings?.minDistance === "number"
+      ? state.cameraSettings.minDistance
+      : (typeof defaultCam.minDistance === "number" ? defaultCam.minDistance : 1.35));
+
+  const maxDistance = typeof state.cameraRig?.maxDistance === "number"
+    ? state.cameraRig.maxDistance
+    : (typeof state.cameraSettings?.maxDistance === "number"
+      ? state.cameraSettings.maxDistance
+      : (typeof defaultCam.maxDistance === "number" ? defaultCam.maxDistance : 16.0));
+
   const exportData = {
     version: CURRENT_SCHEMA_VERSION,
     metadata: {
@@ -360,6 +376,8 @@ async function exportJson() {
       fov: defaultCam.fov ?? (state.camera?.fov || 45),
       near: state.camera?.near || 0.01,
       far: state.camera?.far || 1000,
+      minDistance: Number(minDistance),
+      maxDistance: Number(maxDistance),
       target: defaultCam.target || [0, 0, 0],
       distance: typeof defaultCam.distance === "number" ? defaultCam.distance : 4.0,
       yaw: typeof defaultCam.yaw === "number" ? defaultCam.yaw : 0.0,

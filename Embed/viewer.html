@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>3D Product Viewer</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+</head>
+
+<body>
+
+<!-- 2D Screen Overlay for Hotspot Pins, Callout Cards & Connector Lines -->
+<div id="overlay">
+  <svg id="svg"></svg>
+</div>
+
+<!-- Main Viewer Embed Entry Point -->
+<script type="module" src="embed.js"></script>
+
+</body>
+</html>
