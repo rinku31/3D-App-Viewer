@@ -1,34 +1,109 @@
 {
+  "version": "2.0.0",
+  "metadata": {
+    "title": "Viper V4 Pro",
+    "author": "3D App Author",
+    "createdAt": "2026-08-23T09:58:58.455Z",
+    "updatedAt": "2026-08-23T09:58:58.455Z",
+    "generator": "3D App Viewer Editor v2.0.0",
+    "tags": [
+      "3d",
+      "product-viewer",
+      "interactive"
+    ]
+  },
   "scene": {
-    "background": "#3f3f3f",
+    "background": "#ffffff",
+    "backgroundType": "color",
+    "backgroundBlur": 0,
     "environment": {
-      "hdri": "studio_small_09",
-      "intensity": 1.5,
+      "preset": "studio_small_09",
+      "customHdrUrl": null,
+      "intensity": 1.3,
+      "rotation": 50,
       "exposure": 1.2,
-      "toneMapping": "ACESFilmic"
+      "toneMapping": "AgX"
+    },
+    "rendering": {
+      "shadows": true,
+      "shadowType": "pcfsoft"
+    },
+    "helpers": {
+      "grid": true,
+      "axes": false
     }
   },
-
-  "camera": {},
-
-  "model": {},
-
-  "lights": [],
-  
+  "camera": {
+    "fov": 45,
+    "near": 0.01,
+    "far": 1000,
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "distance": 10.693877058009141,
+    "yaw": 1.1102230246251565e-16,
+    "pitch": -1.5707963267948974,
+    "viewpoints": []
+  },
+  "model": {
+    "name": "Viper V4 Pro",
+    "filename": "Viper V4 Pro.glb",
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale": [
+      1,
+      1,
+      1
+    ]
+  },
+  "lights": [
+    {
+      "id": "spot_light_mt5mna0s",
+      "name": "Spot Light",
+      "type": "spot",
+      "color": "#ffffff",
+      "intensity": 40,
+      "castShadow": true,
+      "position": [
+        0,
+        2.755808751310715,
+        3.11071398497597
+      ],
+      "target": [
+        0,
+        0.8,
+        2
+      ],
+      "distance": 5.5,
+      "decay": 0.4,
+      "angle": 0.7504915783575618,
+      "penumbra": 0.2
+    }
+  ],
   "settings": {
     "line": {
-
-      "color": "#bfbfbf",
-
-      "width": 1,
-
+      "color": "#44D62C",
+      "width": 1.5,
       "offset": {
         "x": 0,
         "y": 0
       }
-
+    },
+    "hotspots": {
+      "pulseAnimation": true,
+      "theme": "default",
+      "occlusionTolerance": 0.08
     }
-
   },
   "hotspots": [
     {
