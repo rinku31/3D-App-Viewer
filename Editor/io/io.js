@@ -313,7 +313,7 @@ function hideExportConfirmationDialog() {
   if (modal) modal.style.display = "none";
 }
 
-function exportJson() {
+async function exportJson() {
   const defaultCam = state.cameraRig?.getDefaultState?.() || {
     target: [0, 0, 0],
     yaw: 0.0,
