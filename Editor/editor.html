@@ -22,32 +22,115 @@
 
 <div id="app">
 
-<div id="sidebarContainer">
+<div id="editorLayout">
 
+<div id="viewportContainer">
 <div id="viewport">
 
-<button id="toggleSidebarBtn" title="Toggle Sidebar">
-&#9776;
+<div id="topNavbar">
+  <div id="fileMenuContainer" class="nav-dropdown-container">
+    <button id="fileMenuBtn" class="gizmo-btn file-menu-btn" title="File Menu">
+      <span class="menu-icon">&#128196;</span>
+      <span class="menu-text">File</span>
+      <span class="dropdown-arrow">&#9662;</span>
+    </button>
+    <div id="fileDropdown" class="nav-dropdown-menu">
+      <button id="menuImportModelBtn" class="dropdown-item" type="button">
+        <span class="item-icon">&#128230;</span>
+        <span class="item-text">Import File (.glb, .gltf, .json)...</span>
+      </button>
+      <div class="dropdown-divider"></div>
+      <button id="menuExportJsonBtn" class="dropdown-item" type="button">
+        <span class="item-icon">&#128190;</span>
+        <span class="item-text">Export Scene JSON</span>
+      </button>
+      <div class="dropdown-divider"></div>
+      <a id="menuHubBtn" href="/index.html" class="dropdown-item">
+        <span class="item-icon">&#8592;</span>
+        <span class="item-text">Return to Hub</span>
+      </a>
+    </div>
+  </div>
+
+  <div id="gizmoToolbar">
+    <div class="gizmo-btn-group">
+      <button id="gizmoHideBtn" class="gizmo-btn active" title="Toggle Gizmo Visibility (X)">&#128295; Gizmo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Right Viewport Controls -->
+<button id="toggleSidebarBtn" title="Toggle Sidebar Panel">
+  <span class="toggle-icon">&#9776;</span>
+  <span class="toggle-text">Panel</span>
 </button>
 
-<div id="gizmoToolbar">
-  <div class="gizmo-btn-group">
-    <button id="gizmoTranslateBtn" class="gizmo-btn active" title="Translate Mode (G / W)">&#10021; Move</button>
-    <button id="gizmoRotateBtn" class="gizmo-btn" title="Rotate Mode (R / E)">&#8635; Rotate</button>
-    <button id="gizmoScaleBtn" class="gizmo-btn" title="Scale Mode (S)">&#8690; Scale</button>
+<div id="cameraViewToolbar">
+  <span class="camera-toolbar-label">Axis</span>
+  <div class="camera-btn-group">
+    <button class="camera-axis-btn" data-axis="front" title="Snap to Front View (1)">Front</button>
+    <button class="camera-axis-btn" data-axis="back" title="Snap to Back View (Ctrl+1)">Back</button>
+    <button class="camera-axis-btn" data-axis="left" title="Snap to Left View (Ctrl+3)">Left</button>
+    <button class="camera-axis-btn" data-axis="right" title="Snap to Right View (3)">Right</button>
+    <button class="camera-axis-btn" data-axis="top" title="Snap to Top View (7)">Top</button>
+    <button class="camera-axis-btn" data-axis="bottom" title="Snap to Bottom View (Ctrl+7)">Bottom</button>
   </div>
-  <div class="gizmo-divider"></div>
-  <div class="gizmo-btn-group">
-    <button id="gizmoSpaceBtn" class="gizmo-btn" title="Toggle World / Local Space">WORLD</button>
-    <button id="gizmoSnapBtn" class="gizmo-btn" title="Toggle Snapping (0.25m / 15°)">SNAP</button>
-    <button id="gizmoHideBtn" class="gizmo-btn" title="Toggle Gizmo Visibility (X)">GIZMO</button>
-  </div>
+  <div class="gizmo-divider-horizontal"></div>
+  <button id="resetCamViewBtn" class="camera-axis-btn camera-axis-reset" title="Reset Camera View to Default (R)">&#8634; Reset</button>
 </div>
 
 <div id="overlay">
 <svg id="hotspotLines"></svg>
 </div>
 
+<!-- Hidden File Input for 3D Models & Scene JSON (Unified Smart Routing) -->
+<input id="modelInput" type="file" accept=".glb,.gltf,.bin,.json,application/json,image/*" multiple style="display: none;">
+
+<!-- Export Scene JSON Confirmation Modal -->
+<div id="exportModal" class="editor-modal-backdrop" style="display: none;">
+  <div class="editor-modal-card">
+    <div class="editor-modal-header">
+      <div class="editor-modal-title">
+        <span class="modal-title-icon">&#128190;</span>
+        <h3>Export Scene JSON</h3>
+      </div>
+      <button id="closeExportModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
+    </div>
+    <div class="editor-modal-body">
+      <p class="modal-description">Save this scene configuration, camera viewpoints, lighting setup, and interactive hotspots into a JSON document.</p>
+      
+      <div id="exportModalWarning" class="modal-warning-banner" style="display: none;">
+        <span class="warning-icon">&#9888;&#65039;</span>
+        <span class="warning-text">No 3D model is currently loaded in the editor.</span>
+      </div>
+
+      <div class="modal-info-grid">
+        <div class="modal-info-row">
+          <span class="info-label">3D Model</span>
+          <span id="exportModalModelName" class="info-value">None</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="info-label">Interactive Hotspots</span>
+          <span id="exportModalHotspotsCount" class="info-value">0</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="info-label">Custom Lights</span>
+          <span id="exportModalLightsCount" class="info-value">0</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="info-label">Output Filename</span>
+          <span id="exportModalFilename" class="info-value code-font">scene.json</span>
+        </div>
+      </div>
+    </div>
+    <div class="editor-modal-footer">
+      <button id="cancelExportModalBtn" class="secondary" type="button">Cancel</button>
+      <button id="confirmExportModalBtn" class="primary-btn" type="button">&#128190; Confirm &amp; Download</button>
+    </div>
+  </div>
+</div>
+
+</div>
 </div>
 
 <div id="sidebar">
@@ -59,97 +142,252 @@ class="sidebar-tab active"
 type="button"
 data-tab="scene"
 >
-Hierarchy &amp; Scene
+Scene
 </button>
 
 <button
-id="propertiesTabBtn"
+id="createTabBtn"
 class="sidebar-tab"
 type="button"
-data-tab="properties"
+data-tab="create"
 >
-Inspector
+Create &amp; Views
+</button>
+
+<button
+id="environmentTabBtn"
+class="sidebar-tab"
+type="button"
+data-tab="environment"
+>
+Environment
 </button>
 </div>
 
+<!-- Tab 1: Scene (Hierarchy + Inspector Split Windows) -->
 <div
 id="sceneTab"
-class="sidebar-tab-panel active"
+class="sidebar-tab-panel active scene-split-panel"
 >
 
-<div class="section hierarchy-section">
-  <div class="section-header">
-    <h3>Scene Hierarchy</h3>
-    <span class="hierarchy-badge">Outliner</span>
+  <!-- Upper Window: Scene Hierarchy -->
+  <div class="panel-window hierarchy-window">
+    <div class="panel-window-header">
+      <div class="panel-header-left">
+        <span class="panel-window-icon">&#128450;</span>
+        <span class="panel-window-title">Scene Hierarchy</span>
+      </div>
+      <span class="hierarchy-badge">Outliner</span>
+    </div>
+    
+    <div class="hierarchy-search-bar">
+      <input id="hierarchySearchInput" type="text" placeholder="Filter objects in scene...">
+    </div>
+
+    <div id="sceneHierarchyTree" class="hierarchy-tree-container">
+      <!-- Rendered dynamically by hierarchy.js -->
+    </div>
   </div>
-  
-  <div class="hierarchy-search-bar">
-    <input id="hierarchySearchInput" type="text" placeholder="Filter objects in scene...">
+
+  <!-- Lower Window: Inspector / Properties -->
+  <div class="panel-window inspector-window">
+    <div class="panel-window-header">
+      <div class="panel-header-left">
+        <span class="panel-window-icon">&#9881;</span>
+        <span class="panel-window-title">Inspector</span>
+      </div>
+      <span id="inspectorSelectionBadge" class="inspector-badge-sm">Properties</span>
+    </div>
+
+    <div id="propertiesTab" class="inspector-scroll-content">
+      <!-- Rendered dynamically by inspector.js -->
+    </div>
   </div>
 
-  <div id="sceneHierarchyTree" class="hierarchy-tree-container">
-    <!-- Rendered dynamically by hierarchy.js -->
-  </div>
 </div>
 
-<div class="section">
-<h3>Quick Create</h3>
-<div class="button-grid">
-  <button id="addBtn" class="primary-btn">
-    Add Hotspot
-  </button>
-  <button id="addDirectionalLightBtn" class="secondary">
-    &#10133; Directional Light
-  </button>
-</div>
-</div>
-
-<div class="section">
-<h3>Model Import</h3>
-<input id="modelInput" type="file" accept=".glb">
-</div>
-
-<div class="section">
-<h3>JSON Annotations</h3>
-
-<button id="importJsonBtn" class="secondary">
-Import JSON
-</button>
-
-<input
-id="jsonInput"
-type="file"
-accept=".json"
-style="display:none"
->
-
-<button id="exportBtn">
-Export JSON
-</button>
-
-</div>
-
-<div class="section">
-
-<h3>Scene Environment</h3>
-
-<div class="param-row-flex">
-  <label>Background Color</label>
-  <input
-  id="backgroundColor"
-  type="color"
-  value="#3f3f3f">
-</div>
-
-</div>
-
-</div>
-
+<!-- Tab 2: Quick Create & Camera Viewpoints -->
 <div
-id="propertiesTab"
-class="sidebar-tab-panel"
+id="createTab"
+class="sidebar-tab-panel scrollable-tab-panel"
 >
-  <!-- Rendered dynamically by inspector.js -->
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Quick Create</h3>
+      <span class="hierarchy-badge">Objects</span>
+    </div>
+    <div class="button-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 8px;">
+      <button id="addBtn" class="primary-btn">
+        &#10133; Hotspot
+      </button>
+      <button id="addDirectionalLightBtn" class="secondary">
+        &#9889; Directional
+      </button>
+      <button id="addPointLightBtn" class="secondary">
+        &#128161; Point Light
+      </button>
+      <button id="addSpotLightBtn" class="secondary">
+        &#128294; Spot Light
+      </button>
+    </div>
+    <button id="addAmbientLightBtn" class="secondary" style="width: 100%; margin-bottom: 10px;">
+      &#9728; Ambient Light
+    </button>
+
+    <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Studio Light Presets</div>
+    <div class="button-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
+      <button class="secondary light-preset-btn" data-preset="clean_studio" style="font-size: 11px; padding: 6px 4px;">Clean Studio</button>
+      <button class="secondary light-preset-btn" data-preset="dramatic_contrast" style="font-size: 11px; padding: 6px 4px;">Dramatic Rim</button>
+      <button class="secondary light-preset-btn" data-preset="dark_showcase" style="font-size: 11px; padding: 6px 4px;">Dark Showcase</button>
+      <button class="secondary light-preset-btn" data-preset="outdoor_sun" style="font-size: 11px; padding: 6px 4px;">Outdoor Sun</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Camera &amp; Viewpoints</h3>
+      <span class="hierarchy-badge">View</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+      <button id="sidebarSetDefaultCamBtn" class="primary-btn" style="width: 100%; font-size: 12px; padding: 7px 10px;">
+        &#9733; Set Current as Default View
+      </button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <button id="sidebarResetDefaultCamBtn" class="secondary" style="font-size: 11px; padding: 5px 6px;">
+          &#8634; Reset View
+        </button>
+        <button id="sidebarFrameModelBtn" class="secondary" style="font-size: 11px; padding: 5px 6px;">
+          &#128269; Frame Model
+        </button>
+      </div>
+    </div>
+    <div class="button-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <button class="secondary camera-axis-btn" data-axis="front" title="Snap to Front View">Front</button>
+      <button class="secondary camera-axis-btn" data-axis="back" title="Snap to Back View">Back</button>
+      <button class="secondary camera-axis-btn" data-axis="left" title="Snap to Left View">Left</button>
+      <button class="secondary camera-axis-btn" data-axis="right" title="Snap to Right View">Right</button>
+      <button class="secondary camera-axis-btn" data-axis="top" title="Snap to Top View">Top</button>
+      <button class="secondary camera-axis-btn" data-axis="bottom" title="Snap to Bottom View">Bottom</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tab 3: Environment & Render Settings -->
+<div
+id="environmentTab"
+class="sidebar-tab-panel scrollable-tab-panel"
+>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>HDR Environment &amp; Reflection</h3>
+      <span class="hierarchy-badge">IBL</span>
+    </div>
+
+    <div class="param-row">
+      <label>Environment Preset</label>
+      <select id="envTabPreset" class="inspector-select">
+        <option value="studio_small_09">Studio Small 09 (Balanced)</option>
+        <option value="potsdamer_platz">Potsdamer Platz (Urban)</option>
+        <option value="autumn_ground">Autumn Park (Warm Nature)</option>
+        <option value="aircraft_workshop">Aircraft Workshop (Industrial)</option>
+      </select>
+    </div>
+
+    <div class="param-row">
+      <div class="slider-header"><label>Environment Intensity</label><span class="value-badge" id="envTabIntensityVal">1.0</span></div>
+      <input id="envTabIntensity" type="range" min="0" max="4.0" step="0.1" value="1.0">
+    </div>
+
+    <div class="param-row">
+      <div class="slider-header"><label>Environment Rotation</label><span class="value-badge" id="envTabRotationVal">0°</span></div>
+      <input id="envTabRotation" type="range" min="0" max="360" step="5" value="0">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Background &amp; Skybox</h3>
+      <span class="hierarchy-badge">Backdrop</span>
+    </div>
+
+    <div class="param-row">
+      <label>Background Mode</label>
+      <select id="envTabBgType" class="inspector-select">
+        <option value="color">Solid Color</option>
+        <option value="environment">HDR Skybox</option>
+        <option value="transparent">Transparent</option>
+      </select>
+    </div>
+
+    <div class="param-row-flex" id="envTabBgColorRow">
+      <label>Solid Background Color</label>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input id="envTabBgColor" type="color" value="#222228">
+      </div>
+    </div>
+
+    <div class="param-row" id="envTabBgBlurRow" style="display:none;">
+      <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="envTabBgBlurVal">0.00</span></div>
+      <input id="envTabBgBlur" type="range" min="0" max="1" step="0.05" value="0">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Color &amp; Tone Mapping</h3>
+      <span class="hierarchy-badge">Color</span>
+    </div>
+
+    <div class="param-row">
+      <label>Tone Mapping Method</label>
+      <select id="envTabToneMapping" class="inspector-select">
+        <option value="ACESFilmic">ACES Filmic (Recommended)</option>
+        <option value="AgX">AgX (Cinematic Highlight Roll-off)</option>
+        <option value="Linear">Linear</option>
+        <option value="Reinhard">Reinhard</option>
+        <option value="Cineon">Cineon</option>
+      </select>
+    </div>
+
+    <div class="param-row">
+      <div class="slider-header"><label>Camera Exposure</label><span class="value-badge" id="envTabExposureVal">1.6</span></div>
+      <input id="envTabExposure" type="range" min="0.1" max="4.0" step="0.1" value="1.6">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Viewport Helpers</h3>
+      <span class="hierarchy-badge">Guides</span>
+    </div>
+
+    <div class="param-row-checkbox">
+      <label>
+        <input id="envTabShadows" type="checkbox" checked>
+        Real-Time Soft Shadows
+      </label>
+    </div>
+
+    <div class="param-row-checkbox">
+      <label>
+        <input id="envTabGrid" type="checkbox" checked>
+        Ground Grid Helper
+      </label>
+    </div>
+
+    <div class="param-row-checkbox">
+      <label>
+        <input id="envTabAxes" type="checkbox">
+        World Coordinate Axes (XYZ)
+      </label>
+    </div>
+  </div>
+
+</div>
+
 </div>
 
 </div>

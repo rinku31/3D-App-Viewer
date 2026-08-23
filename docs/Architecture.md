@@ -2,123 +2,108 @@
 
 ## High-level architecture
 
-3D App Viewer contains two independent browser applications connected by a JSON document and a shared model filename convention.
+3D App Viewer contains two independent browser applications connected by a Schema v2 JSON document and a shared model filename convention.
 
 ```mermaid
 flowchart LR
   Author[Author] --> Editor[Editor]
-  Editor -->|exports hotspot JSON| ProductJSON[Product JSON]
+  Editor -->|exports Schema v2 JSON| ProductJSON[Scene JSON]
   Model[GLB model] --> Editor
   Model --> Viewer[Viewer]
   ProductJSON --> Viewer
   Viewer --> Experience[Interactive product experience]
 ```
 
-Both applications use native ES modules and Three.js from an import map. They currently load supporting resources—Three.js, Draco decoder files, HDR environment, and some helper textures—from remote URLs.
+Both applications use native ES modules and Three.js from an import map. Shared runtime primitives reside in `/shared/`, allowing both Editor and Viewer to consume consistent math, disposal, environment, and schema validation logic.
 
 ## Module responsibilities
 
-### Editor
+### Shared Primitives (`/shared/`)
 
 | Module | Responsibility |
 | --- | --- |
-| `editor.js` | Gets the viewport, initializes rendering, configures GLTF/Draco loading, and starts the Editor. |
-| `state/state.js` | Owns the shared mutable Editor state: scene objects, DOM references, collections, selection, and settings. |
-| `render/render.js` | Creates the scene, camera, WebGL renderer, controls, default lighting/environment, resize behavior, model framing, and animation loop. |
-| `bootstrap/bootstrap.js` | Coordinates module initialization, canvas clicks, selection, add mode, field binding, and per-frame updates. |
-| `hotspots/hotspots.js` | Creates hotspot data and DOM overlay elements; manages selection, dragging, panel content, projection, visibility, and removal. |
-| `lights/lights.js` | Creates and edits directional lights and their editor-only sprites, helper, target, and line. |
-| `io/io.js` | Imports GLB and JSON files, exports JSON, and reports import errors. |
-| `ui/ui.js` | Handles non-scene UI behavior, currently the sidebar toggle. |
+| `shared/schema.js` | Canonical Schema v2.0.0 definition, validator, and migration engine for scene documents. |
+| `shared/CameraRig.js` | Multi-pivot camera orbit rig with unconstrained yaw/pitch, damping, auto-rotate turntable, and default view handling. |
+| `shared/disposal.js` | Safe, recursive Three.js resource disposal for meshes, geometries, materials, textures, and PMREM maps. |
+| `shared/environment.js` | HDR presets, RGBELoader, PMREM generation, background mode handling (color, environment, transparent), tone mapping, and exposure. |
+| `shared/lights.js` | Factory functions to instantiate and synchronize Schema v2 lights (`DirectionalLight`, `PointLight`, `SpotLight`, `AmbientLight`) in Three.js scenes. |
+| `shared/hotspotMath.js` | Hotspot screen projection (`projectToScreen`), geometric occlusion raycasting (`testHotspotOcclusion`), and SVG connector lines (`calculateConnectorLine`). |
 
-### Viewer
+### Editor (`/Editor/`)
 
 | Module | Responsibility |
 | --- | --- |
-| `viewer.html` | Defines the viewer page, import control, and overlay container. |
-| `viewer.js` | Initializes Three.js, loads the selected GLB and matching JSON, builds overlay DOM, determines hotspot visibility, and renders frames. |
-| `style.css` | Styles the canvas, hotspot marker, information panels, lines, and upload control. |
-| `assets/Products/` | Holds published product GLB/JSON pairs. |
+| `editor.js` | Viewport acquisition, render loop initialization, and Editor bootstrap. |
+| `state/state.js` | Shared mutable state: scene objects, DOM references, selection, gizmo state, and scene settings. |
+| `render/render.js` | Viewport rendering, CameraRig initialization, visual helpers (grid/axes), environment loading, and render loop. |
+| `bootstrap/bootstrap.js` | Module coordination, toolbar event binding, universal selection routing, and per-frame updates. |
+| `hotspots/hotspots.js` | Hotspot creation, dragging, inspector binding, and shared math projection. |
+| `selection/selection.js` | Universal selection system for hotspots, lights, models, meshes, and cameras. |
+| `gizmo/gizmo.js` | TransformControls integration for translate, rotate, and scale operations. |
+| `inspector/inspector.js` | Dynamic property inspector for inspecting and editing properties of selected scene entities. |
+| `hierarchy/hierarchy.js` | Scene Outliner / Hierarchy tree view with real-time filtering, visibility toggling, and framing. |
+| `lights/lights.js` | Interactive light authoring (Directional, Point, Spot, Ambient) with editor sprites and helpers. |
+| `io/io.js` | Scene GLB and Schema v2 JSON import, export, migration, and error reporting. |
+
+### Viewer (`/Viewer/`)
+
+| Module | Responsibility |
+| --- | --- |
+| `viewer.html` | Presentation viewer layout, navigation header, upload triggers, and SVG overlay container. |
+| `viewer.js` | Application entry point initiating Viewer bootstrap. |
+| `bootstrap/bootstrap.js` | Coordinates viewer subsystems, sets up DOM events, and runs per-frame update loop. |
+| `state/state.js` | Viewer runtime state singleton. |
+| `render/render.js` | WebGLRenderer setup, OrbitControls, animation loop, and background/tone-mapping syncing. |
+| `loading/loader.js` | GLTF/Draco 3D model loading, resource disposal, auto-framing, and Schema v2 JSON auto-discovery & loading. |
+| `lights/lights.js` | Presentation lighting manager syncing custom Schema v2 lights or fallback default lights. |
+| `overlay/overlay.js` | DOM generation for hotspot markers and information panels, SVG connector lines, and screen positioning. |
+| `visibility/visibility.js` | Throttled occlusion testing against model geometry. |
+| `style.css` | Styles for viewer layout, header, hotspot markers, information cards, and animated SVG lines. |
+| `assets/Products/` | Bundled product GLB and matching Scene JSON files. |
 
 ## Dependency flow
 
-The Editor intentionally uses one-way ES module imports. Feature modules depend on `state`; `bootstrap` coordinates features; the entrypoint starts the application.
+Both applications avoid circular imports. Feature modules depend downward on state and shared primitives.
 
 ```mermaid
 flowchart TD
-  Entry[editor.js] --> Render[render/render.js]
-  Entry --> Bootstrap[bootstrap/bootstrap.js]
-  Bootstrap --> State[state/state.js]
-  Bootstrap --> Hotspots[hotspots/hotspots.js]
-  Bootstrap --> Lights[lights/lights.js]
-  Bootstrap --> IO[io/io.js]
-  Bootstrap --> UI[ui/ui.js]
-  Bootstrap --> Render
-  Hotspots --> State
-  Lights --> State
-  IO --> State
-  IO --> Hotspots
-  IO --> Render
-  UI --> State
+  SharedSchema[shared/schema.js]
+  SharedDisposal[shared/disposal.js]
+  SharedEnv[shared/environment.js]
+  SharedMath[shared/hotspotMath.js]
+  SharedLights[shared/lights.js]
+
+  Editor[Editor/editor.js] --> EditorBootstrap[Editor/bootstrap/bootstrap.js]
+  EditorBootstrap --> EditorState[Editor/state/state.js]
+  EditorBootstrap --> EditorRender[Editor/render/render.js]
+  EditorBootstrap --> EditorHotspots[Editor/hotspots/hotspots.js]
+  EditorBootstrap --> EditorIO[Editor/io/io.js]
+
+  EditorIO --> SharedSchema
+  EditorIO --> SharedDisposal
+  EditorHotspots --> SharedMath
+  EditorRender --> SharedEnv
+  EditorRender --> SharedDisposal
+
+  Viewer[Viewer/viewer.js] --> ViewerBootstrap[Viewer/bootstrap/bootstrap.js]
+  ViewerBootstrap --> ViewerState[Viewer/state/state.js]
+  ViewerBootstrap --> ViewerRender[Viewer/render/render.js]
+  ViewerBootstrap --> ViewerLoader[Viewer/loading/loader.js]
+  ViewerBootstrap --> ViewerLights[Viewer/lights/lights.js]
+  ViewerBootstrap --> ViewerOverlay[Viewer/overlay/overlay.js]
+  ViewerBootstrap --> ViewerVisibility[Viewer/visibility/visibility.js]
+
+  ViewerRender --> SharedEnv
+  ViewerLoader --> SharedDisposal
+  ViewerLoader --> SharedSchema
+  ViewerLights --> SharedLights
+  ViewerOverlay --> SharedMath
+  ViewerVisibility --> SharedMath
 ```
 
-There are no intended circular imports. New modules should depend downward on stable primitives and must not import the bootstrap module.
+## Hotspot system & Projection
 
-## State management
-
-The Editor uses the singleton exported by `state/state.js`. It contains:
-
-- Three.js objects: `scene`, `camera`, `renderer`, `controls`, and `raycaster`.
-- DOM references: viewport, overlay, hotspot SVG, and sidebar controls.
-- Domain collections: `currentModel`, `hotspots`, and `lights`.
-- Selection state: `selection.hotspot` and `selection.light`, exposed through `selected` and `selectedLight` accessors.
-- Interaction state: mode, add-mode flag, and hotspot-drag state.
-- Scene settings and the preferred export filename.
-
-State is mutable by design today. Modules should update only the fields they own and avoid adding duplicate representations of the same data.
-
-## Rendering pipeline
-
-```mermaid
-sequenceDiagram
-  participant Browser
-  participant Render as render.js / viewer.js
-  participant Three as Three.js
-  participant Overlay as DOM/SVG overlay
-  Browser->>Render: requestAnimationFrame
-  Render->>Three: update OrbitControls
-  Render->>Render: update hotspot/light state
-  Render->>Overlay: project visible hotspots to screen coordinates
-  Render->>Three: render(scene, camera)
-```
-
-Each application creates a `THREE.Scene`, perspective camera, `WebGLRenderer`, and `OrbitControls`. Both enable sRGB output, ACES filmic tone mapping, a directional light, ambient light, and an HDR environment. The Editor caps device pixel ratio at `1.5`; the Viewer uses a fixed quality scale of `0.8`.
-
-Hotspot coordinates are world-space positions. Every frame, they are projected through the camera to position HTML markers and panels. A ray from the camera to the hotspot checks whether the current model occludes it.
-
-## Selection system
-
-Selection is Editor-only.
-
-- Clicking a hotspot selects it and fills the hotspot inspector fields.
-- Clicking a light sprite selects its directional light and fills the light controls.
-- Clicking empty model space deselects the active hotspot.
-- Add mode uses a raycast against `currentModel` to place one new hotspot.
-
-The current system has distinct hotspot and light selection paths. Future universal selection should build on these behaviors instead of creating competing selection state.
-
-## Hotspot system
-
-A hotspot is a domain object with an ID, title, description, world-space position, panel offset, and runtime references to its DOM marker, panel, and SVG line. The Editor creates and updates those references; export omits them and writes only serializable fields.
-
-Hotspots can be placed by clicking the model, moved by dragging their marker over the model, and edited through the inspector. Panels are draggable in screen space. The Viewer creates equivalent DOM overlays from the JSON but exposes them as hover interactions rather than editing controls.
-
-## Lighting system
-
-The Editor initializes ambient and directional lighting for the scene. Its light tool can add directional lights with an `Object3D` target, marker sprites, a helper, and a connecting line. The tool supports color, intensity, position, target, and shadow checkbox editing.
-
-These light-tool objects are currently Editor-only: light collections are not serialized and the Viewer uses its own fixed ambient/directional setup. Do not imply that exported JSON reproduces Editor light edits until scene serialization supports it.
-
-## UI responsibilities
-
-HTML defines stable control IDs; feature modules bind behavior to those controls. CSS owns visual layout. Three.js renders only the 3D scene, while hotspot markers, panels, and connector lines are DOM/SVG overlay elements. Keep visual changes in CSS and interaction/data behavior in JavaScript modules.
+Hotspot coordinates are world-space positions. Every frame:
+1. `testHotspotOcclusion` checks if the hotspot is behind the camera plane or occluded by model geometry.
+2. `projectToScreen` converts 3D world coordinates to screen pixel offsets within the viewport.
+3. `calculateConnectorLine` computes endpoints for the animated SVG connector line from the marker to the info card.

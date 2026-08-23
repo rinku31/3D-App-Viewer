@@ -7,6 +7,7 @@ const state = {
 
   scene: null,
   camera: null,
+  cameraRig: null,
   renderer: null,
   controls: null,
   raycaster: null,
@@ -39,14 +40,36 @@ const state = {
   defaultDirectionalLight: null,
   transformControls: null,
 
+  gridHelper: null,
+  axesHelper: null,
+
   sceneSettings: {
-    background: "#3f3f3f",
+    background: "#222228",
+    backgroundType: "color", // "color" | "environment" | "transparent"
+    backgroundBlur: 0.0,
     environment: {
+      preset: "studio_small_09",
+      customHdrUrl: null,
       intensity: 1.0,
+      rotation: 0.0,
       exposure: 1.6,
       toneMapping: "ACESFilmic",
-      hdri: "studio_small_09",
     },
+    rendering: {
+      shadows: true,
+      shadowType: "pcfsoft",
+    },
+    helpers: {
+      grid: true,
+      axes: false,
+    },
+  },
+
+  cameraSettings: {
+    fov: 45,
+    near: 0.01,
+    far: 1000,
+    viewpoints: [],
   },
 };
 

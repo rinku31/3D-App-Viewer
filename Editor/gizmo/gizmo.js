@@ -8,12 +8,6 @@ let gizmoAnchor = null;
 let activeTransformTarget = null;
 let isTransforming = false;
 
-const snapConfig = {
-  translation: 0.25,
-  rotation: THREE.MathUtils.degToRad(15),
-  scale: 0.1,
-};
-
 function initializeGizmo() {
   if (transformControls) return transformControls;
 
@@ -23,6 +17,8 @@ function initializeGizmo() {
 
   if (!scene || !camera || !renderer) return null;
 
+  state.gizmo = state.gizmo || { mode: "translate", space: "world", visible: true };
+
   // Invisible anchor object used for manipulating entities that aren't single Object3D instances (e.g., hotspots)
   gizmoAnchor = new THREE.Object3D();
   gizmoAnchor.name = "__gizmo_anchor__";
@@ -30,8 +26,8 @@ function initializeGizmo() {
 
   transformControls = new TransformControls(camera, renderer.domElement);
   transformControls.size = 0.85;
-  transformControls.setMode(state.gizmo?.mode || "translate");
-  transformControls.setSpace(state.gizmo?.space || "world");
+  transformControls.setMode("translate");
+  transformControls.setSpace("world");
 
   // Prevent OrbitControls from interfering during gizmo drag
   transformControls.addEventListener("dragging-changed", (event) => {
@@ -73,7 +69,7 @@ function onSelectionChange(event) {
 function attachGizmoForSelection(selection) {
   if (!transformControls || !state.scene) return;
 
-  const { type, object, target } = selection;
+  const { type, object } = selection;
 
   if (type === "hotspot" && object) {
     activeTransformTarget = { type: "hotspot", object };
@@ -82,26 +78,24 @@ function attachGizmoForSelection(selection) {
     gizmoAnchor.rotation.set(0, 0, 0);
     gizmoAnchor.scale.set(1, 1, 1);
     transformControls.attach(gizmoAnchor);
-    transformControls.setMode("translate"); // Hotspots only translate
+    transformControls.setMode("translate");
   } else if (type === "light" && object?.light) {
     activeTransformTarget = { type: "light", object };
     transformControls.attach(object.light);
-    transformControls.setMode(state.gizmo?.mode || "translate");
+    transformControls.setMode("translate");
   } else if (type === "lightTarget" && object?.target) {
     activeTransformTarget = { type: "lightTarget", object };
     transformControls.attach(object.target);
     transformControls.setMode("translate");
-  } else if (type === "model" && object) {
-    activeTransformTarget = { type: "model", object };
-    transformControls.attach(object);
-    transformControls.setMode(state.gizmo?.mode || "translate");
-  } else if (type === "mesh" && object) {
-    activeTransformTarget = { type: "mesh", object };
-    transformControls.attach(object);
-    transformControls.setMode(state.gizmo?.mode || "translate");
   } else {
     detachGizmo();
+    return;
   }
+
+  // Respect gizmo visibility toggle (Three.js attach() internally forces visible = true)
+  const isVisible = state.gizmo?.visible !== false;
+  transformControls.enabled = isVisible;
+  transformControls.visible = isVisible;
 
   updateGizmoToolbarUI();
 }
@@ -153,43 +147,9 @@ function updateGizmoAnchorPosition(x, y, z) {
 
 function setGizmoMode(mode) {
   if (!transformControls) return;
-  if (mode !== "translate" && mode !== "rotate" && mode !== "scale") return;
-
-  // Hotspots and Light targets only support translation
-  if (
-    (state.selection?.type === "hotspot" || state.selection?.type === "lightTarget") &&
-    mode !== "translate"
-  ) {
-    return;
-  }
-
   state.gizmo = state.gizmo || {};
-  state.gizmo.mode = mode;
-  transformControls.setMode(mode);
-  updateGizmoToolbarUI();
-}
-
-function setGizmoSpace(space) {
-  if (!transformControls) return;
-  if (space !== "world" && space !== "local") return;
-
-  state.gizmo = state.gizmo || {};
-  state.gizmo.space = space;
-  transformControls.setSpace(space);
-  updateGizmoToolbarUI();
-}
-
-function toggleGizmoSnap() {
-  if (!transformControls) return;
-
-  state.gizmo = state.gizmo || {};
-  const isSnap = !state.gizmo.snap;
-  state.gizmo.snap = isSnap;
-
-  transformControls.setTranslationSnap(isSnap ? snapConfig.translation : null);
-  transformControls.setRotationSnap(isSnap ? snapConfig.rotation : null);
-  transformControls.setScaleSnap(isSnap ? snapConfig.scale : null);
-
+  state.gizmo.mode = "translate";
+  transformControls.setMode("translate");
   updateGizmoToolbarUI();
 }
 
@@ -197,10 +157,12 @@ function toggleGizmoVisibility() {
   if (!transformControls) return;
 
   state.gizmo = state.gizmo || {};
-  const visible = state.gizmo.visible === false ? true : false;
-  state.gizmo.visible = visible;
-  transformControls.enabled = visible;
-  transformControls.visible = visible;
+  const currentlyVisible = state.gizmo.visible !== false;
+  const newVisible = !currentlyVisible;
+  state.gizmo.visible = newVisible;
+
+  transformControls.enabled = newVisible;
+  transformControls.visible = newVisible;
 
   updateGizmoToolbarUI();
 }
@@ -217,10 +179,6 @@ function setupGizmoShortcuts() {
 
     if (key === "g" || key === "w") {
       setGizmoMode("translate");
-    } else if (key === "r" || key === "e") {
-      setGizmoMode("rotate");
-    } else if (key === "s") {
-      setGizmoMode("scale");
     } else if (key === "x") {
       toggleGizmoVisibility();
     } else if (key === "escape") {
@@ -232,52 +190,18 @@ function setupGizmoShortcuts() {
 }
 
 function bindGizmoToolbar() {
-  const translateBtn = document.getElementById("gizmoTranslateBtn");
-  const rotateBtn = document.getElementById("gizmoRotateBtn");
-  const scaleBtn = document.getElementById("gizmoScaleBtn");
-  const spaceBtn = document.getElementById("gizmoSpaceBtn");
-  const snapBtn = document.getElementById("gizmoSnapBtn");
   const hideBtn = document.getElementById("gizmoHideBtn");
-
-  if (translateBtn) translateBtn.onclick = () => setGizmoMode("translate");
-  if (rotateBtn) rotateBtn.onclick = () => setGizmoMode("rotate");
-  if (scaleBtn) scaleBtn.onclick = () => setGizmoMode("scale");
-  if (spaceBtn) spaceBtn.onclick = () => setGizmoSpace(state.gizmo?.space === "world" ? "local" : "world");
-  if (snapBtn) snapBtn.onclick = () => toggleGizmoSnap();
   if (hideBtn) hideBtn.onclick = () => toggleGizmoVisibility();
-
   updateGizmoToolbarUI();
 }
 
 function updateGizmoToolbarUI() {
-  const mode = state.gizmo?.mode || "translate";
-  const space = state.gizmo?.space || "world";
-  const snap = Boolean(state.gizmo?.snap);
   const visible = state.gizmo?.visible !== false;
-
-  const translateBtn = document.getElementById("gizmoTranslateBtn");
-  const rotateBtn = document.getElementById("gizmoRotateBtn");
-  const scaleBtn = document.getElementById("gizmoScaleBtn");
-  const spaceBtn = document.getElementById("gizmoSpaceBtn");
-  const snapBtn = document.getElementById("gizmoSnapBtn");
   const hideBtn = document.getElementById("gizmoHideBtn");
 
-  if (translateBtn) translateBtn.classList.toggle("active", mode === "translate");
-  if (rotateBtn) rotateBtn.classList.toggle("active", mode === "rotate");
-  if (scaleBtn) scaleBtn.classList.toggle("active", mode === "scale");
-
-  if (spaceBtn) {
-    spaceBtn.textContent = space.toUpperCase();
-    spaceBtn.classList.toggle("active", space === "local");
-  }
-
-  if (snapBtn) {
-    snapBtn.classList.toggle("active", snap);
-    snapBtn.title = snap ? "Snapping Enabled (0.25m / 15°)" : "Toggle Snap";
-  }
-
   if (hideBtn) {
-    hideBtn.classList.toggle("active", !visible);
+    hideBtn.classList.toggle("active", visible);
+    hideBtn.title = visible ? "Gizmo is Visible (Press X to hide)" : "Gizmo is Hidden (Press X to show)";
   }
 }
 
@@ -286,8 +210,6 @@ export {
   attachGizmoForSelection,
   detachGizmo,
   setGizmoMode,
-  setGizmoSpace,
-  toggleGizmoSnap,
   toggleGizmoVisibility,
   updateGizmoAnchorPosition,
   updateGizmoToolbarUI

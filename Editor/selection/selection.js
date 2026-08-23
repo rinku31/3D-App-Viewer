@@ -13,6 +13,11 @@ import { state, setSelection, clearSelection, notifySelectionChanged } from "../
  */
 
 function select(type, object, target = null) {
+  // Imported GLB model is a fixed immutable object: never selectable
+  if (type === "model" || type === "mesh") {
+    return;
+  }
+
   if (!object && type !== "scene") {
     deselect();
     return;

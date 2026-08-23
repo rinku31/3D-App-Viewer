@@ -61,28 +61,20 @@ function renderHierarchy() {
       });
     }
 
-    // 3. Model Node
+    // 3. Model Node (Treated as a single fixed immutable object)
     if (state.currentModel) {
       const modelLabel = state.currentModel.name || "GLB Model";
       html += buildTreeItem({
         id: "model_root",
-        label: modelLabel,
+        label: `${escapeHTML(modelLabel)} <span class="tree-meta">Fixed Object</span>`,
         icon: "&#128230;",
-        type: "model",
+        type: "model_fixed",
         object: state.currentModel,
-        hasChildren: true,
-        expanded: expandedNodes.has("model"),
-        categoryKey: "model",
+        hasChildren: false,
         actions: `
-          <button class="tree-action-btn" data-action="frame-model" title="Frame Model">&#128269;</button>
+          <button class="tree-action-btn" data-action="frame-model" title="Frame Model in Viewport">&#128269;</button>
         `
       });
-
-      if (expandedNodes.has("model")) {
-        html += `<div class="tree-children">`;
-        html += buildModelChildren(state.currentModel);
-        html += `</div>`;
-      }
     } else {
       html += `
         <div class="tree-empty-notice">
@@ -120,25 +112,33 @@ function renderHierarchy() {
         hasChildren: false
       });
 
-      // Custom directional lights
+      // Custom authored lights
       if (Array.isArray(state.lights)) {
         state.lights.forEach((l, idx) => {
           const colorSwatch = `<span class="color-swatch-sm" style="background:${l.color}"></span>`;
+          let icon = "&#9889;"; // Directional
+          if (l.type === "point") icon = "&#128161;";
+          else if (l.type === "spot") icon = "&#128294;";
+          else if (l.type === "ambient") icon = "&#9728;";
+
+          const hasTarget = Boolean(l.target);
+          const isExpanded = expandedNodes.has(`light_${l.id}`);
+
           html += buildTreeItem({
             id: `light_${l.id}`,
-            label: `${colorSwatch} ${l.id || "Directional Light " + (idx + 1)}`,
-            icon: "&#9889;",
+            label: `${colorSwatch} ${l.name || l.id || "Light " + (idx + 1)}`,
+            icon: icon,
             type: "light",
             object: l,
-            hasChildren: true,
-            expanded: expandedNodes.has(`light_${l.id}`),
+            hasChildren: hasTarget,
+            expanded: isExpanded,
             categoryKey: `light_${l.id}`,
             actions: `
               <button class="tree-action-btn delete" data-action="delete-light" data-id="${l.id}" title="Delete Light">&#128465;</button>
             `
           });
 
-          if (expandedNodes.has(`light_${l.id}`)) {
+          if (hasTarget && isExpanded) {
             html += `<div class="tree-children">`;
             html += buildTreeItem({
               id: `light_target_${l.id}`,
@@ -334,22 +334,11 @@ function bindHierarchyEvents() {
       } else if (action === "focus-hotspot") {
         const id = btn.dataset.id;
         const hotspot = state.hotspots?.find((h) => h.id === id);
-        if (hotspot && state.camera && state.controls) {
+        if (hotspot && state.cameraRig) {
           const target = new THREE.Vector3(hotspot.position[0], hotspot.position[1], hotspot.position[2]);
-          state.controls.target.copy(target);
-          state.controls.update();
+          state.cameraRig.focus(target);
           select("hotspot", hotspot);
-          showSidebarTab("properties");
-        }
-      } else if (action === "toggle-visibility") {
-        const meshId = parseInt(btn.dataset.meshId, 10);
-        if (state.currentModel) {
-          state.currentModel.traverse((child) => {
-            if (child.id === meshId) {
-              child.visible = !child.visible;
-              renderHierarchy();
-            }
-          });
+          showSidebarTab("scene");
         }
       }
     });
@@ -365,48 +354,30 @@ function handleTreeSelection(type, itemId) {
 
   if (type === "scene") {
     select("scene", state.scene);
-    showSidebarTab("properties");
+    showSidebarTab("scene");
   } else if (type === "camera") {
     select("camera", state.camera);
-    showSidebarTab("properties");
-  } else if (type === "model") {
-    if (state.currentModel) {
-      select("model", state.currentModel);
-      showSidebarTab("properties");
-    }
-  } else if (type === "mesh") {
-    const meshIdStr = itemId.replace("mesh_node_", "");
-    const meshId = parseInt(meshIdStr, 10);
-    if (state.currentModel) {
-      let foundMesh = null;
-      state.currentModel.traverse((child) => {
-        if (child.id === meshId) foundMesh = child;
-      });
-      if (foundMesh) {
-        select("mesh", foundMesh);
-        showSidebarTab("properties");
-      }
-    }
+    showSidebarTab("scene");
   } else if (type === "light") {
     const lightId = itemId.replace("light_", "");
     const lightData = state.lights?.find((l) => l.id === lightId);
     if (lightData) {
       select("light", lightData);
-      showSidebarTab("properties");
+      showSidebarTab("scene");
     }
   } else if (type === "lightTarget") {
     const lightId = itemId.replace("light_target_", "");
     const lightData = state.lights?.find((l) => l.id === lightId);
     if (lightData) {
       select("lightTarget", lightData, lightData.target);
-      showSidebarTab("properties");
+      showSidebarTab("scene");
     }
   } else if (type === "hotspot") {
     const hotspotId = itemId.replace("hotspot_", "");
     const hotspot = state.hotspots?.find((h) => h.id === hotspotId);
     if (hotspot) {
       select("hotspot", hotspot);
-      showSidebarTab("properties");
+      showSidebarTab("scene");
     }
   }
 }

@@ -1,0 +1,185 @@
+{
+  "version": "2.0.0",
+  "metadata": {
+    "title": "Viper V4 Pro",
+    "author": "Razer Inc.",
+    "createdAt": "2026-03-10T12:00:00.000Z",
+    "updatedAt": "2026-08-22T14:30:00.000Z",
+    "generator": "3D App Viewer Editor v2.0.0",
+    "tags": ["gaming", "peripherals", "mouse", "interactive-3d"]
+  },
+  "scene": {
+    "background": "#222228",
+    "backgroundType": "color",
+    "backgroundBlur": 0.0,
+    "environment": {
+      "preset": "studio_small_09",
+      "intensity": 1.5,
+      "exposure": 1.4,
+      "toneMapping": "ACESFilmic"
+    },
+    "rendering": {
+      "shadows": true,
+      "shadowType": "pcfsoft"
+    },
+    "helpers": {
+      "grid": false,
+      "axes": false
+    }
+  },
+  "camera": {
+    "fov": 45,
+    "near": 0.01,
+    "far": 1000,
+    "target": [0.0, 0.2, 0.0],
+    "position": [0.0, 1.8, 4.5],
+    "distance": 4.5,
+    "viewpoints": [
+      {
+        "id": "vp_top",
+        "name": "Top View",
+        "target": [0, 0, 0],
+        "distance": 4.5,
+        "yaw": 0,
+        "pitch": 1.57,
+        "fov": 45
+      },
+      {
+        "id": "vp_front",
+        "name": "Front Switches",
+        "target": [0, 0.2, -1.0],
+        "distance": 3.0,
+        "yaw": 3.14,
+        "pitch": 0.3,
+        "fov": 40
+      }
+    ]
+  },
+  "model": {
+    "name": "Viper V4 Pro",
+    "filename": "Viper V4 Pro.glb",
+    "position": [0, 0, 0],
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "scale": [1, 1, 1]
+  },
+  "lights": [
+    {
+      "id": "key_light",
+      "name": "Key Light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 2.2,
+      "castShadow": true,
+      "position": [4, 8, 4],
+      "target": [0, 0, 0]
+    },
+    {
+      "id": "fill_light",
+      "name": "Fill Light",
+      "type": "directional",
+      "color": "#90c8ff",
+      "intensity": 1.0,
+      "castShadow": false,
+      "position": [-4, 3, -3],
+      "target": [0, 0, 0]
+    },
+    {
+      "id": "rim_light",
+      "name": "Rim Light",
+      "type": "point",
+      "color": "#44D62C",
+      "intensity": 1.8,
+      "castShadow": false,
+      "position": [0, 2, -3.5],
+      "distance": 10,
+      "decay": 2
+    }
+  ],
+  "settings": {
+    "line": {
+      "color": "#44D62C",
+      "width": 1.5,
+      "offset": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "hotspots": {
+      "pulseAnimation": true,
+      "theme": "default",
+      "occlusionTolerance": 0.08
+    }
+  },
+  "hotspots": [
+    {
+      "id": "hotspot_1778478610537",
+      "title": "DPI & Power LED",
+      "description": "Multi-stage LED indicator for active DPI sensitivity stage and battery power status.",
+      "position": [
+        0.004160230515804056,
+        0.026601059226252374,
+        -3.22658717589361
+      ],
+      "panelOffset": {
+        "x": 345,
+        "y": -294
+      }
+    },
+    {
+      "id": "hotspot_1778478759130",
+      "title": "Optical Mouse Switches Gen-4",
+      "description": "Ultra-responsive switches with zero debounce delay and 90-million click lifecycle.",
+      "position": [
+        -0.9086009161508204,
+        0.21571523764414358,
+        -2.5366041633084517
+      ],
+      "panelOffset": {
+        "x": -639,
+        "y": -368
+      }
+    },
+    {
+      "id": "hotspot_1778478787552",
+      "title": "Optical Scroll Wheel",
+      "description": "Tactile, notched optical encoder for precision weapon switching and scrolling.",
+      "position": [
+        0.014487491243838337,
+        0.996673355009617,
+        -1.5550765148898176
+      ],
+      "panelOffset": {
+        "x": -643,
+        "y": -128
+      }
+    },
+    {
+      "id": "hotspot_1778478816177",
+      "title": "Ultra-Lightweight Ergonomics",
+      "description": "Sub-50g symmetrical esports chassis engineered for effortless control and rapid flicks.",
+      "position": [
+        0.9523258712583187,
+        0.9062442497630064,
+        1.4217579174113542
+      ],
+      "panelOffset": {
+        "x": 391,
+        "y": 27
+      }
+    },
+    {
+      "id": "hotspot_1778478854903",
+      "title": "HyperSpeed Wireless Gen-2",
+      "description": "True 8000 Hz polling rate wireless technology with ultra-low latency.",
+      "position": [
+        0.010442664361433375,
+        -0.33493490337758464,
+        -2.977503512763616
+      ],
+      "panelOffset": {
+        "x": 373,
+        "y": 248
+      }
+    }
+  ]
+}

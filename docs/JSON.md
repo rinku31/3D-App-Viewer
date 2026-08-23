@@ -1,109 +1,177 @@
-# JSON format
+# JSON Schema v2 Specification
 
-## Purpose
+## 1. Overview
 
-JSON documents store portable hotspot annotations for a product model. The Editor imports and exports a focused hotspot document. The Viewer loads a JSON file whose basename matches the GLB selected by the user.
+The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. It represents the canonical scene document structure shared between authoring and presentation environments.
 
-For example, selecting `Viper V4 Pro.glb` makes the Viewer request:
-
-```text
-/Viewer/assets/Products/Viper V4 Pro.json
-```
-
-## Current schema
-
-There is no `schemaVersion` field yet. The current format is permissive: applications use the properties they understand and ignore some optional properties.
+## 2. Top-Level Structure
 
 ```json
 {
+  "version": "2.0.0",
+  "metadata": {
+    "title": "Model Presentation",
+    "author": "3D Artist",
+    "createdAt": "2026-08-22T00:00:00.000Z",
+    "updatedAt": "2026-08-22T14:30:00.000Z",
+    "generator": "3D App Viewer Editor v2.0.0",
+    "tags": ["product", "interactive"]
+  },
   "scene": {
-    "background": "#3f3f3f",
+    "background": "#222228",
+    "backgroundType": "color",
+    "backgroundBlur": 0.0,
     "environment": {
-      "hdri": "studio_small_09",
+      "preset": "studio_small_09",
+      "customHdrUrl": null,
       "intensity": 1.5,
-      "exposure": 1.2,
+      "rotation": 0.0,
+      "exposure": 1.6,
       "toneMapping": "ACESFilmic"
+    },
+    "rendering": {
+      "shadows": true,
+      "shadowType": "pcfsoft"
+    },
+    "helpers": {
+      "grid": true,
+      "axes": false
     }
   },
-  "camera": {},
-  "model": {
-    "rotation": { "x": 0, "y": 0, "z": 0 }
+  "camera": {
+    "fov": 45,
+    "near": 0.01,
+    "far": 1000,
+    "position": [0, 1.2, 4.0],
+    "target": [0, 0, 0],
+    "distance": 4.0,
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "viewpoints": [
+      {
+        "id": "vp_front",
+        "name": "Front View",
+        "target": [0, 0, 0],
+        "distance": 3.5,
+        "yaw": 0.0,
+        "pitch": 0.2,
+        "fov": 45
+      }
+    ]
   },
-  "lights": [],
+  "model": {
+    "name": "Viper V4 Pro",
+    "filename": "Viper V4 Pro.glb",
+    "position": [0, 0, 0],
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "scale": [1, 1, 1]
+  },
+  "lights": [
+    {
+      "id": "key_light",
+      "name": "Key Light",
+      "type": "directional",
+      "color": "#ffffff",
+      "intensity": 2.2,
+      "castShadow": true,
+      "position": [4, 8, 4],
+      "target": [0, 0, 0]
+    },
+    {
+      "id": "fill_point",
+      "name": "Fill Point",
+      "type": "point",
+      "color": "#90c8ff",
+      "intensity": 1.5,
+      "castShadow": false,
+      "position": [-3, 2, -2],
+      "distance": 15,
+      "decay": 2
+    }
+  ],
   "settings": {
     "line": {
-      "color": "#bfbfbf",
-      "width": 1,
+      "color": "#44D62C",
+      "width": 1.5,
       "offset": { "x": 0, "y": 0 }
+    },
+    "hotspots": {
+      "pulseAnimation": true,
+      "theme": "default",
+      "occlusionTolerance": 0.08
     }
   },
   "hotspots": [
     {
-      "id": "hotspot_1710000000000",
-      "title": "Optical sensor",
-      "description": "High-precision tracking sensor.",
-      "position": [0.25, -0.88, 0.19],
-      "panelOffset": { "x": -667, "y": 0 }
+      "id": "hotspot_1",
+      "title": "Feature Title",
+      "description": "Detailed explanation of feature.",
+      "position": [0.1, 0.5, -0.2],
+      "panelOffset": { "x": 300, "y": -150 },
+      "color": "#44D62C",
+      "cameraViewpointId": "vp_front"
     }
   ]
 }
 ```
 
-### Root properties
+## 3. Schema Fields & Types
 
-| Property | Type | Editor behavior | Viewer behavior |
-| --- | --- | --- | --- |
-| `scene` | object, optional | Imports and exports scene settings. Only `background` is applied during import. | Currently ignored. |
-| `scene.background` | CSS color string | Sets the Editor scene background and color input. | Ignored. |
-| `scene.environment` | object, optional | Retained in `sceneSettings` and re-exported; not applied from imported JSON. | Ignored. |
-| `camera` | object, optional | Ignored. | Ignored. |
-| `model` | object, optional | Ignored. | May contain `rotation`. |
-| `model.rotation` | object, optional | Ignored. | Applies `x`, `y`, and `z` Euler rotation values to the loaded model; missing values default to `0`. |
-| `lights` | array, optional | Ignored. | Ignored. |
-| `settings` | object, optional | Exported as an empty object. | Reads optional `line` settings. |
-| `settings.line` | object, optional | Ignored. | Sets connector line appearance. |
-| `settings.line.color` | CSS color string | Ignored. | SVG stroke color; defaults to `#ffffff`. |
-| `settings.line.width` | number | Ignored. | SVG stroke width; defaults to `2`. |
-| `settings.line.offset` | `{ x, y }` | Ignored. | Offset added to the connector's hotspot endpoint; defaults to `{ "x": 0, "y": 0 }`. |
-| `hotspots` | array, required for Editor import | Imported, edited, and exported. | Built as interactive overlays. |
+### 3.1 Metadata
+- `title` (`string`): Human-readable scene display name.
+- `author` (`string`): Creator/author identifier.
+- `createdAt` (`ISO 8601 string`): Creation timestamp.
+- `updatedAt` (`ISO 8601 string`): Last modified timestamp.
+- `generator` (`string`): Generating tool identifier.
+- `tags` (`string[]`): Search and taxonomy tags.
 
-### Hotspot properties
+### 3.2 Scene & Environment
+- `background` (`string`): Hex/CSS color value (`#222228`).
+- `backgroundType` (`"color" | "environment" | "transparent"`): Viewport clear strategy.
+- `backgroundBlur` (`number [0.0 - 1.0]`): Skybox background blur level.
+- `environment.preset` (`string`): Preset ID (`studio_small_09`, `sunset_fairway`, `puresky`, `workshop`, `city_night`).
+- `environment.intensity` (`number >= 0`): HDR irradiance and reflection strength.
+- `environment.exposure` (`number > 0`): Renderer tone mapping exposure multiplier.
+- `environment.toneMapping` (`"ACESFilmic" | "AgX" | "Cineon" | "Reinhard" | "Linear" | "None"`).
+- `rendering.shadows` (`boolean`): Soft shadow mapping toggle.
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `id` | string | Stable hotspot identifier. The Editor generates IDs using a `hotspot_` prefix plus a timestamp. |
-| `title` | string | Panel heading. May be empty. |
-| `description` | string | Panel body text. |
-| `position` | number array `[x, y, z]` | World-space point on the loaded model. |
-| `panelOffset` | object | Screen-space offset from the center of the render viewport. |
-| `panelOffset.x` | number | Horizontal offset in CSS pixels. |
-| `panelOffset.y` | number | Vertical offset in CSS pixels. |
+### 3.3 Camera & Viewpoints
+- `fov` (`number [5 - 140]`): Field of view in degrees.
+- `near` / `far` (`number`): Frustum clipping distances in scene units.
+- `position` (`[number, number, number]`): Camera world position.
+- `target` (`[number, number, number]`): Orbit/lookAt focal center.
+- `viewpoints` (`Array<Viewpoint>`): Saved camera angles for guided tours or hotspot associations.
 
-The Editor requires `hotspots` to be an array when importing. Individual hotspot fields are expected to be present and well-formed; malformed fields are not yet schema-validated.
+### 3.4 Model
+- `name` (`string`): Display name of model asset.
+- `filename` (`string`): Relative GLB filename reference.
+- `position` (`[x, y, z]`): Model origin translation.
+- `rotation` (`{ x, y, z }`): Euler angles in radians.
+- `scale` (`[x, y, z]`): Local scaling factors.
 
-## Editor export behavior
+### 3.5 Lights
+- `id` (`string`): Unique light identifier.
+- `name` (`string`): Display name in Hierarchy outliner.
+- `type` (`"directional" | "point" | "spot" | "ambient"`): Light emitter type.
+- `color` (`string`): Light color in hex format (`#ffffff`).
+- `intensity` (`number >= 0`): Luminous intensity.
+- `castShadow` (`boolean`): Real-time shadow casting toggle.
+- `position` (`[x, y, z]`): Emitter location (point, spot, directional).
+- `target` (`[x, y, z]`): Directional and spotlight aim vector.
+- `distance` (`number`): Attenuation cutoff distance.
+- `decay` (`number`): Physical attenuation falloff rate.
+- `angle` (`number`): Spotlight cone angle in radians.
+- `penumbra` (`number [0 - 1]`): Spotlight cone soft edge ratio.
 
-The current Editor exports this reduced document:
+### 3.6 Hotspots & Annotations
+- `id` (`string`): Unique hotspot identifier.
+- `title` (`string`): Headline text rendered in info overlay panel.
+- `description` (`string`): Detailed description body.
+- `position` (`[x, y, z]`): 3D anchor point on model surface.
+- `panelOffset` (`{ x: number, y: number }`): 2D screen offset from viewport center.
+- `color` (`string, optional`): Custom hotspot accent color override.
+- `cameraViewpointId` (`string, optional`): Linked viewpoint triggered on interaction.
 
-```json
-{
-  "scene": { "...": "sceneSettings" },
-  "settings": {},
-  "hotspots": ["..."]
-}
-```
-
-It does not currently export `camera`, `model`, `lights`, or line settings. This means model rotation, line styling, and Editor light changes from a richer source document will not survive an Editor export. Preserve an original JSON file when those fields matter.
-
-## Compatibility expectations
-
-- A Viewer can display JSON exported by the current Editor because it needs only the `hotspots` array; it will use default line styling.
-- The Editor can import the bundled Viewer JSON because it contains `hotspots`; fields it does not implement are retained only where they are part of `sceneSettings` and otherwise are dropped on export.
-- The Viewer requires its model/JSON filename convention and a server path with the exact `Products` directory casing.
-- JSON should be UTF-8. Ensure text is correctly encoded so trademark and other non-ASCII characters render as intended.
-
-## Future schema — planned, not implemented
-
-JSON Schema v2 is planned in [ROADMAP.md](../ROADMAP.md). It will add an explicit schema version, validation, migration rules, and complete serialization for model metadata/transforms, camera, scene environment, lights, line styles, and hotspots.
-
-Until then, do not add fields that require either application to change behavior without updating both applications and this document in the same change.
+## 4. Migration & Backward Compatibility
+- **Legacy v1 Documents** (`schemaVersion: "1.0.0"` or untyped JSON) are automatically detected and migrated to canonical v2.0.0 by both the Editor (`Editor/io/schema.js`) and Viewer (`Viewer/schema.js`).
+- Migrator populates missing environment presets, camera parameters, light targets, and panel offset coordinates with robust defaults without breaking existing annotations.

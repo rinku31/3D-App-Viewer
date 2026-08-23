@@ -2,8 +2,25 @@ import * as THREE from "three";
 import { state, notifySelectionChanged } from "../state/state.js";
 import { select, deselect } from "../selection/selection.js";
 import { removeHotspot, updatePanelHTML } from "../hotspots/hotspots.js";
-import { deleteSelectedLight, updateLights } from "../lights/lights.js";
-import { frameModel } from "../render/render.js";
+import {
+  applyLightingPreset,
+  createAmbientLight,
+  createDirectionalLight,
+  createPointLight,
+  createSpotLight,
+  deleteLight,
+  deleteSelectedLight,
+  updateLights
+} from "../lights/lights.js";
+import {
+  applyBackgroundSettings,
+  applyEnvironmentParams,
+  frameModel,
+  loadEnvironment,
+  setAxesVisible,
+  setGridVisible,
+  setShadowsEnabled
+} from "../render/render.js";
 import { updateGizmoAnchorPosition } from "../gizmo/gizmo.js";
 import { showSidebarTab } from "../ui/ui.js";
 
@@ -26,9 +43,22 @@ function renderInspector() {
   const selection = state.selection;
   const { type, object, target } = selection || {};
 
+  const selectionBadge = document.getElementById("inspectorSelectionBadge");
+
   if (!type || !object) {
+    if (selectionBadge) {
+      selectionBadge.textContent = "None";
+      selectionBadge.style.color = "#71717a";
+      selectionBadge.style.background = "#27272a";
+    }
     renderEmptyInspector();
     return;
+  }
+
+  if (selectionBadge) {
+    selectionBadge.textContent = type.toUpperCase();
+    selectionBadge.style.color = "#44D62C";
+    selectionBadge.style.background = "#1c2e1c";
   }
 
   // Preserve focus if actively typing
@@ -45,10 +75,6 @@ function renderInspector() {
     html = buildLightInspector(object);
   } else if (type === "lightTarget") {
     html = buildLightTargetInspector(object);
-  } else if (type === "model") {
-    html = buildModelInspector(object);
-  } else if (type === "mesh") {
-    html = buildMeshInspector(object);
   } else if (type === "camera") {
     html = buildCameraInspector(object);
   } else if (type === "scene") {
@@ -79,13 +105,11 @@ function renderEmptyInspector() {
     <div class="section inspector-placeholder">
       <div class="empty-state-icon">&#128065;</div>
       <h3>Nothing Selected</h3>
-      <p>Select a hotspot, light, model mesh, or camera from the 3D viewport or the <strong>Scene Hierarchy</strong> tab to inspect and edit properties.</p>
+      <p>Select a hotspot, light, camera, or scene from the viewport or the <strong>Scene Hierarchy</strong> tab to inspect and edit properties.</p>
       
       <div class="empty-state-actions">
         <button id="emptyAddHotspotBtn" class="primary-btn">&#10133; Add Hotspot</button>
         <button id="emptyAddLightBtn" class="secondary">&#10133; Add Directional Light</button>
-        <button id="emptySelectModelBtn" class="secondary">&#128230; Select Model</button>
-        <button id="emptyViewHierarchyBtn" class="secondary">&#128450; View Scene Hierarchy</button>
       </div>
     </div>
   `;
@@ -95,19 +119,7 @@ function renderEmptyInspector() {
   });
 
   document.getElementById("emptyAddLightBtn")?.addEventListener("click", () => {
-    document.getElementById("addDirectionalLightBtn")?.click();
-  });
-
-  document.getElementById("emptySelectModelBtn")?.addEventListener("click", () => {
-    if (state.currentModel) {
-      select("model", state.currentModel);
-    } else {
-      document.getElementById("modelInput")?.click();
-    }
-  });
-
-  document.getElementById("emptyViewHierarchyBtn")?.addEventListener("click", () => {
-    showSidebarTab("scene");
+    createDirectionalLight();
   });
 }
 
@@ -193,38 +205,89 @@ function buildHotspotInspector(hotspot) {
 }
 
 function buildLightInspector(lightData) {
-  const pos = lightData.light.position;
-  const targetPos = lightData.target.position;
+  const isAmbient = lightData.type === "ambient";
+  const isPoint = lightData.type === "point";
+  const isSpot = lightData.type === "spot";
+  const isDir = lightData.type === "directional";
+
+  const pos = lightData.light?.position || new THREE.Vector3();
+  const targetPos = lightData.target?.position || new THREE.Vector3();
+
+  const typeName = lightData.type ? lightData.type.toUpperCase() + " LIGHT" : "LIGHT";
 
   return `
-    ${buildHeader("DIRECTIONAL LIGHT", lightData.id || "Light", true)}
+    ${buildHeader(typeName, lightData.name || lightData.id, true)}
 
     <div class="section-group">
       <div class="section-group-title">Light Properties</div>
       
       <div class="param-row-flex">
         <label>Color</label>
-        <input id="prop_light_color" type="color" value="${lightData.color}">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_light_color" type="color" value="${lightData.color || '#ffffff'}">
+          <span style="font-size:0.8rem; font-family:monospace; color:var(--text-dim);">${lightData.color || '#ffffff'}</span>
+        </div>
       </div>
 
       <div class="param-row">
         <div class="slider-header">
           <label>Intensity</label>
-          <span class="value-badge" id="light_intensity_val">${Number(lightData.intensity).toFixed(1)}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input id="prop_light_intensity_num" type="number" min="0" max="1000" step="0.5" value="${Number(lightData.intensity || 1).toFixed(1)}" style="width:68px; text-align:right; background:var(--bg-input, #1e1e24); border:1px solid var(--border-color, #33333e); color:var(--text-main, #fff); border-radius:4px; padding:2px 6px; font-size:0.8rem; font-family:monospace;">
+          </div>
         </div>
-        <input id="prop_light_intensity" type="range" min="0" max="10" step="0.1" value="${lightData.intensity}">
+        <input id="prop_light_intensity" type="range" min="0" max="100" step="0.5" value="${Math.min(Number(lightData.intensity || 1), 100)}">
       </div>
 
+      ${(isPoint || isSpot) ? `
+      <div class="param-row">
+        <div class="slider-header">
+          <label>Distance (0 = infinite)</label>
+          <span class="value-badge" id="light_dist_val">${(lightData.distance || 0).toFixed(1)}m</span>
+        </div>
+        <input id="prop_light_distance" type="range" min="0" max="100" step="0.5" value="${lightData.distance || 0}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header">
+          <label>Decay (Falloff)</label>
+          <span class="value-badge" id="light_decay_val">${(lightData.decay !== undefined ? lightData.decay : 2).toFixed(1)}</span>
+        </div>
+        <input id="prop_light_decay" type="range" min="0" max="4" step="0.1" value="${lightData.decay !== undefined ? lightData.decay : 2}">
+      </div>
+      ` : ""}
+
+      ${isSpot ? `
+      <div class="param-row">
+        <div class="slider-header">
+          <label>Cone Angle</label>
+          <span class="value-badge" id="light_angle_val">${Math.round(THREE.MathUtils.radToDeg(lightData.angle || Math.PI / 4))}°</span>
+        </div>
+        <input id="prop_light_angle" type="range" min="5" max="85" step="1" value="${Math.round(THREE.MathUtils.radToDeg(lightData.angle || Math.PI / 4))}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header">
+          <label>Penumbra (Soft Edge)</label>
+          <span class="value-badge" id="light_penumbra_val">${(lightData.penumbra || 0.3).toFixed(2)}</span>
+        </div>
+        <input id="prop_light_penumbra" type="range" min="0" max="1" step="0.05" value="${lightData.penumbra || 0.3}">
+      </div>
+      ` : ""}
+
+      ${!isAmbient ? `
       <div class="param-row-checkbox">
         <label>
           <input id="prop_light_shadow" type="checkbox" ${lightData.castShadow ? "checked" : ""}>
-          Cast Shadows
+          Cast Real-Time Shadows
         </label>
       </div>
+      ` : ""}
     </div>
 
-    ${buildTransformSection("Light Position", pos)}
+    ${!isAmbient ? buildTransformSection("Light Position", pos) : ""}
 
+    ${(isDir || isSpot) ? `
     <div class="section-group">
       <div class="section-group-title">Target Position</div>
       <div class="param-row">
@@ -235,131 +298,74 @@ function buildLightInspector(lightData) {
         </div>
       </div>
     </div>
+    ` : ""}
+
+    <div class="section-group">
+      <div class="section-group-title">Studio Lighting Presets</div>
+      <div class="button-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
+        <button class="secondary light-preset-btn" data-preset="clean_studio" title="Clean 3-Point Studio">Clean Studio</button>
+        <button class="secondary light-preset-btn" data-preset="dramatic_contrast" title="Dramatic Edge & Rim">Dramatic Rim</button>
+        <button class="secondary light-preset-btn" data-preset="dark_showcase" title="Dark Showcase Dual Rim">Dark Showcase</button>
+        <button class="secondary light-preset-btn" data-preset="outdoor_sun" title="Outdoor Sunlight & Fill">Outdoor Sun</button>
+      </div>
+    </div>
   `;
 }
 
 function buildLightTargetInspector(lightData) {
   const targetPos = lightData.target.position;
   return `
-    ${buildHeader("LIGHT TARGET", `Target of ${lightData.id}`)}
+    ${buildHeader("LIGHT TARGET", `Target of ${lightData.name || lightData.id}`)}
     ${buildTransformSection("Target World Position", targetPos)}
   `;
 }
 
-function buildModelInspector(model) {
-  let vertexCount = 0;
-  let triangleCount = 0;
-  let meshCount = 0;
-
-  model.traverse((child) => {
-    if (child.isMesh && child.geometry) {
-      meshCount++;
-      const geom = child.geometry;
-      if (geom.attributes?.position) {
-        vertexCount += geom.attributes.position.count;
-      }
-      if (geom.index) {
-        triangleCount += geom.index.count / 3;
-      } else if (geom.attributes?.position) {
-        triangleCount += geom.attributes.position.count / 3;
-      }
-    }
-  });
-
-  const box = new THREE.Box3().setFromObject(model);
-  const size = box.getSize(new THREE.Vector3());
-
-  return `
-    ${buildHeader("MODEL", model.name || "GLB Root Model")}
-
-    ${buildTransformSection("Model Transform", model.position, model.rotation, model.scale)}
-
-    <div class="section-group">
-      <div class="section-group-title">Model Actions</div>
-      <div class="button-grid">
-        <button id="btnCenterModel" class="secondary">&#10024; Center Origin</button>
-        <button id="btnFrameModel" class="secondary">&#128269; Frame Camera</button>
-        <button id="btnResetModelTransform" class="secondary">&#8635; Reset Transform</button>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Model Geometry Stats</div>
-      <div class="stats-grid">
-        <div class="stat-item"><span class="stat-num">${meshCount}</span><span class="stat-label">Meshes</span></div>
-        <div class="stat-item"><span class="stat-num">${vertexCount.toLocaleString()}</span><span class="stat-label">Vertices</span></div>
-        <div class="stat-item"><span class="stat-num">${Math.round(triangleCount).toLocaleString()}</span><span class="stat-label">Triangles</span></div>
-      </div>
-      <div class="stat-dimensions">Size: ${size.x.toFixed(2)}m &times; ${size.y.toFixed(2)}m &times; ${size.z.toFixed(2)}m</div>
-    </div>
-  `;
-}
-
-function buildMeshInspector(mesh) {
-  const mat = mesh.material || {};
-  const isMultiMat = Array.isArray(mat);
-  const primaryMat = isMultiMat ? mat[0] : mat;
-  const geom = mesh.geometry;
-  const vertCount = geom?.attributes?.position?.count || 0;
-
-  return `
-    ${buildHeader("MESH", mesh.name || "Unnamed Mesh")}
-
-    ${buildTransformSection("Mesh Local Transform", mesh.position, mesh.rotation, mesh.scale)}
-
-    <div class="section-group">
-      <div class="section-group-title">Material Properties</div>
-      
-      <div class="param-row-flex">
-        <label>Base Color</label>
-        <input id="prop_mesh_color" type="color" value="${primaryMat.color ? '#' + primaryMat.color.getHexString() : '#ffffff'}">
-      </div>
-
-      ${primaryMat.roughness !== undefined ? `
-      <div class="param-row">
-        <div class="slider-header"><label>Roughness</label><span class="value-badge" id="val_roughness">${primaryMat.roughness.toFixed(2)}</span></div>
-        <input id="prop_mesh_roughness" type="range" min="0" max="1" step="0.02" value="${primaryMat.roughness}">
-      </div>` : ""}
-
-      ${primaryMat.metalness !== undefined ? `
-      <div class="param-row">
-        <div class="slider-header"><label>Metalness</label><span class="value-badge" id="val_metalness">${primaryMat.metalness.toFixed(2)}</span></div>
-        <input id="prop_mesh_metalness" type="range" min="0" max="1" step="0.02" value="${primaryMat.metalness}">
-      </div>` : ""}
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_mesh_wireframe" type="checkbox" ${primaryMat.wireframe ? "checked" : ""}>
-          Wireframe
-        </label>
-      </div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_mesh_visible" type="checkbox" ${mesh.visible ? "checked" : ""}>
-          Visible
-        </label>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Mesh Info</div>
-      <div class="stat-dimensions">Vertices: ${vertCount.toLocaleString()} | Geometry: ${geom?.type || "BufferGeometry"}</div>
-    </div>
-  `;
-}
-
 function buildCameraInspector(camera) {
-  const controls = state.controls;
-  const target = controls?.target || new THREE.Vector3();
+  const target = state.cameraRig?.target || new THREE.Vector3();
+  const camWorldPos = new THREE.Vector3();
+  camera.getWorldPosition(camWorldPos);
+
+  const viewpoints = state.cameraSettings?.viewpoints || [];
 
   return `
-    ${buildHeader("CAMERA", "Perspective Camera")}
-
-    ${buildTransformSection("Camera Position", camera.position)}
+    ${buildHeader("CAMERA", "Perspective Camera & Default View")}
 
     <div class="section-group">
-      <div class="section-group-title">Orbit Target (LookAt)</div>
+      <div class="section-group-title">Default View Actions</div>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+        <button id="btnSetDefaultCamInspector" class="primary-btn" style="width:100%; padding:8px 12px; font-size:12px; font-weight:700;">
+          &#9733; Set Current as Default View
+        </button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button id="btnResetDefaultCamInspector" class="secondary" style="font-size:11px; padding:6px;">
+            &#8634; Reset to Default
+          </button>
+          <button id="btnFrameModelFromCam" class="secondary" style="font-size:11px; padding:6px;">
+            &#128269; Frame Model
+          </button>
+        </div>
+      </div>
+
+      <div class="param-row-flex" style="margin-top:8px;">
+        <label>Auto-Rotate Preview</label>
+        <input id="prop_cam_autorotate" type="checkbox" ${state.cameraRig?.autoRotate ? "checked" : ""}>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Snap Camera View to Axis</div>
+      <div class="button-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 8px;">
+        <button class="secondary inspector-camera-axis-btn" data-axis="front" title="Snap to Front View">Front</button>
+        <button class="secondary inspector-camera-axis-btn" data-axis="back" title="Snap to Back View">Back</button>
+        <button class="secondary inspector-camera-axis-btn" data-axis="left" title="Snap to Left View">Left</button>
+        <button class="secondary inspector-camera-axis-btn" data-axis="right" title="Snap to Right View">Right</button>
+        <button class="secondary inspector-camera-axis-btn" data-axis="top" title="Snap to Top View">Top</button>
+        <button class="secondary inspector-camera-axis-btn" data-axis="bottom" title="Snap to Bottom View">Bottom</button>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Orbit Target (LookAt Center)</div>
       <div class="param-row">
         <div class="vector3-inputs">
           <div class="vec-item"><span class="vec-label x">X</span><input id="prop_cam_target_x" type="number" step="0.1" value="${target.x.toFixed(2)}"></div>
@@ -370,33 +376,127 @@ function buildCameraInspector(camera) {
     </div>
 
     <div class="section-group">
-      <div class="section-group-title">Optics</div>
+      <div class="section-group-title">Optics &amp; Clipping</div>
       <div class="param-row">
         <div class="slider-header"><label>Field of View (FOV)</label><span class="value-badge" id="val_fov">${Math.round(camera.fov)}°</span></div>
         <input id="prop_cam_fov" type="range" min="15" max="110" step="1" value="${camera.fov}">
       </div>
 
-      <div class="button-grid" style="margin-top:12px;">
-        <button id="btnFrameModelFromCam" class="secondary">&#128269; Frame Model</button>
+      <div class="param-row">
+        <div class="slider-header"><label>Near Clipping Plane</label><span class="value-badge" id="val_near">${camera.near.toFixed(2)}m</span></div>
+        <input id="prop_cam_near" type="range" min="0.01" max="1.0" step="0.01" value="${camera.near}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Far Clipping Plane</label><span class="value-badge" id="val_far">${Math.round(camera.far)}m</span></div>
+        <input id="prop_cam_far" type="range" min="50" max="2000" step="50" value="${camera.far}">
       </div>
     </div>
   `;
 }
 
 function buildSceneInspector() {
+  const sceneSettings = state.sceneSettings || {};
+  const env = sceneSettings.environment || {};
+  const rendering = sceneSettings.rendering || {};
+  const helpers = sceneSettings.helpers || {};
+
   return `
-    ${buildHeader("SCENE", "Scene Settings")}
+    ${buildHeader("SCENE", "Scene & Environment Settings")}
 
     <div class="section-group">
-      <div class="section-group-title">Environment &amp; Background</div>
-      <div class="param-row-flex">
+      <div class="section-group-title">Background</div>
+      
+      <div class="param-row">
+        <label>Background Type</label>
+        <select id="prop_scene_bg_type" class="inspector-select">
+          <option value="color" ${sceneSettings.backgroundType === "color" ? "selected" : ""}>Solid Color</option>
+          <option value="environment" ${sceneSettings.backgroundType === "environment" ? "selected" : ""}>HDR Skybox</option>
+          <option value="transparent" ${sceneSettings.backgroundType === "transparent" ? "selected" : ""}>Transparent</option>
+        </select>
+      </div>
+
+      <div class="param-row-flex" id="row_scene_bg_color" style="${sceneSettings.backgroundType === 'transparent' ? 'display:none;' : ''}">
         <label>Background Color</label>
-        <input id="prop_scene_bg" type="color" value="${state.sceneSettings.background || '#3f3f3f'}">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_scene_bg" type="color" value="${sceneSettings.background || '#222228'}">
+          <span style="font-size:0.8rem; font-family:monospace; color:var(--text-dim);">${sceneSettings.background || '#222228'}</span>
+        </div>
+      </div>
+
+      <div class="param-row" id="row_scene_bg_blur" style="${sceneSettings.backgroundType === 'environment' ? '' : 'display:none;'}">
+        <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="val_bg_blur">${Number(sceneSettings.backgroundBlur || 0).toFixed(2)}</span></div>
+        <input id="prop_scene_bg_blur" type="range" min="0" max="1" step="0.05" value="${sceneSettings.backgroundBlur || 0}">
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">HDR Environment &amp; Reflection</div>
+
+      <div class="param-row">
+        <label>Environment Preset</label>
+        <select id="prop_scene_env_preset" class="inspector-select">
+          <option value="studio_small_09" ${env.preset === "studio_small_09" ? "selected" : ""}>Studio Small 09 (Balanced)</option>
+          <option value="potsdamer_platz" ${env.preset === "potsdamer_platz" ? "selected" : ""}>Potsdamer Platz (Urban)</option>
+          <option value="autumn_ground" ${env.preset === "autumn_ground" ? "selected" : ""}>Autumn Park (Warm Nature)</option>
+          <option value="aircraft_workshop" ${env.preset === "aircraft_workshop" ? "selected" : ""}>Aircraft Workshop (Industrial)</option>
+        </select>
       </div>
 
       <div class="param-row">
-        <div class="slider-header"><label>Exposure</label><span class="value-badge" id="val_exposure">${(state.renderer?.toneMappingExposure || 1.6).toFixed(1)}</span></div>
-        <input id="prop_scene_exposure" type="range" min="0.1" max="4.0" step="0.1" value="${state.renderer?.toneMappingExposure || 1.6}">
+        <div class="slider-header"><label>Environment Intensity</label><span class="value-badge" id="val_env_intensity">${Number(env.intensity || 1.0).toFixed(1)}</span></div>
+        <input id="prop_scene_env_intensity" type="range" min="0" max="4.0" step="0.1" value="${env.intensity || 1.0}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Environment Rotation</label><span class="value-badge" id="val_env_rotation">${Math.round(env.rotation || 0)}°</span></div>
+        <input id="prop_scene_env_rotation" type="range" min="0" max="360" step="5" value="${env.rotation || 0}">
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Color Grading &amp; Tone Mapping</div>
+
+      <div class="param-row">
+        <label>Tone Mapping</label>
+        <select id="prop_scene_tonemapping" class="inspector-select">
+          <option value="ACESFilmic" ${env.toneMapping === "ACESFilmic" ? "selected" : ""}>ACES Filmic (Vibrant)</option>
+          <option value="AgX" ${env.toneMapping === "AgX" ? "selected" : ""}>AgX (Realistic)</option>
+          <option value="Cineon" ${env.toneMapping === "Cineon" ? "selected" : ""}>Cineon</option>
+          <option value="Reinhard" ${env.toneMapping === "Reinhard" ? "selected" : ""}>Reinhard</option>
+          <option value="Linear" ${env.toneMapping === "Linear" ? "selected" : ""}>Linear</option>
+          <option value="None" ${env.toneMapping === "None" ? "selected" : ""}>None</option>
+        </select>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Exposure</label><span class="value-badge" id="val_exposure">${Number(env.exposure || 1.6).toFixed(1)}</span></div>
+        <input id="prop_scene_exposure" type="range" min="0.1" max="4.0" step="0.1" value="${env.exposure || 1.6}">
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Rendering &amp; Helpers</div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_shadows" type="checkbox" ${rendering.shadows !== false ? "checked" : ""}>
+          Enable Real-Time Soft Shadows
+        </label>
+      </div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_grid" type="checkbox" ${helpers.grid !== false ? "checked" : ""}>
+          Show Ground Grid Helper
+        </label>
+      </div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_axes" type="checkbox" ${helpers.axes ? "checked" : ""}>
+          Show 3D Coordinate Axes Helper
+        </label>
       </div>
     </div>
   `;
@@ -431,11 +531,11 @@ function bindInspectorEvents(type, object, target) {
       object.position = [x, y, z];
       updateGizmoAnchorPosition(x, y, z);
     } else if (type === "light") {
-      object.light.position.set(x, y, z);
+      if (object.light) object.light.position.set(x, y, z);
       if (object.lightSprite) object.lightSprite.position.set(x, y, z);
       updateLights();
     } else if (type === "lightTarget") {
-      object.target.position.set(x, y, z);
+      if (object.target) object.target.position.set(x, y, z);
       if (object.targetSprite) object.targetSprite.position.set(x, y, z);
       updateLights();
     } else if (type === "model" || type === "mesh" || type === "camera") {
@@ -504,6 +604,10 @@ function bindInspectorEvents(type, object, target) {
   } else if (type === "light") {
     const lightColor = document.getElementById("prop_light_color");
     const lightIntensity = document.getElementById("prop_light_intensity");
+    const lightDist = document.getElementById("prop_light_distance");
+    const lightDecay = document.getElementById("prop_light_decay");
+    const lightAngle = document.getElementById("prop_light_angle");
+    const lightPenumbra = document.getElementById("prop_light_penumbra");
     const lightShadow = document.getElementById("prop_light_shadow");
     const targetX = document.getElementById("prop_target_x");
     const targetY = document.getElementById("prop_target_y");
@@ -511,135 +615,254 @@ function bindInspectorEvents(type, object, target) {
 
     lightColor?.addEventListener("input", (e) => {
       object.color = e.target.value;
-      object.light.color.set(object.color);
+      if (object.light) object.light.color.set(object.color);
     });
 
+    const lightIntensityNum = document.getElementById("prop_light_intensity_num");
+
+    const updateIntensity = (val) => {
+      const num = Math.max(0, parseFloat(val) || 0);
+      object.intensity = num;
+      if (object.light) object.light.intensity = num;
+      if (lightIntensity && parseFloat(lightIntensity.value) !== num && num <= 100) {
+        lightIntensity.value = num;
+      }
+      if (lightIntensityNum && parseFloat(lightIntensityNum.value) !== num) {
+        lightIntensityNum.value = num.toFixed(1);
+      }
+    };
+
     lightIntensity?.addEventListener("input", (e) => {
-      object.intensity = parseFloat(e.target.value);
-      object.light.intensity = object.intensity;
-      const valBadge = document.getElementById("light_intensity_val");
-      if (valBadge) valBadge.textContent = object.intensity.toFixed(1);
+      updateIntensity(e.target.value);
+    });
+
+    lightIntensityNum?.addEventListener("input", (e) => {
+      updateIntensity(e.target.value);
+    });
+
+    lightDist?.addEventListener("input", (e) => {
+      object.distance = parseFloat(e.target.value);
+      if (object.light) object.light.distance = object.distance;
+      const valBadge = document.getElementById("light_dist_val");
+      if (valBadge) valBadge.textContent = `${object.distance.toFixed(1)}m`;
+    });
+
+    lightDecay?.addEventListener("input", (e) => {
+      object.decay = parseFloat(e.target.value);
+      if (object.light) object.light.decay = object.decay;
+      const valBadge = document.getElementById("light_decay_val");
+      if (valBadge) valBadge.textContent = object.decay.toFixed(1);
+    });
+
+    lightAngle?.addEventListener("input", (e) => {
+      const deg = parseFloat(e.target.value);
+      object.angle = THREE.MathUtils.degToRad(deg);
+      if (object.light) object.light.angle = object.angle;
+      const valBadge = document.getElementById("light_angle_val");
+      if (valBadge) valBadge.textContent = `${Math.round(deg)}°`;
+      if (object.helper) object.helper.update?.();
+    });
+
+    lightPenumbra?.addEventListener("input", (e) => {
+      object.penumbra = parseFloat(e.target.value);
+      if (object.light) object.light.penumbra = object.penumbra;
+      const valBadge = document.getElementById("light_penumbra_val");
+      if (valBadge) valBadge.textContent = object.penumbra.toFixed(2);
     });
 
     lightShadow?.addEventListener("change", (e) => {
       object.castShadow = e.target.checked;
-      object.light.castShadow = object.castShadow;
+      if (object.light) object.light.castShadow = object.castShadow;
     });
 
     const onTargetChange = () => {
       const tx = parseFloat(targetX?.value || 0);
       const ty = parseFloat(targetY?.value || 0);
       const tz = parseFloat(targetZ?.value || 0);
-      object.target.position.set(tx, ty, tz);
+      if (object.target) object.target.position.set(tx, ty, tz);
       if (object.targetSprite) object.targetSprite.position.set(tx, ty, tz);
       updateLights();
     };
 
     [targetX, targetY, targetZ].forEach((el) => el?.addEventListener("input", onTargetChange));
-  } else if (type === "model") {
-    document.getElementById("btnCenterModel")?.addEventListener("click", () => {
-      const box = new THREE.Box3().setFromObject(object);
-      const center = box.getCenter(new THREE.Vector3());
-      object.position.sub(center);
-      notifySelectionChanged();
-    });
 
-    document.getElementById("btnFrameModel")?.addEventListener("click", () => {
-      frameModel(object);
-    });
-
-    document.getElementById("btnResetModelTransform")?.addEventListener("click", () => {
-      object.position.set(0, 0, 0);
-      object.rotation.set(0, 0, 0);
-      object.scale.set(1, 1, 1);
-      notifySelectionChanged();
-    });
-  } else if (type === "mesh") {
-    const meshColor = document.getElementById("prop_mesh_color");
-    const meshRoughness = document.getElementById("prop_mesh_roughness");
-    const meshMetalness = document.getElementById("prop_mesh_metalness");
-    const meshWireframe = document.getElementById("prop_mesh_wireframe");
-    const meshVisible = document.getElementById("prop_mesh_visible");
-
-    meshColor?.addEventListener("input", (e) => {
-      if (object.material?.color) {
-        object.material.color.set(e.target.value);
-      }
-    });
-
-    meshRoughness?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (object.material && object.material.roughness !== undefined) {
-        object.material.roughness = val;
-      }
-      const badge = document.getElementById("val_roughness");
-      if (badge) badge.textContent = val.toFixed(2);
-    });
-
-    meshMetalness?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (object.material && object.material.metalness !== undefined) {
-        object.material.metalness = val;
-      }
-      const badge = document.getElementById("val_metalness");
-      if (badge) badge.textContent = val.toFixed(2);
-    });
-
-    meshWireframe?.addEventListener("change", (e) => {
-      if (object.material) {
-        object.material.wireframe = e.target.checked;
-      }
-    });
-
-    meshVisible?.addEventListener("change", (e) => {
-      object.visible = e.target.checked;
-    });
+    // Preset buttons handled via delegated click on inspector or sidebar
   } else if (type === "camera") {
     const targetX = document.getElementById("prop_cam_target_x");
     const targetY = document.getElementById("prop_cam_target_y");
     const targetZ = document.getElementById("prop_cam_target_z");
     const camFov = document.getElementById("prop_cam_fov");
+    const camNear = document.getElementById("prop_cam_near");
+    const camFar = document.getElementById("prop_cam_far");
 
     const onCamTargetChange = () => {
+      const tx = parseFloat(targetX?.value || 0);
+      const ty = parseFloat(targetY?.value || 0);
+      const tz = parseFloat(targetZ?.value || 0);
+      if (state.cameraRig) {
+        state.cameraRig.target.set(tx, ty, tz);
+      }
       if (state.controls) {
-        state.controls.target.set(
-          parseFloat(targetX?.value || 0),
-          parseFloat(targetY?.value || 0),
-          parseFloat(targetZ?.value || 0)
-        );
-        state.controls.update();
+        state.controls.target.set(tx, ty, tz);
+        state.controls.update?.();
       }
     };
 
     [targetX, targetY, targetZ].forEach((el) => el?.addEventListener("input", onCamTargetChange));
 
+    document.querySelectorAll(".inspector-camera-axis-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const axis = btn.getAttribute("data-axis");
+        if (state.cameraRig && axis) {
+          state.cameraRig.snapToAxis(axis);
+        }
+      });
+    });
+
     camFov?.addEventListener("input", (e) => {
       const fovVal = parseFloat(e.target.value);
       object.fov = fovVal;
       object.updateProjectionMatrix();
+      if (state.cameraSettings) state.cameraSettings.fov = fovVal;
       const badge = document.getElementById("val_fov");
       if (badge) badge.textContent = `${Math.round(fovVal)}°`;
     });
 
+    camNear?.addEventListener("input", (e) => {
+      const nearVal = parseFloat(e.target.value);
+      object.near = nearVal;
+      object.updateProjectionMatrix();
+      if (state.cameraSettings) state.cameraSettings.near = nearVal;
+      const badge = document.getElementById("val_near");
+      if (badge) badge.textContent = `${nearVal.toFixed(2)}m`;
+    });
+
+    camFar?.addEventListener("input", (e) => {
+      const farVal = parseFloat(e.target.value);
+      object.far = farVal;
+      object.updateProjectionMatrix();
+      if (state.cameraSettings) state.cameraSettings.far = farVal;
+      const badge = document.getElementById("val_far");
+      if (badge) badge.textContent = `${Math.round(farVal)}m`;
+    });
+
     document.getElementById("btnFrameModelFromCam")?.addEventListener("click", () => {
-      if (state.currentModel) frameModel(state.currentModel);
+      if (state.cameraRig && state.currentModel) {
+        state.cameraRig.focus(state.currentModel);
+      }
+    });
+
+    document.getElementById("btnSetDefaultCamInspector")?.addEventListener("click", () => {
+      if (state.cameraRig) {
+        const camState = state.cameraRig.getState();
+        state.cameraRig.setDefaultState(camState);
+        if (!state.sceneDocument) state.sceneDocument = {};
+        state.sceneDocument.camera = {
+          yaw: camState.yaw,
+          pitch: camState.pitch,
+          distance: camState.distance,
+          target: camState.target,
+          fov: camState.fov
+        };
+        const btn = document.getElementById("btnSetDefaultCamInspector");
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = "&#10003; Default Saved!";
+          setTimeout(() => { btn.innerHTML = original; }, 1500);
+        }
+      }
+    });
+
+    document.getElementById("btnResetDefaultCamInspector")?.addEventListener("click", () => {
+      if (state.cameraRig) {
+        state.cameraRig.reset();
+      }
+    });
+
+    const autoRotateToggle = document.getElementById("prop_cam_autorotate");
+    autoRotateToggle?.addEventListener("change", (e) => {
+      if (state.cameraRig) {
+        state.cameraRig.autoRotate = Boolean(e.target.checked);
+      }
     });
   } else if (type === "scene") {
-    const sceneBg = document.getElementById("prop_scene_bg");
-    const sceneExp = document.getElementById("prop_scene_exposure");
+    const bgType = document.getElementById("prop_scene_bg_type");
+    const bg = document.getElementById("prop_scene_bg");
+    const bgBlur = document.getElementById("prop_scene_bg_blur");
+    const envPreset = document.getElementById("prop_scene_env_preset");
+    const envIntensity = document.getElementById("prop_scene_env_intensity");
+    const envRotation = document.getElementById("prop_scene_env_rotation");
+    const tonemapping = document.getElementById("prop_scene_tonemapping");
+    const exposure = document.getElementById("prop_scene_exposure");
+    const shadows = document.getElementById("prop_scene_shadows");
+    const grid = document.getElementById("prop_scene_grid");
+    const axes = document.getElementById("prop_scene_axes");
 
-    sceneBg?.addEventListener("input", (e) => {
+    bgType?.addEventListener("change", (e) => {
+      state.sceneSettings.backgroundType = e.target.value;
+      applyBackgroundSettings();
+      renderInspector();
+    });
+
+    bg?.addEventListener("input", (e) => {
       state.sceneSettings.background = e.target.value;
-      if (state.scene) state.scene.background = new THREE.Color(e.target.value);
+      applyBackgroundSettings();
       const bgInput = document.getElementById("backgroundColor");
       if (bgInput) bgInput.value = e.target.value;
     });
 
-    sceneExp?.addEventListener("input", (e) => {
-      const expVal = parseFloat(e.target.value);
-      if (state.renderer) state.renderer.toneMappingExposure = expVal;
+    bgBlur?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      state.sceneSettings.backgroundBlur = val;
+      applyBackgroundSettings();
+      const badge = document.getElementById("val_bg_blur");
+      if (badge) badge.textContent = val.toFixed(2);
+    });
+
+    envPreset?.addEventListener("change", (e) => {
+      state.sceneSettings.environment.preset = e.target.value;
+      loadEnvironment(e.target.value);
+    });
+
+    envIntensity?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      state.sceneSettings.environment.intensity = val;
+      applyEnvironmentParams();
+      const badge = document.getElementById("val_env_intensity");
+      if (badge) badge.textContent = val.toFixed(1);
+    });
+
+    envRotation?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      state.sceneSettings.environment.rotation = val;
+      applyEnvironmentParams();
+      const badge = document.getElementById("val_env_rotation");
+      if (badge) badge.textContent = `${Math.round(val)}°`;
+    });
+
+    tonemapping?.addEventListener("change", (e) => {
+      state.sceneSettings.environment.toneMapping = e.target.value;
+      applyEnvironmentParams();
+    });
+
+    exposure?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      state.sceneSettings.environment.exposure = val;
+      applyEnvironmentParams();
       const badge = document.getElementById("val_exposure");
-      if (badge) badge.textContent = expVal.toFixed(1);
+      if (badge) badge.textContent = val.toFixed(1);
+    });
+
+    shadows?.addEventListener("change", (e) => {
+      setShadowsEnabled(e.target.checked);
+    });
+
+    grid?.addEventListener("change", (e) => {
+      setGridVisible(e.target.checked);
+    });
+
+    axes?.addEventListener("change", (e) => {
+      setAxesVisible(e.target.checked);
     });
   }
 }

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { clearSelection, notifySelectionChanged, setSelection, state } from "../state/state.js";
 import { select, deselect } from "../selection/selection.js";
 import { updateGizmoAnchorPosition } from "../gizmo/gizmo.js";
+import { projectToScreen, testHotspotOcclusion, calculateConnectorLine } from "../../shared/hotspotMath.js";
 
 function createHotspot(point){
 
@@ -95,69 +96,33 @@ panel.replaceChildren(title, description);
 }
 
 function makePanelDraggable(panel,hotspot){
+  let dragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
 
-let dragging = false;
+  panel.addEventListener("mousedown", (e)=>{
+    dragging = true;
+    const vpWidth = state.viewport?.clientWidth || window.innerWidth;
+    const vpHeight = state.viewport?.clientHeight || window.innerHeight;
+    offsetX = e.clientX - ((vpWidth * 0.5) + (hotspot.panelOffset?.x || 0));
+    offsetY = e.clientY - ((vpHeight * 0.5) + (hotspot.panelOffset?.y || 0));
+    e.stopPropagation();
+  });
 
-let offsetX = 0;
-let offsetY = 0;
+  window.addEventListener("mousemove", (e)=>{
+    if(!dragging) return;
+    const vpWidth = state.viewport?.clientWidth || window.innerWidth;
+    const vpHeight = state.viewport?.clientHeight || window.innerHeight;
+    hotspot.panelOffset.x = (e.clientX - offsetX) - (vpWidth * 0.5);
+    hotspot.panelOffset.y = (e.clientY - offsetY) - (vpHeight * 0.5);
+    if(state.selected === hotspot){
+      notifySelectionChanged();
+    }
+  });
 
-panel.addEventListener(
-"mousedown",
-(e)=>{
-
-dragging = true;
-
-offsetX =
-e.clientX -
-(
-(window.innerWidth * .5)
-+ hotspot.panelOffset.x
-);
-
-offsetY =
-e.clientY -
-(
-(window.innerHeight * .5)
-+ hotspot.panelOffset.y
-);
-
-e.stopPropagation();
-
-}
-);
-
-window.addEventListener(
-"mousemove",
-(e)=>{
-
-if(!dragging) return;
-
-hotspot.panelOffset.x =
-(
-e.clientX - offsetX
-) - (window.innerWidth * .5);
-
-hotspot.panelOffset.y =
-(
-e.clientY - offsetY
-) - (window.innerHeight * .5);
-
-if(state.selected === hotspot){
-notifySelectionChanged();
-}
-
-}
-);
-
-window.addEventListener(
-"mouseup",
-()=>{
-
-dragging = false;
-
-}
-);
-
+  window.addEventListener("mouseup", ()=>{
+    dragging = false;
+  });
 }
 
 function makeHotspotDraggable(dot,hotspot){
@@ -252,120 +217,61 @@ deselect("hotspot");
 }
 
 function updateHotspots(){
+  if (!state.camera || !state.viewport || !state.hotspots) return;
 
-state.hotspots.forEach((h)=>{
+  const viewportWidth = state.viewport.clientWidth;
+  const viewportHeight = state.viewport.clientHeight;
 
-const pos =
-new THREE.Vector3(
-h.position[0],
-h.position[1],
-h.position[2]
-);
+  state.hotspots.forEach((h)=>{
+    if (!h.position || !h.dot || !h.panel) return;
 
-const projected =
-pos.clone().project(state.camera);
+    // 1. Occlusion & camera plane test
+    const isVisible = testHotspotOcclusion(
+      h.position,
+      state.camera,
+      state.currentModel,
+      state.raycaster,
+      0.08
+    );
 
-if(projected.z > 1){
+    if(!isVisible){
+      h.dot.style.display = "none";
+      h.panel.style.display = "none";
+      if(h.line) h.line.style.display = "none";
+      return;
+    }
 
-h.dot.style.display = "none";
-h.panel.style.display = "none";
+    // 2. Project to screen
+    const { x, y, inFrustum } = projectToScreen(h.position, state.camera, viewportWidth, viewportHeight);
 
-if(h.line){
-h.line.style.display = "none";
-}
+    if(!inFrustum){
+      h.dot.style.display = "none";
+      h.panel.style.display = "none";
+      if(h.line) h.line.style.display = "none";
+      return;
+    }
 
-return;
+    h.dot.style.display = "block";
+    h.panel.style.display = "block";
+    if(h.line) h.line.style.display = "block";
 
-}
+    h.dot.style.left = `${x}px`;
+    h.dot.style.top = `${y}px`;
 
-const direction =
-pos.clone()
-.sub(state.camera.position)
-.normalize();
+    const panelX = (viewportWidth * 0.5) + (h.panelOffset?.x || 0);
+    const panelY = (viewportHeight * 0.5) + (h.panelOffset?.y || 0);
 
-state.raycaster.set(
-state.camera.position,
-direction
-);
+    h.panel.style.left = `${panelX}px`;
+    h.panel.style.top = `${panelY}px`;
 
-const intersects =
-state.raycaster.intersectObject(
-state.currentModel,
-true
-);
-
-const hotspotDistance =
-state.camera.position.distanceTo(pos);
-
-let visible = true;
-
-if(intersects.length){
-
-visible =
-intersects[0].distance >=
-hotspotDistance - 0.03;
-
-}
-
-if(!visible){
-
-h.dot.style.display = "none";
-h.panel.style.display = "none";
-
-if(h.line){
-h.line.style.display = "none";
-}
-
-return;
-
-}
-
-h.dot.style.display = "block";
-h.panel.style.display = "block";
-
-if(h.line){
-h.line.style.display = "block";
-}
-
-const x =
-(projected.x * .5 + .5)
-* state.viewport.clientWidth;
-
-const y =
-(-projected.y * .5 + .5)
-* state.viewport.clientHeight;
-
-h.dot.style.left =
-`${x}px`;
-
-h.dot.style.top =
-`${y}px`;
-
-const panelX =
-(state.viewport.clientWidth * .5)
-+ h.panelOffset.x;
-
-const panelY =
-(state.viewport.clientHeight * .5)
-+ h.panelOffset.y;
-
-h.panel.style.left =
-`${panelX}px`;
-
-h.panel.style.top =
-`${panelY}px`;
-
-if(h.line){
-
-h.line.setAttribute("x1",x);
-h.line.setAttribute("y1",y);
-h.line.setAttribute("x2",panelX);
-h.line.setAttribute("y2",panelY + 40);
-
-}
-
-});
-
+    if(h.line){
+      const coords = calculateConnectorLine(x, y, panelX, panelY);
+      h.line.setAttribute("x1", coords.x1);
+      h.line.setAttribute("y1", coords.y1);
+      h.line.setAttribute("x2", coords.x2);
+      h.line.setAttribute("y2", coords.y2);
+    }
+  });
 }
 
 function removeHotspot(h){
