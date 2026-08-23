@@ -1,0 +1,35 @@
+# =========================================================================
+# COMPREHENSIVE BINARY 3D & MESH FILES (Guaranteed to break text-parsing)
+# =========================================================================
+*.glb
+*.gltf
+*.fbx
+*.obj
+*.bin
+*.stl
+*.dae
+*.3ds
+*.blend
+
+# =========================================================================
+# DEPENDENCY FOLDERS (Massive structures that crash the workspace memory)
+# =========================================================================
+node_modules/
+bower_components/
+dist/
+build/
+out/
+.next/
+bin/
+obj/
+target/
+vendor/
+
+# =========================================================================
+# CREDENTIALS & SECRETS (Crucial to prevent API prompt injection leaks)
+# =========================================================================
+.env
+.env.*
+secrets.json
+*.pem
+*.key
