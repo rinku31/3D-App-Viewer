@@ -9,22 +9,26 @@ import { disposeTexture } from "./disposal.js";
 export const HDR_PRESETS = [
   {
     id: "studio_small_09",
-    name: "Studio Small 09 (Balanced)",
+    name: "Balance",
+    fullName: "Studio Small 09 (Balance)",
     url: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr"
   },
   {
     id: "potsdamer_platz",
-    name: "Potsdamer Platz (Urban)",
+    name: "Urban",
+    fullName: "Potsdamer Platz (Urban)",
     url: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr"
   },
   {
     id: "autumn_ground",
-    name: "Autumn Park (Warm Nature)",
+    name: "Nature",
+    fullName: "Autumn Park (Nature)",
     url: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/autumn_ground_1k.hdr"
   },
   {
     id: "aircraft_workshop",
-    name: "Aircraft Workshop (Industrial)",
+    name: "Industrial",
+    fullName: "Aircraft Workshop (Industrial)",
     url: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/aircraft_workshop_01_1k.hdr"
   }
 ];
@@ -34,11 +38,20 @@ export const HDR_PRESET_MAP = {
   potsdamer_platz: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr",
   autumn_ground: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/autumn_ground_1k.hdr",
   aircraft_workshop: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/aircraft_workshop_01_1k.hdr",
+  // Aliases
+  balance: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr",
+  urban: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr",
+  nature: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/autumn_ground_1k.hdr",
+  industrial: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/aircraft_workshop_01_1k.hdr",
   // Legacy aliases
   sunset_fairway: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/autumn_ground_1k.hdr",
   puresky: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr",
   workshop: "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/aircraft_workshop_01_1k.hdr"
 };
+
+// Global texture cache across instances to enable instantaneous switching
+const globalTextureCache = new Map();
+const globalLoadingPromises = new Map();
 
 /**
  * Creates an Environment Manager instance for a given scene and renderer
@@ -51,36 +64,96 @@ export function createEnvironmentManager({ scene, renderer }) {
   let currentEnvTexture = null;
   let currentPreset = null;
 
+  /**
+   * Preloads all 4 standard HDR environment presets into memory for 0ms instant switching
+   */
+  function preloadPresets() {
+    HDR_PRESETS.forEach((preset) => {
+      loadHdrTexture(preset.id);
+    });
+  }
+
+  /**
+   * Internal helper to load and PMREM-convert an HDR texture with caching
+   */
+  function loadHdrTexture(presetOrUrl) {
+    const url = HDR_PRESET_MAP[presetOrUrl] || (HDR_PRESETS.find(p => p.id === presetOrUrl)?.url) || presetOrUrl;
+    if (!url) return Promise.reject(new Error("Invalid HDR preset or URL"));
+
+    if (globalTextureCache.has(url)) {
+      return Promise.resolve(globalTextureCache.get(url));
+    }
+
+    if (globalLoadingPromises.has(url)) {
+      return globalLoadingPromises.get(url);
+    }
+
+    const loadPromise = new Promise((resolve, reject) => {
+      rgbeLoader.load(
+        url,
+        (hdrTexture) => {
+          hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+          const envTexture = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+          hdrTexture.dispose();
+          globalTextureCache.set(url, envTexture);
+          globalLoadingPromises.delete(url);
+          resolve(envTexture);
+        },
+        undefined,
+        (err) => {
+          console.warn("Could not load HDR environment from:", url, err);
+          globalLoadingPromises.delete(url);
+          reject(err);
+        }
+      );
+    });
+
+    globalLoadingPromises.set(url, loadPromise);
+    return loadPromise;
+  }
+
   function loadEnvironment(presetOrUrl, onLoaded, onError) {
     const url = HDR_PRESET_MAP[presetOrUrl] || (HDR_PRESETS.find(p => p.id === presetOrUrl)?.url) || presetOrUrl;
     if (!url) return;
 
     currentPreset = presetOrUrl;
 
-    rgbeLoader.load(
-      url,
-      (hdrTexture) => {
-        if (currentEnvTexture) {
-          disposeTexture(currentEnvTexture);
+    // Fast-path: Instant synchronous swap if already in cache
+    if (globalTextureCache.has(url)) {
+      const cachedTexture = globalTextureCache.get(url);
+      currentEnvTexture = cachedTexture;
+      if (scene) {
+        scene.environment = cachedTexture;
+        // Keep solid background color as is unless scene background is explicitly set to environment skybox
+        if (scene.background && scene.background.isTexture) {
+          scene.background = cachedTexture;
         }
-        hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
-        currentEnvTexture = pmremGenerator.fromEquirectangular(hdrTexture).texture;
-        hdrTexture.dispose();
+      }
+      if (typeof onLoaded === "function") {
+        onLoaded(cachedTexture);
+      }
+      return;
+    }
 
-        scene.environment = currentEnvTexture;
-
+    // Asynchronous load if not yet cached
+    loadHdrTexture(presetOrUrl)
+      .then((envTexture) => {
+        currentEnvTexture = envTexture;
+        if (scene) {
+          scene.environment = envTexture;
+          if (scene.background && scene.background.isTexture) {
+            scene.background = envTexture;
+          }
+        }
         if (typeof onLoaded === "function") {
-          onLoaded(currentEnvTexture);
+          onLoaded(envTexture);
         }
-      },
-      undefined,
-      (err) => {
-        console.warn("Could not load HDR environment from:", url, err);
+      })
+      .catch((err) => {
         if (typeof onError === "function") {
           onError(err);
         }
-      }
-    );
+      });
   }
 
   function applyBackground(sceneConfig) {
@@ -152,10 +225,6 @@ export function createEnvironmentManager({ scene, renderer }) {
   }
 
   function dispose() {
-    if (currentEnvTexture) {
-      disposeTexture(currentEnvTexture);
-      currentEnvTexture = null;
-    }
     if (pmremGenerator) {
       pmremGenerator.dispose();
       pmremGenerator = null;
@@ -164,6 +233,7 @@ export function createEnvironmentManager({ scene, renderer }) {
 
   return {
     loadEnvironment,
+    preloadPresets,
     applyBackground,
     applyToneMapping,
     getEnvTexture: () => currentEnvTexture,

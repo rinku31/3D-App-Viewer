@@ -56,8 +56,9 @@ export class CameraRig {
     // Speeds & limits
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.0015;
-    this.minDistance = 0.05;
-    this.maxDistance = 500;
+    // Strictly bounded to prevent clipping inside models or zooming out to infinity
+    this.minDistance = options.minDistance || 1.35;
+    this.maxDistance = options.maxDistance || 16.0;
 
     // Auto rotate turntable
     this.autoRotate = Boolean(options.autoRotate || false);
@@ -139,12 +140,19 @@ export class CameraRig {
       const box = new THREE.Box3().setFromObject(targetObjectOrVec);
       if (!box.isEmpty()) {
         box.getCenter(center);
+        const size = box.getSize(new THREE.Vector3());
+        const maxSize = Math.max(size.x, size.y, size.z);
+        const boundingRadius = maxSize / 2;
+
+        // Ensure minimum distance is strictly outside the outer hull of the model
+        this.minDistance = Math.max(0.6, boundingRadius * 1.15);
+        // Ensure max distance doesn't let user zoom into an empty void
+        this.maxDistance = Math.max(7.0, boundingRadius * 6.5);
+
         if (distance === null) {
-          const size = box.getSize(new THREE.Vector3());
-          const maxSize = Math.max(size.x, size.y, size.z);
           const fovRad = THREE.MathUtils.degToRad(this.camera.fov / 2);
-          distance = (maxSize / 2) / Math.tan(fovRad) * 1.5;
-          if (distance < 0.2) distance = 2.0;
+          distance = (boundingRadius) / Math.tan(fovRad) * 1.45;
+          if (distance < this.minDistance) distance = this.minDistance * 1.5;
         }
       } else {
         targetObjectOrVec.getWorldPosition(center);
@@ -390,10 +398,13 @@ export class CameraRig {
     const prevTargetY = this.currentTarget ? this.currentTarget.y : this.target.y;
     const prevTargetZ = this.currentTarget ? this.currentTarget.z : this.target.z;
 
+    this.targetDistance = THREE.MathUtils.clamp(this.targetDistance, this.minDistance, this.maxDistance);
+
     if (this.enableDamping) {
       this.yaw += (this.targetYaw - this.yaw) * this.dampingFactor;
       this.pitch += (this.targetPitch - this.pitch) * this.dampingFactor;
       this.distance += (this.targetDistance - this.distance) * this.dampingFactor;
+      this.distance = THREE.MathUtils.clamp(this.distance, this.minDistance, this.maxDistance);
       if (this.currentTarget) {
         this.currentTarget.lerp(this.target, this.dampingFactor);
       }

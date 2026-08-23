@@ -392,6 +392,129 @@ canvas {
 }
 
 /* ==========================================================================
+   Viewer Bottom-Right Environment Option Selector
+   ========================================================================== */
+
+.viewer-env-selector {
+  position: absolute;
+  bottom: 22px;
+  right: 20px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  background: rgba(24, 24, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.viewer-env-selector.viewer-chrome-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+}
+
+.env-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.env-btn {
+  position: relative;
+  background: rgba(42, 42, 50, 0.85);
+  color: #c4c4cc;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.env-btn:hover {
+  background: #363644;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.env-btn:active {
+  transform: scale(0.92);
+}
+
+.env-btn.active {
+  background: rgba(68, 214, 44, 0.18);
+  color: #44D62C;
+  border-color: rgba(68, 214, 44, 0.6);
+  box-shadow: 0 0 14px rgba(68, 214, 44, 0.32);
+}
+
+.env-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.env-btn:hover .env-icon {
+  transform: scale(1.1);
+}
+
+.env-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(18, 18, 22, 0.96);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  z-index: 40;
+}
+
+.env-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(18, 18, 22, 0.96) transparent transparent transparent;
+}
+
+.env-btn:hover .env-tooltip,
+.env-btn:focus-visible .env-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
    Responsive & Touch Optimizations
    ========================================================================== */
 
@@ -421,7 +544,25 @@ canvas {
     bottom: 16px;
     padding: 5px 8px;
     gap: 4px;
-    max-width: calc(100vw - 16px);
+    left: 16px;
+    transform: none;
+    max-width: calc(100vw - 180px);
+  }
+
+  .viewer-hud.viewer-chrome-hidden {
+    transform: translateY(14px);
+  }
+
+  .viewer-env-selector {
+    bottom: 16px;
+    right: 16px;
+    padding: 4px 5px;
+    gap: 3px;
+  }
+
+  .env-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .hud-brand {
@@ -457,6 +598,21 @@ canvas {
 
   .hud-btn {
     padding: 8px 11px;
+  }
+
+  .viewer-env-selector {
+    bottom: 14px;
+    right: 10px;
+  }
+
+  .viewer-hud {
+    bottom: 14px;
+    left: 10px;
+  }
+
+  .env-btn {
+    width: 34px;
+    height: 34px;
   }
 }
 

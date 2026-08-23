@@ -18,14 +18,135 @@ let currentSpeedIndex = 1; // Default: 1x
 
 /**
  * Initializes the Viewer HUD overlay, event handlers, keyboard shortcuts,
- * and auto-hide inactivity controller.
+ * environment preset selector, and auto-hide inactivity controller.
  */
 export function initializeViewerHUD() {
   createHUDMarkup();
+  createEnvironmentSelectorMarkup();
   bindHUDActions();
+  bindEnvironmentSelectorActions();
   setupInactivityAutoHide();
   setupKeyboardShortcuts();
   updateHudSceneInfo();
+}
+
+/**
+ * Injects the bottom-right Environment Option selector into the DOM.
+ */
+function createEnvironmentSelectorMarkup() {
+  const existing = document.getElementById("viewerEnvSelector");
+  if (existing) existing.remove();
+
+  const envContainer = document.createElement("nav");
+  envContainer.id = "viewerEnvSelector";
+  envContainer.className = "viewer-env-selector";
+  envContainer.setAttribute("aria-label", "Lighting Environment Selector");
+
+  envContainer.innerHTML = `
+    <div class="env-group" role="toolbar" aria-label="Environment Presets">
+      <!-- 1. Balance (Studio Small 09) -->
+      <button class="env-btn active" data-preset="studio_small_09" data-name="Balance" type="button" aria-label="Balance Environment" title="Balance Environment">
+        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2"></path>
+          <path d="M12 20v2"></path>
+          <path d="m4.93 4.93 1.41 1.41"></path>
+          <path d="m17.66 17.66 1.41 1.41"></path>
+          <path d="M2 12h2"></path>
+          <path d="M20 12h2"></path>
+          <path d="m6.34 17.66-1.41 1.41"></path>
+          <path d="m19.07 4.93-1.41 1.41"></path>
+        </svg>
+        <span class="env-tooltip">Balance</span>
+      </button>
+
+      <!-- 2. Urban (Potsdamer Platz) -->
+      <button class="env-btn" data-preset="potsdamer_platz" data-name="Urban" type="button" aria-label="Urban Environment" title="Urban Environment">
+        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"></path>
+          <path d="M5 21V7l8-4v18"></path>
+          <path d="M19 21V11l-6-4"></path>
+          <path d="M9 9h1"></path>
+          <path d="M9 13h1"></path>
+          <path d="M9 17h1"></path>
+        </svg>
+        <span class="env-tooltip">Urban</span>
+      </button>
+
+      <!-- 3. Nature (Autumn Park) -->
+      <button class="env-btn" data-preset="autumn_ground" data-name="Nature" type="button" aria-label="Nature Environment" title="Nature Environment">
+        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+        </svg>
+        <span class="env-tooltip">Nature</span>
+      </button>
+
+      <!-- 4. Industrial (Aircraft Workshop) -->
+      <button class="env-btn" data-preset="aircraft_workshop" data-name="Industrial" type="button" aria-label="Industrial Environment" title="Industrial Environment">
+        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+          <path d="M17 18h1"></path>
+          <path d="M12 18h1"></path>
+          <path d="M7 18h1"></path>
+        </svg>
+        <span class="env-tooltip">Industrial</span>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(envContainer);
+  state.envSelector = envContainer;
+}
+
+/**
+ * Binds click events to instantly switch environment HDR preset while preserving solid background color.
+ */
+function bindEnvironmentSelectorActions() {
+  const container = document.getElementById("viewerEnvSelector");
+  if (!container) return;
+
+  container.querySelectorAll(".env-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const preset = btn.getAttribute("data-preset");
+      if (!preset || !state.environmentManager) return;
+
+      // Update active button state
+      updateActiveEnvButton(preset);
+
+      // Instantaneous environment switch
+      state.environmentManager.loadEnvironment(preset, () => {
+        state.visibilityDirty = true;
+      });
+
+      // Update scene document if present
+      if (state.sceneDocument) {
+        if (!state.sceneDocument.scene) state.sceneDocument.scene = {};
+        if (!state.sceneDocument.scene.environment) state.sceneDocument.scene.environment = {};
+        state.sceneDocument.scene.environment.preset = preset;
+      }
+    });
+  });
+}
+
+/**
+ * Updates the active visual indicator for environment preset buttons.
+ */
+export function updateActiveEnvButton(activePreset) {
+  const container = document.getElementById("viewerEnvSelector");
+  if (!container) return;
+
+  const normalized = activePreset === "balance" ? "studio_small_09"
+    : activePreset === "urban" ? "potsdamer_platz"
+    : activePreset === "nature" ? "autumn_ground"
+    : activePreset === "industrial" ? "aircraft_workshop"
+    : activePreset;
+
+  container.querySelectorAll(".env-btn").forEach((btn) => {
+    const isTarget = btn.getAttribute("data-preset") === normalized;
+    btn.classList.toggle("active", isTarget);
+  });
 }
 
 /**
@@ -337,17 +458,21 @@ function updateFullscreenUI(isFullscreen) {
 }
 
 /**
- * Sanitizes and updates the product showcase title, removing trailing " Scene".
+ * Sanitizes and updates the product showcase title, removing trailing " Scene",
+ * and syncs active environment preset button.
  */
 export function updateHudSceneInfo() {
   const titleEl = document.getElementById("hudSceneTitle");
-  if (!titleEl) return;
+  if (titleEl) {
+    let rawTitle = state.sceneDocument?.metadata?.title || state.currentModel?.name || "Viper V4 Pro";
+    // Remove " Scene" suffix if present
+    const cleanedTitle = rawTitle.replace(/\s+Scene$/i, "").trim() || "Product Showcase";
+    titleEl.textContent = cleanedTitle;
+  }
 
-  let rawTitle = state.sceneDocument?.metadata?.title || state.currentModel?.name || "Viper V4 Pro";
-  // Remove " Scene" suffix if present
-  const cleanedTitle = rawTitle.replace(/\s+Scene$/i, "").trim() || "Product Showcase";
-
-  titleEl.textContent = cleanedTitle;
+  // Sync active environment preset indicator
+  const activePreset = state.sceneDocument?.scene?.environment?.preset || state.environmentManager?.getCurrentPreset() || "studio_small_09";
+  updateActiveEnvButton(activePreset);
 }
 
 /**
@@ -358,12 +483,13 @@ export function refreshTourSteps() {
 }
 
 /**
- * Sets up inactivity auto-hide for header and floating HUD.
+ * Sets up inactivity auto-hide for header, floating HUD, and environment selector.
  * Fades out overlay controls after 3.5s of inactivity unless hovered.
  */
 function setupInactivityAutoHide() {
   const header = document.getElementById("viewerHeader");
   const hud = document.getElementById("viewerHud");
+  const envSelector = document.getElementById("viewerEnvSelector");
 
   const resetTimer = () => {
     setChromeVisible(true);
@@ -383,7 +509,7 @@ function setupInactivityAutoHide() {
   };
 
   // Hover tracking on UI Chrome
-  [header, hud].forEach((el) => {
+  [header, hud, envSelector].forEach((el) => {
     if (!el) return;
     el.addEventListener("mouseenter", () => {
       state.isChromeHovered = true;
@@ -413,13 +539,16 @@ function setupInactivityAutoHide() {
 export function setChromeVisible(visible) {
   const header = document.getElementById("viewerHeader");
   const hud = document.getElementById("viewerHud");
+  const envSelector = document.getElementById("viewerEnvSelector");
 
   if (visible) {
     header?.classList.remove("viewer-chrome-hidden");
     hud?.classList.remove("viewer-chrome-hidden");
+    envSelector?.classList.remove("viewer-chrome-hidden");
   } else {
     header?.classList.add("viewer-chrome-hidden");
     hud?.classList.add("viewer-chrome-hidden");
+    envSelector?.classList.add("viewer-chrome-hidden");
   }
 }
 

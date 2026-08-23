@@ -41,9 +41,11 @@ export async function bootstrapViewer() {
     updateOverlayPositions();
   });
 
-  // 6. Load Default Environment & Initial Showcase Scene
+  // 6. Load Default Environment, Warm Preset Cache & Initial Showcase Scene
   state.environmentManager.loadEnvironment("studio_small_09", async () => {
     state.environmentManager.applyBackground({ background: "#222228", backgroundType: "color" });
+    // Preload remaining environment presets in the background for 0ms instantaneous switching
+    state.environmentManager.preloadPresets();
     
     // Auto-load default demo showcase if present
     try {

@@ -1,13 +1,9 @@
 import * as THREE from "three";
-import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 import { CameraRig } from "../camera/CameraRig.js";
 import { state } from "../state/state.js";
-import { HDR_PRESETS } from "../../shared/environment.js";
-import { disposeTexture } from "../../shared/disposal.js";
+import { HDR_PRESETS, createEnvironmentManager } from "../../shared/environment.js";
 
-let pmremGenerator = null;
-let currentEnvTexture = null;
-let rgbeLoader = null;
+let envManager = null;
 
 function initializeRender() {
   const viewport = state.viewport;
@@ -38,7 +34,7 @@ function initializeRender() {
     domElement: renderer.domElement,
     aspect: viewport.clientWidth / viewport.clientHeight,
     fov: state.cameraSettings?.fov || 45,
-    near: state.cameraSettings?.near || 0.01,
+    near: state.cameraSettings?.near || 0.02,
     far: state.cameraSettings?.far || 1000,
     distance: 4,
   });
@@ -76,13 +72,14 @@ function initializeRender() {
   scene.add(axesHelper);
   state.axesHelper = axesHelper;
 
-  // PMREM Generator & HDR Environment loader
-  pmremGenerator = new THREE.PMREMGenerator(renderer);
-  pmremGenerator.compileEquirectangularShader();
-  rgbeLoader = new RGBELoader();
+  // Environment Manager with Texture Cache & Preloading
+  envManager = createEnvironmentManager({ scene, renderer });
+  state.environmentManager = envManager;
 
-  // Load default environment
-  loadEnvironment(state.sceneSettings?.environment?.preset || "studio_small_09");
+  // Load initial environment and preload remaining presets for 0ms instant switching
+  const initialPreset = state.sceneSettings?.environment?.preset || "studio_small_09";
+  loadEnvironment(initialPreset);
+  envManager.preloadPresets();
 
   // Apply initial background
   applyBackgroundSettings();
@@ -97,64 +94,22 @@ function initializeRender() {
 }
 
 /**
- * Loads an HDR Environment by preset name or direct URL
+ * Loads an HDR Environment by preset name or direct URL with 0ms instant cached switching
  */
 function loadEnvironment(presetOrUrl) {
-  if (!rgbeLoader || !pmremGenerator || !state.scene) return;
-
-  const found = HDR_PRESETS.find((p) => p.id === presetOrUrl);
-  const url = found ? found.url : presetOrUrl;
-  if (!url) return;
-
-  rgbeLoader.load(
-    url,
-    (hdrTexture) => {
-      if (currentEnvTexture) {
-        disposeTexture(currentEnvTexture);
-      }
-      currentEnvTexture = pmremGenerator.fromEquirectangular(hdrTexture).texture;
-      hdrTexture.dispose();
-
-      state.scene.environment = currentEnvTexture;
-      if (state.sceneSettings.backgroundType === "environment") {
-        state.scene.background = currentEnvTexture;
-      }
-
-      applyEnvironmentParams();
-      applyBackgroundSettings();
-    },
-    undefined,
-    (err) => {
-      console.warn("Could not load HDR environment from:", url, err);
-      // Fallback ambient environment
-      applyBackgroundSettings();
-    }
-  );
+  if (!envManager) return;
+  envManager.loadEnvironment(presetOrUrl, () => {
+    applyEnvironmentParams();
+    applyBackgroundSettings();
+  });
 }
 
 /**
  * Applies background type, color, and blur
  */
 function applyBackgroundSettings() {
-  if (!state.scene) return;
-
-  const bgType = state.sceneSettings?.backgroundType || "color";
-  const bgColor = state.sceneSettings?.background || "#222228";
-  const blur = Number(state.sceneSettings?.backgroundBlur || 0);
-
-  if (bgType === "transparent") {
-    state.scene.background = null;
-    if (state.renderer) state.renderer.setClearColor(0x000000, 0);
-  } else if (bgType === "environment") {
-    state.scene.background = currentEnvTexture || new THREE.Color(bgColor);
-    if ("backgroundBlurriness" in state.scene) {
-      state.scene.backgroundBlurriness = blur;
-    }
-  } else {
-    state.scene.background = new THREE.Color(bgColor);
-    if ("backgroundBlurriness" in state.scene) {
-      state.scene.backgroundBlurriness = 0;
-    }
+  if (envManager) {
+    envManager.applyBackground(state.sceneSettings);
   }
 }
 
@@ -165,21 +120,11 @@ function applyEnvironmentParams() {
   if (!state.scene || !state.renderer) return;
 
   const env = state.sceneSettings?.environment || {};
-  const intensity = env.intensity !== undefined ? Number(env.intensity) : 1.0;
-  const exposure = env.exposure !== undefined ? Number(env.exposure) : 1.6;
-  const rotationDeg = env.rotation !== undefined ? Number(env.rotation) : 0.0;
-  const rotationRad = THREE.MathUtils.degToRad(rotationDeg);
-  const toneMappingStr = env.toneMapping || "ACESFilmic";
+  if (envManager) {
+    envManager.applyToneMapping(env);
+  }
 
-  if ("environmentIntensity" in state.scene) {
-    state.scene.environmentIntensity = intensity;
-  }
-  if ("environmentRotation" in state.scene) {
-    state.scene.environmentRotation.y = rotationRad;
-  }
-  if ("backgroundRotation" in state.scene) {
-    state.scene.backgroundRotation.y = rotationRad;
-  }
+  const intensity = env.intensity !== undefined ? Number(env.intensity) : 1.0;
 
   // Also adjust materials if model is present
   if (state.currentModel) {
@@ -188,30 +133,6 @@ function applyEnvironmentParams() {
         obj.material.envMapIntensity = intensity * 2.5;
       }
     });
-  }
-
-  state.renderer.toneMappingExposure = exposure;
-
-  switch (toneMappingStr) {
-    case "AgX":
-      state.renderer.toneMapping = THREE.AgXToneMapping || THREE.ACESFilmicToneMapping;
-      break;
-    case "Cineon":
-      state.renderer.toneMapping = THREE.CineonToneMapping;
-      break;
-    case "Reinhard":
-      state.renderer.toneMapping = THREE.ReinhardToneMapping;
-      break;
-    case "Linear":
-      state.renderer.toneMapping = THREE.LinearToneMapping;
-      break;
-    case "None":
-      state.renderer.toneMapping = THREE.NoToneMapping;
-      break;
-    case "ACESFilmic":
-    default:
-      state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      break;
   }
 }
 
