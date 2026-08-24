@@ -16,34 +16,33 @@ export function initializeRender() {
   scene.background = new THREE.Color(0x222228);
   state.scene = scene;
 
+  const viewport = document.getElementById("viewport") || document.body;
+
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
   });
 
-  renderer.setSize(
-    window.innerWidth * state.qualityScale,
-    window.innerHeight * state.qualityScale,
-    false
-  );
-  renderer.domElement.style.width = "100%";
-  renderer.domElement.style.height = "100%";
-  renderer.domElement.style.imageRendering = "auto";
-  renderer.setPixelRatio(1);
+  const width = viewport.clientWidth || window.innerWidth || 300;
+  const height = viewport.clientHeight || window.innerHeight || 150;
+  const aspect = height > 0 ? (width / height) : 1;
+
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.6;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  document.body.appendChild(renderer.domElement);
+  viewport.appendChild(renderer.domElement);
   state.renderer = renderer;
 
   // Initialize shared CameraRig
   const cameraRig = new CameraRig({
     scene,
     domElement: renderer.domElement,
-    aspect: window.innerWidth / window.innerHeight,
+    aspect: aspect,
     fov: 45,
     near: 0.01,
     far: 1000,
@@ -59,8 +58,20 @@ export function initializeRender() {
   // Environment Manager
   state.environmentManager = createEnvironmentManager({ scene, renderer });
 
-  // Initial resize event listener
+  // Initial resize event listeners
   window.addEventListener("resize", handleResize);
+
+  if (window.ResizeObserver && viewport) {
+    const ro = new ResizeObserver(() => {
+      handleResize();
+    });
+    ro.observe(viewport);
+  }
+
+  // Defer an initial resize check in case layout calculates asynchronously in Firefox
+  requestAnimationFrame(() => {
+    handleResize();
+  });
 
   return { scene, camera: cameraRig.camera, cameraRig, renderer };
 }
@@ -71,14 +82,21 @@ export function initializeRender() {
 export function handleResize() {
   if (!state.camera || !state.renderer) return;
 
-  state.camera.aspect = window.innerWidth / window.innerHeight;
+  const viewport = document.getElementById("viewport") || document.body;
+  const width = viewport.clientWidth || window.innerWidth || 300;
+  const height = viewport.clientHeight || window.innerHeight || 150;
+
+  if (width <= 0 || height <= 0) return;
+
+  state.camera.aspect = width / height;
   state.camera.updateProjectionMatrix();
 
-  state.renderer.setSize(
-    window.innerWidth * state.qualityScale,
-    window.innerHeight * state.qualityScale,
-    false
-  );
+  state.renderer.setSize(width, height);
+
+  // Immediately render to prevent unpainted buffer frames
+  if (state.scene) {
+    state.renderer.render(state.scene, state.camera);
+  }
 
   state.visibilityDirty = true;
 }

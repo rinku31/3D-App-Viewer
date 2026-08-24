@@ -29,13 +29,32 @@ gltfLoader.setDRACOLoader(dracoLoader);
  * Loads a GLB 3D model from a URL or File object.
  * @param {string | File} source - URL string or File object
  * @param {string} [modelName] - Optional name of the model
+ * @param {File | object} [companionJson] - Optional companion JSON document
+ * @param {File[]} [allFiles] - Optional companion files (textures, bin)
  */
-export async function loadViewerModel(source, modelName = "Product", companionJson = null) {
+export async function loadViewerModel(source, modelName = "Product", companionJson = null, allFiles = []) {
   let url = source;
   let isBlob = false;
+  const fileUrlMap = new Map();
 
   if (source instanceof File) {
-    url = URL.createObjectURL(source);
+    if (allFiles && allFiles.length > 1) {
+      allFiles.forEach((f) => {
+        fileUrlMap.set(f.name, URL.createObjectURL(f));
+      });
+
+      gltfLoader.manager.setURLModifier((u) => {
+        const cleanName = u.split("/").pop().split("?")[0];
+        if (fileUrlMap.has(cleanName)) {
+          return fileUrlMap.get(cleanName);
+        }
+        return u;
+      });
+
+      url = fileUrlMap.get(source.name) || URL.createObjectURL(source);
+    } else {
+      url = URL.createObjectURL(source);
+    }
     isBlob = true;
     modelName = source.name.replace(/\.[^/.]+$/, "");
   } else if (typeof source === "string") {
@@ -100,6 +119,9 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
     if (isBlob && url) {
       URL.revokeObjectURL(url);
     }
+    fileUrlMap.forEach((blobUrl) => {
+      URL.revokeObjectURL(blobUrl);
+    });
   }
 }
 
@@ -139,15 +161,16 @@ export function loadViewerSceneJson(rawData, defaultModelName = "Product") {
 
   // Apply Subsystems
   applyViewerSceneSettings();
-  applyCameraAndModelTransforms();
-  syncViewerLights();
-  buildHotspotOverlays();
-  refreshTourSteps();
 
   // If no 3D model is in scene, generate procedural product geometry so hotspots and lighting have physical presence
   if (!state.currentModel) {
     createProceduralProductModel(defaultModelName);
   }
+
+  applyCameraAndModelTransforms();
+  syncViewerLights();
+  buildHotspotOverlays();
+  refreshTourSteps();
 
   state.visibilityDirty = true;
   return migrated;
@@ -249,6 +272,10 @@ export function createProceduralProductModel(name = "Viper V4 Pro") {
 
   state.currentModel = group;
   state.scene.add(group);
+
+  // Auto-frame camera rig to procedural model
+  frameViewerModel(group);
+
   return group;
 }
 

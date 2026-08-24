@@ -16,8 +16,9 @@ export function initializeRender() {
   scene.background = new THREE.Color(0x222228);
   state.scene = scene;
 
-  const width = Math.max(window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 300, 10);
-  const height = Math.max(window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 150, 10);
+  const viewport = document.getElementById("viewport") || document.body;
+  const width = viewport.clientWidth || window.innerWidth || 300;
+  const height = viewport.clientHeight || window.innerHeight || 150;
   const aspect = height > 0 ? (width / height) : 1;
 
   const renderer = new THREE.WebGLRenderer({
@@ -25,23 +26,15 @@ export function initializeRender() {
     powerPreference: "high-performance",
   });
 
-  renderer.setSize(
-    width * state.qualityScale,
-    height * state.qualityScale,
-    false
-  );
-  renderer.domElement.style.width = "100%";
-  renderer.domElement.style.height = "100%";
-  renderer.domElement.style.display = "block";
-  renderer.domElement.style.imageRendering = "auto";
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.6;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  document.body.appendChild(renderer.domElement);
+  viewport.appendChild(renderer.domElement);
   state.renderer = renderer;
 
   // Initialize shared CameraRig
@@ -67,11 +60,11 @@ export function initializeRender() {
   // Initial resize event listeners
   window.addEventListener("resize", handleResize);
 
-  if (window.ResizeObserver) {
+  if (window.ResizeObserver && viewport) {
     const ro = new ResizeObserver(() => {
       handleResize();
     });
-    ro.observe(document.body);
+    ro.observe(viewport);
   }
 
   // Defer an initial resize check in case iframe dimensions calculate asynchronously in Firefox
@@ -88,18 +81,20 @@ export function initializeRender() {
 export function handleResize() {
   if (!state.camera || !state.renderer) return;
 
-  const width = Math.max(window.innerWidth || document.documentElement.clientWidth || document.body?.clientWidth || 300, 10);
-  const height = Math.max(window.innerHeight || document.documentElement.clientHeight || document.body?.clientHeight || 150, 10);
+  const viewport = document.getElementById("viewport") || document.body;
+  const width = viewport.clientWidth || window.innerWidth || 300;
+  const height = viewport.clientHeight || window.innerHeight || 150;
 
-  if (width > 0 && height > 0) {
-    state.camera.aspect = width / height;
-    state.camera.updateProjectionMatrix();
+  if (width <= 0 || height <= 0) return;
 
-    state.renderer.setSize(
-      width * state.qualityScale,
-      height * state.qualityScale,
-      false
-    );
+  state.camera.aspect = width / height;
+  state.camera.updateProjectionMatrix();
+
+  state.renderer.setSize(width, height);
+
+  // Immediately render to prevent unpainted buffer frames
+  if (state.scene) {
+    state.renderer.render(state.scene, state.camera);
   }
 
   state.visibilityDirty = true;

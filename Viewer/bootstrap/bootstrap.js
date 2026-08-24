@@ -132,7 +132,7 @@ function setupFileListeners() {
 
       if (glbFile) {
         const modelBaseName = glbFile.name.replace(/\.[^/.]+$/, "");
-        await loadViewerModel(glbFile, modelBaseName, jsonFile);
+        await loadViewerModel(glbFile, modelBaseName, jsonFile, files);
       } else if (jsonFile) {
         try {
           const text = await jsonFile.text();
@@ -164,7 +164,7 @@ function setupFileListeners() {
 
     if (glbFile) {
       const modelBaseName = glbFile.name.replace(/\.[^/.]+$/, "");
-      await loadViewerModel(glbFile, modelBaseName, jsonFile);
+      await loadViewerModel(glbFile, modelBaseName, jsonFile, files);
     } else if (jsonFile) {
       try {
         const text = await jsonFile.text();
