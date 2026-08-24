@@ -15,8 +15,10 @@ import { syncViewerLights } from "../lights/lights.js";
 import { buildHotspotOverlays, clearHotspotOverlays } from "../overlay/overlay.js";
 import { refreshTourSteps, updateHudSceneInfo, showLoading, hideLoading } from "../ui/hud.js";
 
+const dracoPath = new URL("../../libs/draco/gltf/", import.meta.url).href;
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+dracoLoader.setDecoderPath(dracoPath);
+dracoLoader.setDecoderConfig({ type: "wasm" });
 dracoLoader.preload();
 
 const gltfLoader = new GLTFLoader();

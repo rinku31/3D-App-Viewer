@@ -7,8 +7,10 @@ import { initializeEditor } from "./bootstrap/bootstrap.js";
 state.viewport = document.getElementById("viewport");
 initializeRender();
 
+const dracoPath = new URL("../libs/draco/gltf/", import.meta.url).href;
 const draco = new DRACOLoader();
-draco.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+draco.setDecoderPath(dracoPath);
+draco.setDecoderConfig({ type: "wasm" });
 draco.preload();
 
 const loader = new GLTFLoader();
