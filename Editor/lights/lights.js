@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 
 import { clearSelection, setSelection, state, notifySelectionChanged } from "../state/state.js";
 import { select, deselect } from "../selection/selection.js";
@@ -8,6 +9,188 @@ import { applyStudioPreset, STUDIO_LIGHTING_PRESETS } from "../../shared/lights.
 const lightTexture = new THREE.TextureLoader().load(
   "https://threejs.org/examples/textures/sprites/disc.png"
 );
+
+/**
+ * Converts Kelvin color temperature (1000K - 12000K) to hex color string
+ */
+export function kelvinToHex(kelvin) {
+  const temp = Math.max(1000, Math.min(12000, Number(kelvin))) / 100;
+  let red, green, blue;
+
+  // Red
+  if (temp <= 66) {
+    red = 255;
+  } else {
+    red = temp - 60;
+    red = 329.698727446 * Math.pow(red, -0.1332047592);
+    red = Math.min(255, Math.max(0, red));
+  }
+
+  // Green
+  if (temp <= 66) {
+    green = temp;
+    green = 99.4708025861 * Math.log(green) - 161.1195681661;
+    green = Math.min(255, Math.max(0, green));
+  } else {
+    green = temp - 60;
+    green = 288.1221695283 * Math.pow(green, -0.0755148492);
+    green = Math.min(255, Math.max(0, green));
+  }
+
+  // Blue
+  if (temp >= 66) {
+    blue = 255;
+  } else if (temp <= 19) {
+    blue = 0;
+  } else {
+    blue = temp - 10;
+    blue = 138.5177312231 * Math.log(blue) - 305.0447927307;
+    blue = Math.min(255, Math.max(0, blue));
+  }
+
+  const r = Math.round(red).toString(16).padStart(2, "0");
+  const g = Math.round(green).toString(16).padStart(2, "0");
+  const b = Math.round(blue).toString(16).padStart(2, "0");
+  return `#${r}${g}${b}`;
+}
+
+export const KELVIN_PRESETS = [
+  { name: "Warm Tungsten (2700K)", kelvin: 2700, color: kelvinToHex(2700) },
+  { name: "Studio Halogen (3200K)", kelvin: 3200, color: kelvinToHex(3200) },
+  { name: "Fluorescent (4000K)", kelvin: 4000, color: kelvinToHex(4000) },
+  { name: "Direct Sunlight (5500K)", kelvin: 5500, color: kelvinToHex(5500) },
+  { name: "Daylight D65 (6500K)", kelvin: 6500, color: kelvinToHex(6500) },
+  { name: "Overcast Sky (7500K)", kelvin: 7500, color: kelvinToHex(7500) },
+];
+
+export const CYCLES_LIGHTING_PRESETS = {
+  cycles_studio: {
+    id: "cycles_studio",
+    name: "Blender Cycles Studio (3-Point)",
+    description: "Soft warm key sun with cool area fill and crisp rim edge, matching Cycles studio renders.",
+    lights: [
+      {
+        name: "Key Sun Light",
+        type: "directional",
+        color: kelvinToHex(5500),
+        intensity: 3.5,
+        position: [3.2, 4.2, 3.2],
+        target: [0, 0, 0],
+        castShadow: true,
+        radius: 2.0,
+      },
+      {
+        name: "Fill Softbox Area",
+        type: "area",
+        color: kelvinToHex(6500),
+        intensity: 12.0,
+        width: 3.0,
+        height: 3.0,
+        position: [-3.5, 2.5, 2.2],
+        target: [0, 0, 0],
+      },
+      {
+        name: "Rim Backlight",
+        type: "directional",
+        color: "#ffffff",
+        intensity: 2.8,
+        position: [0.0, 3.8, -4.0],
+        target: [0, 0, 0],
+        castShadow: false,
+      }
+    ]
+  },
+  cycles_product: {
+    id: "cycles_product",
+    name: "Cycles Product Showcase",
+    description: "Top overhead softbox with high-contrast dual edge kickers for crisp product definition.",
+    lights: [
+      {
+        name: "Overhead Top Softbox",
+        type: "area",
+        color: "#ffffff",
+        intensity: 18.0,
+        width: 4.0,
+        height: 4.0,
+        position: [0.0, 5.0, 0.5],
+        target: [0, 0, 0],
+      },
+      {
+        name: "Left Kicker Spot",
+        type: "spot",
+        color: kelvinToHex(6000),
+        intensity: 35.0,
+        position: [-4.0, 2.0, -2.5],
+        target: [0, 0, 0],
+        angle: Math.PI / 4,
+        penumbra: 0.5,
+        castShadow: true,
+        radius: 2.5,
+      },
+      {
+        name: "Right Kicker Spot",
+        type: "spot",
+        color: kelvinToHex(5000),
+        intensity: 35.0,
+        position: [4.0, 2.0, -2.5],
+        target: [0, 0, 0],
+        angle: Math.PI / 4,
+        penumbra: 0.5,
+        castShadow: true,
+        radius: 2.5,
+      }
+    ]
+  },
+  cycles_sun: {
+    id: "cycles_sun",
+    name: "Cycles Outdoor Sun",
+    description: "High-power crisp directional sun at 5500K with deep contact ground shadows.",
+    lights: [
+      {
+        name: "Direct Sunlight",
+        type: "directional",
+        color: kelvinToHex(5500),
+        intensity: 4.5,
+        position: [4.5, 6.5, 3.0],
+        target: [0, 0, 0],
+        castShadow: true,
+        radius: 1.5,
+      },
+      {
+        name: "Sky Ambient Bounce",
+        type: "ambient",
+        color: kelvinToHex(7500),
+        intensity: 0.35,
+      }
+    ]
+  },
+  cycles_moody: {
+    id: "cycles_moody",
+    name: "Cycles Cinematic Moody",
+    description: "Dramatic low-key rim lighting with warm tungsten accent and sharp edge falloff.",
+    lights: [
+      {
+        name: "Warm Rim Point",
+        type: "point",
+        color: kelvinToHex(2700),
+        intensity: 45.0,
+        position: [-2.5, 3.0, -3.0],
+        castShadow: true,
+        radius: 3.0,
+      },
+      {
+        name: "Cool Side Softbox",
+        type: "area",
+        color: kelvinToHex(7500),
+        intensity: 14.0,
+        width: 3.0,
+        height: 3.0,
+        position: [3.5, 1.8, 2.0],
+        target: [0, 0, 0],
+      }
+    ]
+  }
+};
 
 function createLightSprite(colorHex, scale = 0.15) {
   const sprite = new THREE.Sprite(
@@ -23,24 +206,27 @@ function createLightSprite(colorHex, scale = 0.15) {
 }
 
 /**
- * Creates a Directional Light in the scene
+ * Creates a Directional / Sun Light in the scene (Blender Sun Light model)
  */
 function createDirectionalLight(options = {}) {
   const color = options.color || "#ffffff";
   const intensity = options.intensity !== undefined ? Number(options.intensity) : 3.5;
   const castShadow = options.castShadow !== undefined ? Boolean(options.castShadow) : true;
+  const radius = options.radius !== undefined ? Number(options.radius) : 2.0;
 
   const light = new THREE.DirectionalLight(new THREE.Color(color), intensity);
-  const pos = options.position || [2, 3, 2];
+  const pos = options.position || [2.5, 4.0, 2.5];
   light.position.set(pos[0], pos[1], pos[2]);
   light.castShadow = castShadow;
 
   if (light.shadow) {
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
     light.shadow.camera.near = 0.1;
-    light.shadow.camera.far = 50;
-    light.shadow.bias = -0.0005;
+    light.shadow.camera.far = 40;
+    light.shadow.bias = -0.0001;
+    light.shadow.normalBias = 0.02;
+    light.shadow.radius = radius;
   }
 
   const target = new THREE.Object3D();
@@ -74,7 +260,7 @@ function createDirectionalLight(options = {}) {
 
   const lightData = {
     id: options.id || "dir_light_" + Date.now().toString(36),
-    name: options.name || "Directional Light",
+    name: options.name || "Sun Light",
     type: "directional",
     light,
     helper,
@@ -84,6 +270,7 @@ function createDirectionalLight(options = {}) {
     line,
     color,
     intensity,
+    radius,
     castShadow,
   };
 
@@ -96,24 +283,27 @@ function createDirectionalLight(options = {}) {
 }
 
 /**
- * Creates a Point Light in the scene
+ * Creates a Point Light in the scene (Blender Point Light model with inverse-square falloff)
  */
 function createPointLight(options = {}) {
   const color = options.color || "#ffaa33";
-  const intensity = options.intensity !== undefined ? Number(options.intensity) : 25.0;
+  const intensity = options.intensity !== undefined ? Number(options.intensity) : 30.0;
   const distance = options.distance !== undefined ? Number(options.distance) : 0;
-  const decay = options.decay !== undefined ? Number(options.decay) : 2;
+  const decay = options.decay !== undefined ? Number(options.decay) : 2.0; // Inverse square
   const castShadow = options.castShadow !== undefined ? Boolean(options.castShadow) : true;
+  const radius = options.radius !== undefined ? Number(options.radius) : 2.0;
 
   const light = new THREE.PointLight(new THREE.Color(color), intensity, distance, decay);
-  const pos = options.position || [0, 2, 0];
+  const pos = options.position || [0, 2.5, 0];
   light.position.set(pos[0], pos[1], pos[2]);
   light.castShadow = castShadow;
 
   if (light.shadow) {
-    light.shadow.mapSize.width = 512;
-    light.shadow.mapSize.height = 512;
-    light.shadow.bias = -0.002;
+    light.shadow.mapSize.width = 1024;
+    light.shadow.mapSize.height = 1024;
+    light.shadow.bias = -0.0005;
+    light.shadow.normalBias = 0.02;
+    light.shadow.radius = radius;
   }
 
   state.scene.add(light);
@@ -139,6 +329,7 @@ function createPointLight(options = {}) {
     intensity,
     distance,
     decay,
+    radius,
     castShadow,
   };
 
@@ -151,16 +342,17 @@ function createPointLight(options = {}) {
 }
 
 /**
- * Creates a Spot Light in the scene
+ * Creates a Spot Light in the scene (Blender Spot Light model with Spot Size & Blend)
  */
 function createSpotLight(options = {}) {
   const color = options.color || "#ffffff";
-  const intensity = options.intensity !== undefined ? Number(options.intensity) : 35.0;
+  const intensity = options.intensity !== undefined ? Number(options.intensity) : 40.0;
   const distance = options.distance !== undefined ? Number(options.distance) : 0;
   const angle = options.angle !== undefined ? Number(options.angle) : Math.PI / 4;
-  const penumbra = options.penumbra !== undefined ? Number(options.penumbra) : 0.3;
-  const decay = options.decay !== undefined ? Number(options.decay) : 2;
+  const penumbra = options.penumbra !== undefined ? Number(options.penumbra) : 0.4;
+  const decay = options.decay !== undefined ? Number(options.decay) : 2.0;
   const castShadow = options.castShadow !== undefined ? Boolean(options.castShadow) : true;
+  const radius = options.radius !== undefined ? Number(options.radius) : 2.0;
 
   const light = new THREE.SpotLight(
     new THREE.Color(color),
@@ -170,14 +362,16 @@ function createSpotLight(options = {}) {
     penumbra,
     decay
   );
-  const pos = options.position || [0, 3.5, 2];
+  const pos = options.position || [0, 3.5, 2.5];
   light.position.set(pos[0], pos[1], pos[2]);
   light.castShadow = castShadow;
 
   if (light.shadow) {
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
-    light.shadow.bias = -0.0005;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
+    light.shadow.bias = -0.0001;
+    light.shadow.normalBias = 0.02;
+    light.shadow.radius = radius;
   }
 
   const target = new THREE.Object3D();
@@ -225,7 +419,80 @@ function createSpotLight(options = {}) {
     angle,
     penumbra,
     decay,
+    radius,
     castShadow,
+  };
+
+  state.lights.push(lightData);
+  syncDefaultLightsState();
+  if (options.select !== false) {
+    selectLight(lightData);
+  }
+  return lightData;
+}
+
+/**
+ * Creates an Area / Softbox Light in the scene (Blender Area Light model)
+ */
+function createAreaLight(options = {}) {
+  const color = options.color || "#ffffff";
+  const intensity = options.intensity !== undefined ? Number(options.intensity) : 15.0;
+  const width = options.width !== undefined ? Number(options.width) : 2.5;
+  const height = options.height !== undefined ? Number(options.height) : 2.5;
+
+  const light = new THREE.RectAreaLight(new THREE.Color(color), intensity, width, height);
+  const pos = options.position || [-2.5, 3.0, 2.5];
+  light.position.set(pos[0], pos[1], pos[2]);
+
+  const target = new THREE.Object3D();
+  const targetPos = options.target || [0, 0, 0];
+  target.position.set(targetPos[0], targetPos[1], targetPos[2]);
+  state.scene.add(target);
+  light.lookAt(target.position);
+
+  state.scene.add(light);
+
+  const lightSprite = createLightSprite(0x38bdf8, 0.16);
+  lightSprite.position.copy(light.position);
+  state.scene.add(lightSprite);
+
+  const targetSprite = createLightSprite(0x00e5ff, 0.12);
+  targetSprite.position.copy(target.position);
+  state.scene.add(targetSprite);
+
+  let helper = null;
+  try {
+    helper = new RectAreaLightHelper(light);
+    light.add(helper);
+  } catch (e) {
+    console.warn("Could not create RectAreaLightHelper:", e);
+  }
+
+  const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+    light.position.clone(),
+    target.position.clone(),
+  ]);
+  const line = new THREE.Line(
+    lineGeometry,
+    new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+  );
+  state.scene.add(line);
+
+  const lightData = {
+    id: options.id || "area_light_" + Date.now().toString(36),
+    name: options.name || "Area Softbox",
+    type: "area",
+    light,
+    helper,
+    target,
+    lightSprite,
+    targetSprite,
+    line,
+    color,
+    intensity,
+    width,
+    height,
+    castShadow: false,
   };
 
   state.lights.push(lightData);
@@ -241,7 +508,7 @@ function createSpotLight(options = {}) {
  */
 function createAmbientLight(options = {}) {
   const color = options.color || "#ffffff";
-  const intensity = options.intensity !== undefined ? Number(options.intensity) : 0.8;
+  const intensity = options.intensity !== undefined ? Number(options.intensity) : 0.4;
 
   const light = new THREE.AmbientLight(new THREE.Color(color), intensity);
   state.scene.add(light);
@@ -280,10 +547,17 @@ function deselectLight() {
 function deleteLight(lightData) {
   if (!lightData) return;
 
-  if (lightData.light) state.scene.remove(lightData.light);
+  if (lightData.light) {
+    if (lightData.helper && lightData.light.children.includes(lightData.helper)) {
+      lightData.light.remove(lightData.helper);
+    }
+    state.scene.remove(lightData.light);
+  }
   if (lightData.lightSprite) state.scene.remove(lightData.lightSprite);
   if (lightData.targetSprite) state.scene.remove(lightData.targetSprite);
-  if (lightData.helper) state.scene.remove(lightData.helper);
+  if (lightData.helper && !lightData.light?.children.includes(lightData.helper)) {
+    state.scene.remove(lightData.helper);
+  }
   if (lightData.line) state.scene.remove(lightData.line);
   if (lightData.target) state.scene.remove(lightData.target);
 
@@ -307,10 +581,15 @@ function deleteSelectedLight() {
 function clearAllLights() {
   const currentLights = [...state.lights];
   currentLights.forEach((l) => {
-    if (l.light) state.scene.remove(l.light);
+    if (l.light) {
+      if (l.helper && l.light.children.includes(l.helper)) {
+        l.light.remove(l.helper);
+      }
+      state.scene.remove(l.light);
+    }
     if (l.lightSprite) state.scene.remove(l.lightSprite);
     if (l.targetSprite) state.scene.remove(l.targetSprite);
-    if (l.helper) {
+    if (l.helper && !l.light?.children.includes(l.helper)) {
       state.scene.remove(l.helper);
       l.helper.dispose?.();
     }
@@ -344,6 +623,9 @@ function updateLights() {
       l.target.updateMatrixWorld(true);
     }
     if (l.light) {
+      if (l.type === "area" && l.target) {
+        l.light.lookAt(l.target.position);
+      }
       l.light.updateMatrixWorld(true);
     }
     if (l.helper) {
@@ -384,7 +666,10 @@ function applyLightingPreset(presetKey) {
     }
   }
 
-  const preset = STUDIO_LIGHTING_PRESETS[presetKey] || STUDIO_LIGHTING_PRESETS.clean_studio;
+  const preset = CYCLES_LIGHTING_PRESETS[presetKey] || 
+                 STUDIO_LIGHTING_PRESETS[presetKey] || 
+                 CYCLES_LIGHTING_PRESETS.cycles_studio;
+
   if (!preset || !preset.lights) return;
 
   preset.lights.forEach((l) => {
@@ -394,28 +679,32 @@ function applyLightingPreset(presetKey) {
       center.z + l.position[2] * scale
     ] : [0, 0, 0];
 
-    if (l.type === "DirectionalLight") {
+    const typeLower = (l.type || "directional").toLowerCase();
+
+    if (typeLower === "directionallight" || typeLower === "directional") {
       createDirectionalLight({
         name: l.name,
         color: l.color,
         intensity: l.intensity,
         position: pos,
         target: [center.x, center.y, center.z],
-        castShadow: l.castShadow,
+        radius: l.radius || 2.0,
+        castShadow: l.castShadow !== false,
         select: false
       });
-    } else if (l.type === "PointLight") {
+    } else if (typeLower === "pointlight" || typeLower === "point") {
       createPointLight({
         name: l.name,
         color: l.color,
         intensity: l.intensity,
         position: pos,
         distance: l.distance || 0,
-        decay: l.decay || 2,
-        castShadow: l.castShadow,
+        decay: l.decay || 2.0,
+        radius: l.radius || 2.0,
+        castShadow: l.castShadow !== false,
         select: false
       });
-    } else if (l.type === "SpotLight") {
+    } else if (typeLower === "spotlight" || typeLower === "spot") {
       createSpotLight({
         name: l.name,
         color: l.color,
@@ -423,11 +712,23 @@ function applyLightingPreset(presetKey) {
         position: pos,
         target: [center.x, center.y, center.z],
         angle: l.angle || Math.PI / 4,
-        penumbra: l.penumbra || 0.2,
-        castShadow: l.castShadow,
+        penumbra: l.penumbra || 0.3,
+        radius: l.radius || 2.0,
+        castShadow: l.castShadow !== false,
         select: false
       });
-    } else if (l.type === "AmbientLight") {
+    } else if (typeLower === "arealight" || typeLower === "area" || typeLower === "rectarea") {
+      createAreaLight({
+        name: l.name,
+        color: l.color,
+        intensity: l.intensity,
+        width: (l.width || 2.5) * scale,
+        height: (l.height || 2.5) * scale,
+        position: pos,
+        target: [center.x, center.y, center.z],
+        select: false
+      });
+    } else if (typeLower === "ambientlight" || typeLower === "ambient") {
       createAmbientLight({
         name: l.name,
         color: l.color,
@@ -454,6 +755,9 @@ function bindLightUI() {
   document.getElementById("addSpotLightBtn")?.addEventListener("click", () => {
     createSpotLight();
   });
+  document.getElementById("addAreaLightBtn")?.addEventListener("click", () => {
+    createAreaLight();
+  });
   document.getElementById("addAmbientLightBtn")?.addEventListener("click", () => {
     createAmbientLight();
   });
@@ -467,6 +771,7 @@ export {
   bindLightUI,
   clearAllLights,
   createAmbientLight,
+  createAreaLight,
   createDirectionalLight,
   createPointLight,
   createSpotLight,

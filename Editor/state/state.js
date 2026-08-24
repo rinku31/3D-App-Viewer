@@ -52,12 +52,17 @@ const state = {
       customHdrUrl: null,
       intensity: 1.0,
       rotation: 0.0,
-      exposure: 1.6,
-      toneMapping: "ACESFilmic",
+      exposure: 1.0,
+      exposureEV: 0.0,
+      toneMapping: "AgX",
+      look: "None", // "None" | "Medium Contrast" | "High Contrast" | "Very High Contrast"
     },
     rendering: {
       shadows: true,
       shadowType: "pcfsoft",
+      contactShadows: true,
+      shadowSoftness: 2.0,
+      blenderCyclesMode: true,
     },
     helpers: {
       grid: true,

@@ -2,6 +2,14 @@ import * as THREE from "three";
 import { CameraRig } from "../camera/CameraRig.js";
 import { state } from "../state/state.js";
 import { HDR_PRESETS, createEnvironmentManager } from "../../shared/environment.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+
+// Initialize uniform library for Blender-style RectAreaLights
+try {
+  RectAreaLightUniformsLib.init();
+} catch (err) {
+  console.warn("RectAreaLightUniformsLib init error:", err);
+}
 
 let envManager = null;
 
@@ -19,10 +27,14 @@ function initializeRender() {
   renderer.setSize(viewport.clientWidth, viewport.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.6;
 
-  // Configure Soft Shadows
+  // Blender 4.0+ AgX Color Management by default
+  renderer.toneMapping = THREE.AgXToneMapping || THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = state.sceneSettings?.environment?.exposure !== undefined 
+    ? Number(state.sceneSettings.environment.exposure) 
+    : 1.0; // 0.0 EV
+
+  // Configure Soft Contact Shadows
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -43,20 +55,23 @@ function initializeRender() {
   state.camera = cameraRig.camera;
   state.controls = cameraRig;
 
-  // Default Ambient Light
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // In Blender Cycles, World Environment (IBL) provides diffuse & specular radiance;
+  // AmbientLight is set to 0 to prevent flattening physical contrast
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.0);
   scene.add(ambientLight);
   state.defaultAmbientLight = ambientLight;
 
-  // Default Directional Light
-  const defaultDir = new THREE.DirectionalLight(0xffffff, 1.8);
-  defaultDir.position.set(4, 6, 4);
+  // Default Key Directional (Sun) Light with tight contact shadow bias
+  const defaultDir = new THREE.DirectionalLight(0xfffdf5, 2.5);
+  defaultDir.position.set(3.5, 5.0, 3.5);
   defaultDir.castShadow = true;
-  defaultDir.shadow.mapSize.width = 1024;
-  defaultDir.shadow.mapSize.height = 1024;
+  defaultDir.shadow.mapSize.width = 2048;
+  defaultDir.shadow.mapSize.height = 2048;
   defaultDir.shadow.camera.near = 0.1;
-  defaultDir.shadow.camera.far = 30;
-  defaultDir.shadow.bias = -0.0005;
+  defaultDir.shadow.camera.far = 40;
+  defaultDir.shadow.bias = -0.0001;
+  defaultDir.shadow.normalBias = 0.02; // Critical for smooth contact shadows without acne
+  defaultDir.shadow.radius = 2.0;     // Soft penumbra
   scene.add(defaultDir);
   state.defaultDirectionalLight = defaultDir;
 
@@ -114,6 +129,27 @@ function applyBackgroundSettings() {
 }
 
 /**
+ * Tight-fit directional shadow camera to model bounding sphere for maximum shadow resolution
+ */
+function fitDirectionalShadowCamera(light = state.defaultDirectionalLight, model = state.currentModel) {
+  if (!light || !light.shadow || !light.shadow.camera || !model) return;
+  const box = new THREE.Box3().setFromObject(model);
+  if (box.isEmpty()) return;
+
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const radius = Math.max(0.5, sphere.radius);
+  const padding = radius * 1.5;
+
+  light.shadow.camera.left = -padding;
+  light.shadow.camera.right = padding;
+  light.shadow.camera.top = padding;
+  light.shadow.camera.bottom = -padding;
+  light.shadow.camera.near = 0.1;
+  light.shadow.camera.far = Math.max(20, sphere.center.distanceTo(light.position) + radius * 3);
+  light.shadow.camera.updateProjectionMatrix();
+}
+
+/**
  * Applies environment intensity, rotation, exposure, and tone mapping
  */
 function applyEnvironmentParams() {
@@ -126,11 +162,11 @@ function applyEnvironmentParams() {
 
   const intensity = env.intensity !== undefined ? Number(env.intensity) : 1.0;
 
-  // Also adjust materials if model is present
+  // Exact 1.0 multiplier matching Blender Cycles World Background Strength
   if (state.currentModel) {
     state.currentModel.traverse((obj) => {
       if (obj.isMesh && obj.material) {
-        obj.material.envMapIntensity = intensity * 2.5;
+        obj.material.envMapIntensity = intensity;
       }
     });
   }
@@ -226,6 +262,7 @@ export {
   HDR_PRESETS,
   applyBackgroundSettings,
   applyEnvironmentParams,
+  fitDirectionalShadowCamera,
   frameModel,
   initializeRender,
   loadEnvironment,

@@ -221,8 +221,11 @@ class="sidebar-tab-panel scrollable-tab-panel"
       <button id="addBtn" class="primary-btn">
         &#10133; Hotspot
       </button>
+      <button id="addAreaLightBtn" class="secondary" title="Add Area Softbox Light">
+        &#128396; Area Softbox
+      </button>
       <button id="addDirectionalLightBtn" class="secondary">
-        &#9889; Directional
+        &#9889; Directional (Sun)
       </button>
       <button id="addPointLightBtn" class="secondary">
         &#128161; Point Light
@@ -230,17 +233,17 @@ class="sidebar-tab-panel scrollable-tab-panel"
       <button id="addSpotLightBtn" class="secondary">
         &#128294; Spot Light
       </button>
+      <button id="addAmbientLightBtn" class="secondary">
+        &#9728; Ambient
+      </button>
     </div>
-    <button id="addAmbientLightBtn" class="secondary" style="width: 100%; margin-bottom: 10px;">
-      &#9728; Ambient Light
-    </button>
 
-    <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Studio Light Presets</div>
+    <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Cycles Lighting Presets</div>
     <div class="button-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
-      <button class="secondary light-preset-btn" data-preset="clean_studio" style="font-size: 11px; padding: 6px 4px;">Clean Studio</button>
-      <button class="secondary light-preset-btn" data-preset="dramatic_contrast" style="font-size: 11px; padding: 6px 4px;">Dramatic Rim</button>
-      <button class="secondary light-preset-btn" data-preset="dark_showcase" style="font-size: 11px; padding: 6px 4px;">Dark Showcase</button>
-      <button class="secondary light-preset-btn" data-preset="outdoor_sun" style="font-size: 11px; padding: 6px 4px;">Outdoor Sun</button>
+      <button class="secondary light-preset-btn" data-preset="cycles_studio" style="font-size: 11px; padding: 6px 4px;" title="Blender 3-Point Studio Setup">Cycles Studio</button>
+      <button class="secondary light-preset-btn" data-preset="cycles_product" style="font-size: 11px; padding: 6px 4px;" title="Product Showcase Top Softbox">Product Showcase</button>
+      <button class="secondary light-preset-btn" data-preset="cycles_sun" style="font-size: 11px; padding: 6px 4px;" title="Outdoor Sun with Contact Shadows">Outdoor Sun</button>
+      <button class="secondary light-preset-btn" data-preset="cycles_moody" style="font-size: 11px; padding: 6px 4px;" title="Moody Low-Key Rim Lighting">Moody Cinematic</button>
     </div>
   </div>
 

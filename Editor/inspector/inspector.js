@@ -5,11 +5,15 @@ import { removeHotspot, updatePanelHTML } from "../hotspots/hotspots.js";
 import {
   applyLightingPreset,
   createAmbientLight,
+  createAreaLight,
   createDirectionalLight,
   createPointLight,
   createSpotLight,
   deleteLight,
   deleteSelectedLight,
+  kelvinToHex,
+  KELVIN_PRESETS,
+  CYCLES_LIGHTING_PRESETS,
   updateLights
 } from "../lights/lights.js";
 import {
@@ -209,17 +213,20 @@ function buildLightInspector(lightData) {
   const isPoint = lightData.type === "point";
   const isSpot = lightData.type === "spot";
   const isDir = lightData.type === "directional";
+  const isArea = lightData.type === "area";
 
   const pos = lightData.light?.position || new THREE.Vector3();
   const targetPos = lightData.target?.position || new THREE.Vector3();
 
-  const typeName = lightData.type ? lightData.type.toUpperCase() + " LIGHT" : "LIGHT";
+  const typeName = lightData.type === "area" 
+    ? "AREA SOFTBOX" 
+    : lightData.type ? lightData.type.toUpperCase() + " LIGHT" : "LIGHT";
 
   return `
     ${buildHeader(typeName, lightData.name || lightData.id, true)}
 
     <div class="section-group">
-      <div class="section-group-title">Light Properties</div>
+      <div class="section-group-title">Blender Cycles Light Properties</div>
       
       <div class="param-row-flex">
         <label>Color</label>
@@ -230,14 +237,36 @@ function buildLightInspector(lightData) {
       </div>
 
       <div class="param-row">
+        <label style="font-size:11px; margin-bottom:4px; display:block; color:var(--text-dim, #999);">Color Temperature (Kelvin)</label>
+        <div class="kelvin-pills-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:4px;">
+          ${KELVIN_PRESETS.map(p => `
+            <button class="kelvin-pill-btn secondary" data-kelvin="${p.kelvin}" data-hex="${p.color}" title="${p.name}" style="font-size:10px; padding:3px 4px; text-align:center; display:flex; align-items:center; justify-content:center; gap:4px;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${p.color}; border:1px solid rgba(255,255,255,0.2);"></span>
+              ${p.kelvin}K
+            </button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="param-row">
         <div class="slider-header">
-          <label>Intensity</label>
+          <label>Power / Intensity</label>
           <div style="display:flex; align-items:center; gap:6px;">
             <input id="prop_light_intensity_num" type="number" min="0" max="1000" step="0.5" value="${Number(lightData.intensity || 1).toFixed(1)}" style="width:68px; text-align:right; background:var(--bg-input, #1e1e24); border:1px solid var(--border-color, #33333e); color:var(--text-main, #fff); border-radius:4px; padding:2px 6px; font-size:0.8rem; font-family:monospace;">
           </div>
         </div>
         <input id="prop_light_intensity" type="range" min="0" max="100" step="0.5" value="${Math.min(Number(lightData.intensity || 1), 100)}">
       </div>
+
+      ${isArea ? `
+      <div class="param-row">
+        <label>Softbox Dimensions (m)</label>
+        <div class="vector2-inputs" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">W</span><input id="prop_area_width" type="number" min="0.1" max="50" step="0.1" value="${(lightData.width || 2.5).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
+          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">H</span><input id="prop_area_height" type="number" min="0.1" max="50" step="0.1" value="${(lightData.height || 2.5).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
+        </div>
+      </div>
+      ` : ""}
 
       ${(isPoint || isSpot) ? `
       <div class="param-row">
@@ -250,7 +279,7 @@ function buildLightInspector(lightData) {
 
       <div class="param-row">
         <div class="slider-header">
-          <label>Decay (Falloff)</label>
+          <label>Decay (Inverse-Square Falloff)</label>
           <span class="value-badge" id="light_decay_val">${(lightData.decay !== undefined ? lightData.decay : 2).toFixed(1)}</span>
         </div>
         <input id="prop_light_decay" type="range" min="0" max="4" step="0.1" value="${lightData.decay !== undefined ? lightData.decay : 2}">
@@ -260,7 +289,7 @@ function buildLightInspector(lightData) {
       ${isSpot ? `
       <div class="param-row">
         <div class="slider-header">
-          <label>Cone Angle</label>
+          <label>Spot Size (Angle)</label>
           <span class="value-badge" id="light_angle_val">${Math.round(THREE.MathUtils.radToDeg(lightData.angle || Math.PI / 4))}°</span>
         </div>
         <input id="prop_light_angle" type="range" min="5" max="85" step="1" value="${Math.round(THREE.MathUtils.radToDeg(lightData.angle || Math.PI / 4))}">
@@ -268,18 +297,26 @@ function buildLightInspector(lightData) {
 
       <div class="param-row">
         <div class="slider-header">
-          <label>Penumbra (Soft Edge)</label>
+          <label>Blend (Penumbra Softness)</label>
           <span class="value-badge" id="light_penumbra_val">${(lightData.penumbra || 0.3).toFixed(2)}</span>
         </div>
         <input id="prop_light_penumbra" type="range" min="0" max="1" step="0.05" value="${lightData.penumbra || 0.3}">
       </div>
       ` : ""}
 
-      ${!isAmbient ? `
+      ${(!isAmbient && !isArea) ? `
+      <div class="param-row">
+        <div class="slider-header">
+          <label>Light Radius (Shadow Softness)</label>
+          <span class="value-badge" id="light_radius_val">${(lightData.radius || 2.0).toFixed(1)}</span>
+        </div>
+        <input id="prop_light_radius" type="range" min="0.5" max="10" step="0.5" value="${lightData.radius || 2.0}">
+      </div>
+
       <div class="param-row-checkbox">
         <label>
           <input id="prop_light_shadow" type="checkbox" ${lightData.castShadow ? "checked" : ""}>
-          Cast Real-Time Shadows
+          Cast Real-Time Contact Shadows
         </label>
       </div>
       ` : ""}
@@ -287,9 +324,9 @@ function buildLightInspector(lightData) {
 
     ${!isAmbient ? buildTransformSection("Light Position", pos) : ""}
 
-    ${(isDir || isSpot) ? `
+    ${(isDir || isSpot || isArea) ? `
     <div class="section-group">
-      <div class="section-group-title">Target Position</div>
+      <div class="section-group-title">Target / Aim Position</div>
       <div class="param-row">
         <div class="vector3-inputs">
           <div class="vec-item"><span class="vec-label x">X</span><input id="prop_target_x" type="number" step="0.1" value="${targetPos.x.toFixed(2)}"></div>
@@ -301,12 +338,12 @@ function buildLightInspector(lightData) {
     ` : ""}
 
     <div class="section-group">
-      <div class="section-group-title">Studio Lighting Presets</div>
+      <div class="section-group-title">Blender Cycles Lighting Presets</div>
       <div class="button-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
-        <button class="secondary light-preset-btn" data-preset="clean_studio" title="Clean 3-Point Studio">Clean Studio</button>
-        <button class="secondary light-preset-btn" data-preset="dramatic_contrast" title="Dramatic Edge & Rim">Dramatic Rim</button>
-        <button class="secondary light-preset-btn" data-preset="dark_showcase" title="Dark Showcase Dual Rim">Dark Showcase</button>
-        <button class="secondary light-preset-btn" data-preset="outdoor_sun" title="Outdoor Sunlight & Fill">Outdoor Sun</button>
+        <button class="secondary light-preset-btn" data-preset="cycles_studio" title="Blender Cycles 3-Point Studio">Cycles Studio</button>
+        <button class="secondary light-preset-btn" data-preset="cycles_product" title="Cycles Product Showcase Top Softbox">Product Showcase</button>
+        <button class="secondary light-preset-btn" data-preset="cycles_sun" title="Cycles Outdoor Sun & Contact Shadows">Outdoor Sun</button>
+        <button class="secondary light-preset-btn" data-preset="cycles_moody" title="Cycles Cinematic Moody Edge">Moody Cinematic</button>
       </div>
     </div>
   `;
@@ -420,8 +457,11 @@ function buildSceneInspector() {
   const rendering = sceneSettings.rendering || {};
   const helpers = sceneSettings.helpers || {};
 
+  const currentExposure = env.exposure !== undefined ? Number(env.exposure) : 1.0;
+  const currentEV = env.exposureEV !== undefined ? Number(env.exposureEV) : Math.log2(Math.max(0.01, currentExposure));
+
   return `
-    ${buildHeader("SCENE", "Scene & Environment Settings")}
+    ${buildHeader("SCENE", "Scene & Blender Color Management")}
 
     <div class="section-group">
       <div class="section-group-title">Background</div>
@@ -450,57 +490,67 @@ function buildSceneInspector() {
     </div>
 
     <div class="section-group">
-      <div class="section-group-title">HDR Environment &amp; Reflection</div>
+      <div class="section-group-title">Blender World &amp; HDR Environment</div>
 
       <div class="param-row">
         <label>Environment Preset</label>
         <select id="prop_scene_env_preset" class="inspector-select">
-          <option value="studio_small_09" ${env.preset === "studio_small_09" ? "selected" : ""}>Studio Small 09 (Balanced)</option>
-          <option value="potsdamer_platz" ${env.preset === "potsdamer_platz" ? "selected" : ""}>Potsdamer Platz (Urban)</option>
-          <option value="autumn_ground" ${env.preset === "autumn_ground" ? "selected" : ""}>Autumn Park (Warm Nature)</option>
-          <option value="aircraft_workshop" ${env.preset === "aircraft_workshop" ? "selected" : ""}>Aircraft Workshop (Industrial)</option>
+          <option value="studio_small_09" ${env.preset === "studio_small_09" ? "selected" : ""}>Studio Small 09 (Balanced Neutral)</option>
+          <option value="potsdamer_platz" ${env.preset === "potsdamer_platz" ? "selected" : ""}>Potsdamer Platz (Urban Daylight)</option>
+          <option value="autumn_ground" ${env.preset === "autumn_ground" ? "selected" : ""}>Autumn Park (Warm Sunlight)</option>
+          <option value="aircraft_workshop" ${env.preset === "aircraft_workshop" ? "selected" : ""}>Aircraft Workshop (High Dynamic Range)</option>
         </select>
       </div>
 
       <div class="param-row">
-        <div class="slider-header"><label>Environment Intensity</label><span class="value-badge" id="val_env_intensity">${Number(env.intensity || 1.0).toFixed(1)}</span></div>
-        <input id="prop_scene_env_intensity" type="range" min="0" max="4.0" step="0.1" value="${env.intensity || 1.0}">
+        <div class="slider-header"><label>World Strength</label><span class="value-badge" id="val_env_intensity">${Number(env.intensity !== undefined ? env.intensity : 1.0).toFixed(2)}</span></div>
+        <input id="prop_scene_env_intensity" type="range" min="0" max="4.0" step="0.05" value="${env.intensity !== undefined ? env.intensity : 1.0}">
       </div>
 
       <div class="param-row">
-        <div class="slider-header"><label>Environment Rotation</label><span class="value-badge" id="val_env_rotation">${Math.round(env.rotation || 0)}°</span></div>
+        <div class="slider-header"><label>World Rotation</label><span class="value-badge" id="val_env_rotation">${Math.round(env.rotation || 0)}°</span></div>
         <input id="prop_scene_env_rotation" type="range" min="0" max="360" step="5" value="${env.rotation || 0}">
       </div>
     </div>
 
     <div class="section-group">
-      <div class="section-group-title">Color Grading &amp; Tone Mapping</div>
+      <div class="section-group-title">Blender Color Management (AgX)</div>
 
       <div class="param-row">
-        <label>Tone Mapping</label>
+        <label>View Transform</label>
         <select id="prop_scene_tonemapping" class="inspector-select">
-          <option value="ACESFilmic" ${env.toneMapping === "ACESFilmic" ? "selected" : ""}>ACES Filmic (Vibrant)</option>
-          <option value="AgX" ${env.toneMapping === "AgX" ? "selected" : ""}>AgX (Realistic)</option>
-          <option value="Cineon" ${env.toneMapping === "Cineon" ? "selected" : ""}>Cineon</option>
+          <option value="AgX" ${env.toneMapping === "AgX" ? "selected" : ""}>AgX (Blender 4.0+ Default)</option>
+          <option value="ACESFilmic" ${env.toneMapping === "ACESFilmic" ? "selected" : ""}>ACES Filmic</option>
+          <option value="Cineon" ${env.toneMapping === "Cineon" ? "selected" : ""}>Filmic / Cineon</option>
           <option value="Reinhard" ${env.toneMapping === "Reinhard" ? "selected" : ""}>Reinhard</option>
-          <option value="Linear" ${env.toneMapping === "Linear" ? "selected" : ""}>Linear</option>
-          <option value="None" ${env.toneMapping === "None" ? "selected" : ""}>None</option>
+          <option value="Linear" ${env.toneMapping === "Linear" ? "selected" : ""}>Standard / Raw Linear</option>
+          <option value="None" ${env.toneMapping === "None" ? "selected" : ""}>None (Unclamped)</option>
         </select>
       </div>
 
       <div class="param-row">
-        <div class="slider-header"><label>Exposure</label><span class="value-badge" id="val_exposure">${Number(env.exposure || 1.6).toFixed(1)}</span></div>
-        <input id="prop_scene_exposure" type="range" min="0.1" max="4.0" step="0.1" value="${env.exposure || 1.6}">
+        <label>Look / Contrast</label>
+        <select id="prop_scene_look" class="inspector-select">
+          <option value="None" ${env.look === "None" ? "selected" : ""}>None (Natural)</option>
+          <option value="Medium Contrast" ${env.look === "Medium Contrast" ? "selected" : ""}>Medium Contrast</option>
+          <option value="High Contrast" ${env.look === "High Contrast" ? "selected" : ""}>High Contrast</option>
+          <option value="Very High Contrast" ${env.look === "Very High Contrast" ? "selected" : ""}>Very High Contrast</option>
+        </select>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Exposure (EV)</label><span class="value-badge" id="val_exposure_ev">${currentEV >= 0 ? "+" : ""}${currentEV.toFixed(2)} EV</span></div>
+        <input id="prop_scene_exposure_ev" type="range" min="-3.0" max="3.0" step="0.1" value="${currentEV.toFixed(2)}">
       </div>
     </div>
 
     <div class="section-group">
-      <div class="section-group-title">Rendering &amp; Helpers</div>
+      <div class="section-group-title">Cycles Rendering &amp; Shadows</div>
 
       <div class="param-row-checkbox">
         <label>
           <input id="prop_scene_shadows" type="checkbox" ${rendering.shadows !== false ? "checked" : ""}>
-          Enable Real-Time Soft Shadows
+          Enable Physically Soft Shadows
         </label>
       </div>
 
@@ -631,6 +681,60 @@ function bindInspectorEvents(type, object, target) {
     const targetX = document.getElementById("prop_target_x");
     const targetY = document.getElementById("prop_target_y");
     const targetZ = document.getElementById("prop_target_z");
+
+    const lightRadius = document.getElementById("prop_light_radius");
+    const areaWidth = document.getElementById("prop_area_width");
+    const areaHeight = document.getElementById("prop_area_height");
+
+    // Kelvin buttons
+    document.querySelectorAll(".kelvin-pill-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const hex = btn.getAttribute("data-hex");
+        if (hex) {
+          object.color = hex;
+          if (object.light) object.light.color.set(hex);
+          if (lightColor) lightColor.value = hex;
+        }
+      });
+    });
+
+    lightRadius?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      object.radius = val;
+      if (object.light?.shadow) {
+        object.light.shadow.radius = val;
+      }
+      const valBadge = document.getElementById("light_radius_val");
+      if (valBadge) valBadge.textContent = val.toFixed(1);
+    });
+
+    areaWidth?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      object.width = val;
+      if (object.light && object.light.isRectAreaLight) {
+        object.light.width = val;
+        if (object.helper) object.helper.update?.();
+      }
+    });
+
+    areaHeight?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      object.height = val;
+      if (object.light && object.light.isRectAreaLight) {
+        object.light.height = val;
+        if (object.helper) object.helper.update?.();
+      }
+    });
+
+    // Preset buttons
+    document.querySelectorAll(".light-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const presetKey = btn.getAttribute("data-preset");
+        if (presetKey) {
+          applyLightingPreset(presetKey);
+        }
+      });
+    });
 
     lightColor?.addEventListener("input", (e) => {
       object.color = e.target.value;
@@ -941,9 +1045,29 @@ function bindInspectorEvents(type, object, target) {
       applyEnvironmentParams();
     });
 
+    const lookSelect = document.getElementById("prop_scene_look");
+    const exposureEV = document.getElementById("prop_scene_exposure_ev");
+
+    lookSelect?.addEventListener("change", (e) => {
+      state.sceneSettings.environment.look = e.target.value;
+      applyEnvironmentParams();
+    });
+
+    exposureEV?.addEventListener("input", (e) => {
+      const evVal = parseFloat(e.target.value);
+      state.sceneSettings.environment.exposureEV = evVal;
+      // Linear exposure = 2^EV
+      const linearExposure = Math.pow(2, evVal);
+      state.sceneSettings.environment.exposure = linearExposure;
+      applyEnvironmentParams();
+      const badge = document.getElementById("val_exposure_ev");
+      if (badge) badge.textContent = `${evVal >= 0 ? "+" : ""}${evVal.toFixed(2)} EV`;
+    });
+
     exposure?.addEventListener("input", (e) => {
       const val = parseFloat(e.target.value);
       state.sceneSettings.environment.exposure = val;
+      state.sceneSettings.environment.exposureEV = Math.log2(Math.max(0.01, val));
       applyEnvironmentParams();
       const badge = document.getElementById("val_exposure");
       if (badge) badge.textContent = val.toFixed(1);
