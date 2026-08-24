@@ -4,6 +4,16 @@
 
 import * as THREE from "three";
 import { disposeHierarchy } from "./disposal.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+
+// Initialize uniform library for Blender Cycles-style RectAreaLights
+try {
+  if (typeof window !== "undefined") {
+    RectAreaLightUniformsLib.init();
+  }
+} catch (err) {
+  // Ignore if already initialized
+}
 
 /**
  * Curated Studio Lighting Presets

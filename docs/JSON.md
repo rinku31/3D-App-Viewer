@@ -156,16 +156,19 @@ The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. I
 ### 3.5 Lights
 - `id` (`string`): Unique light identifier.
 - `name` (`string`): Display name in Hierarchy outliner.
-- `type` (`"directional" | "point" | "spot" | "ambient"`): Light emitter type.
+- `type` (`"directional" | "point" | "spot" | "area" | "ambient"`): Light emitter type.
 - `color` (`string`): Light color in hex format (`#ffffff`).
 - `intensity` (`number >= 0`): Luminous intensity.
 - `castShadow` (`boolean`): Real-time shadow casting toggle.
-- `position` (`[x, y, z]`): Emitter location (point, spot, directional).
-- `target` (`[x, y, z]`): Directional and spotlight aim vector.
+- `position` (`[x, y, z]`): Emitter location (point, spot, directional, area).
+- `target` (`[x, y, z]`): Directional, spotlight, and area softbox aim vector.
+- `width` (`number`, for area softbox): Softbox width in meters (default `2.5`).
+- `height` (`number`, for area softbox): Softbox height in meters (default `2.5`).
 - `distance` (`number`): Attenuation cutoff distance.
 - `decay` (`number`): Physical attenuation falloff rate.
 - `angle` (`number`): Spotlight cone angle in radians.
 - `penumbra` (`number [0 - 1]`): Spotlight cone soft edge ratio.
+- `radius` (`number`): Contact shadow penumbra blur radius (default `2.0`).
 
 ### 3.6 Hotspots & Annotations
 - `id` (`string`): Unique hotspot identifier.

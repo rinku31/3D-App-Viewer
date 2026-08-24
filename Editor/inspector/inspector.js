@@ -18,10 +18,13 @@ import {
 } from "../lights/lights.js";
 import {
   applyBackgroundSettings,
+  applyBloomSettings,
   applyEnvironmentParams,
   frameModel,
+  getBloomSettings,
   loadEnvironment,
   setAxesVisible,
+  setBloomEnabled,
   setGridVisible,
   setShadowsEnabled
 } from "../render/render.js";
@@ -209,18 +212,25 @@ function buildHotspotInspector(hotspot) {
 }
 
 function buildLightInspector(lightData) {
-  const isAmbient = lightData.type === "ambient";
-  const isPoint = lightData.type === "point";
-  const isSpot = lightData.type === "spot";
-  const isDir = lightData.type === "directional";
-  const isArea = lightData.type === "area";
+  const rawType = (lightData.type || "directional").toLowerCase();
+  const isAmbient = rawType.includes("ambient");
+  const isPoint = rawType.includes("point");
+  const isSpot = rawType.includes("spot");
+  const isArea = rawType.includes("area") || rawType.includes("rect");
+  const isDir = !isAmbient && !isPoint && !isSpot && !isArea;
 
   const pos = lightData.light?.position || new THREE.Vector3();
   const targetPos = lightData.target?.position || new THREE.Vector3();
 
-  const typeName = lightData.type === "area" 
+  const typeName = isArea 
     ? "AREA SOFTBOX" 
-    : lightData.type ? lightData.type.toUpperCase() + " LIGHT" : "LIGHT";
+    : isPoint
+    ? "POINT LIGHT"
+    : isSpot
+    ? "SPOT LIGHT"
+    : isAmbient
+    ? "AMBIENT LIGHT"
+    : "DIRECTIONAL LIGHT";
 
   return `
     ${buildHeader(typeName, lightData.name || lightData.id, true)}
@@ -260,10 +270,10 @@ function buildLightInspector(lightData) {
 
       ${isArea ? `
       <div class="param-row">
-        <label>Softbox Dimensions (m)</label>
+        <label>Softbox Dimensions (WxH)</label>
         <div class="vector2-inputs" style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">W</span><input id="prop_area_width" type="number" min="0.1" max="50" step="0.1" value="${(lightData.width || 2.5).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
-          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">H</span><input id="prop_area_height" type="number" min="0.1" max="50" step="0.1" value="${(lightData.height || 2.5).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
+          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">W</span><input id="prop_area_width" type="number" min="0.1" max="50" step="0.1" value="${(lightData.width !== undefined ? Number(lightData.width) : (lightData.light?.width !== undefined ? Number(lightData.light.width) : 2.5)).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
+          <div class="vec-item" style="display:flex; align-items:center; gap:4px;"><span class="vec-label">H</span><input id="prop_area_height" type="number" min="0.1" max="50" step="0.1" value="${(lightData.height !== undefined ? Number(lightData.height) : (lightData.light?.height !== undefined ? Number(lightData.light.height) : 2.5)).toFixed(1)}" style="width:100%; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;"></div>
         </div>
       </div>
       ` : ""}
@@ -545,6 +555,34 @@ function buildSceneInspector() {
     </div>
 
     <div class="section-group">
+      <div class="section-group-title">Bloom &amp; Post-Processing</div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_bloom_enable" type="checkbox" ${sceneSettings.bloom?.enabled ? "checked" : ""}>
+          Enable Bloom / Glow Effect
+        </label>
+      </div>
+
+      <div id="inspector_bloom_controls" style="${sceneSettings.bloom?.enabled ? '' : 'display:none;'}">
+        <div class="param-row">
+          <div class="slider-header"><label>Bloom Strength</label><span class="value-badge" id="val_bloom_strength">${Number(sceneSettings.bloom?.strength !== undefined ? sceneSettings.bloom.strength : 0.6).toFixed(2)}</span></div>
+          <input id="prop_scene_bloom_strength" type="range" min="0" max="3.0" step="0.05" value="${sceneSettings.bloom?.strength !== undefined ? sceneSettings.bloom.strength : 0.6}">
+        </div>
+
+        <div class="param-row">
+          <div class="slider-header"><label>Bloom Radius</label><span class="value-badge" id="val_bloom_radius">${Number(sceneSettings.bloom?.radius !== undefined ? sceneSettings.bloom.radius : 0.4).toFixed(2)}</span></div>
+          <input id="prop_scene_bloom_radius" type="range" min="0" max="2.0" step="0.05" value="${sceneSettings.bloom?.radius !== undefined ? sceneSettings.bloom.radius : 0.4}">
+        </div>
+
+        <div class="param-row">
+          <div class="slider-header"><label>Bloom Threshold</label><span class="value-badge" id="val_bloom_threshold">${Number(sceneSettings.bloom?.threshold !== undefined ? sceneSettings.bloom.threshold : 0.85).toFixed(2)}</span></div>
+          <input id="prop_scene_bloom_threshold" type="range" min="0" max="2.0" step="0.05" value="${sceneSettings.bloom?.threshold !== undefined ? sceneSettings.bloom.threshold : 0.85}">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-group">
       <div class="section-group-title">Cycles Rendering &amp; Shadows</div>
 
       <div class="param-row-checkbox">
@@ -709,18 +747,18 @@ function bindInspectorEvents(type, object, target) {
     });
 
     areaWidth?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
+      const val = parseFloat(e.target.value) || 0.1;
       object.width = val;
-      if (object.light && object.light.isRectAreaLight) {
+      if (object.light) {
         object.light.width = val;
         if (object.helper) object.helper.update?.();
       }
     });
 
     areaHeight?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
+      const val = parseFloat(e.target.value) || 0.1;
       object.height = val;
-      if (object.light && object.light.isRectAreaLight) {
+      if (object.light) {
         object.light.height = val;
         if (object.helper) object.helper.update?.();
       }
@@ -1075,6 +1113,57 @@ function bindInspectorEvents(type, object, target) {
 
     shadows?.addEventListener("change", (e) => {
       setShadowsEnabled(e.target.checked);
+    });
+
+    // Bloom & Post-processing handlers
+    const bloomEnable = document.getElementById("prop_scene_bloom_enable");
+    const bloomControls = document.getElementById("inspector_bloom_controls");
+    const bloomStrength = document.getElementById("prop_scene_bloom_strength");
+    const bloomRadius = document.getElementById("prop_scene_bloom_radius");
+    const bloomThreshold = document.getElementById("prop_scene_bloom_threshold");
+
+    bloomEnable?.addEventListener("change", (e) => {
+      const enabled = Boolean(e.target.checked);
+      setBloomEnabled(enabled);
+      if (bloomControls) bloomControls.style.display = enabled ? "" : "none";
+      // Also synchronize Environment tab checkbox if present
+      const envTabBloom = document.getElementById("envTabBloomEnabled");
+      if (envTabBloom) envTabBloom.checked = enabled;
+      const envTabControls = document.getElementById("envTabBloomControls");
+      if (envTabControls) envTabControls.style.display = enabled ? "" : "none";
+    });
+
+    bloomStrength?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      applyBloomSettings({ strength: val });
+      const badge = document.getElementById("val_bloom_strength");
+      if (badge) badge.textContent = val.toFixed(2);
+      const envTabStrength = document.getElementById("envTabBloomStrength");
+      if (envTabStrength) envTabStrength.value = val;
+      const envTabStrengthVal = document.getElementById("envTabBloomStrengthVal");
+      if (envTabStrengthVal) envTabStrengthVal.textContent = val.toFixed(2);
+    });
+
+    bloomRadius?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      applyBloomSettings({ radius: val });
+      const badge = document.getElementById("val_bloom_radius");
+      if (badge) badge.textContent = val.toFixed(2);
+      const envTabRadius = document.getElementById("envTabBloomRadius");
+      if (envTabRadius) envTabRadius.value = val;
+      const envTabRadiusVal = document.getElementById("envTabBloomRadiusVal");
+      if (envTabRadiusVal) envTabRadiusVal.textContent = val.toFixed(2);
+    });
+
+    bloomThreshold?.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      applyBloomSettings({ threshold: val });
+      const badge = document.getElementById("val_bloom_threshold");
+      if (badge) badge.textContent = val.toFixed(2);
+      const envTabThreshold = document.getElementById("envTabBloomThreshold");
+      if (envTabThreshold) envTabThreshold.value = val;
+      const envTabThresholdVal = document.getElementById("envTabBloomThresholdVal");
+      if (envTabThresholdVal) envTabThresholdVal.textContent = val.toFixed(2);
     });
 
     grid?.addEventListener("change", (e) => {

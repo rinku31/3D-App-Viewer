@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { CameraRig } from "../../shared/CameraRig.js";
 import { state } from "../state/state.js";
 import { createEnvironmentManager } from "../../shared/environment.js";
+import { createBloomManager } from "../../shared/bloom.js";
 
 /**
  * Initializes the Viewer WebGL renderer, scene, camera, and CameraRig
@@ -59,6 +60,18 @@ export function initializeRender() {
   // Environment Manager
   state.environmentManager = createEnvironmentManager({ scene, renderer });
 
+  // Bloom Post-Processing Manager
+  state.bloomManager = createBloomManager({
+    renderer,
+    scene,
+    camera: cameraRig.camera,
+    width,
+    height
+  });
+  if (state.bloom) {
+    state.bloomManager.applySettings(state.bloom);
+  }
+
   // Initial resize event listeners
   window.addEventListener("resize", handleResize);
 
@@ -74,7 +87,7 @@ export function initializeRender() {
     handleResize();
   });
 
-  return { scene, camera: cameraRig.camera, cameraRig, renderer };
+  return { scene, camera: cameraRig.camera, cameraRig, renderer, bloomManager: state.bloomManager };
 }
 
 /**
@@ -93,17 +106,50 @@ export function handleResize() {
   state.camera.updateProjectionMatrix();
 
   state.renderer.setSize(width, height);
+  if (state.bloomManager) {
+    state.bloomManager.setSize(width, height);
+  }
 
   // Immediately render to prevent unpainted buffer frames
   if (state.scene) {
-    state.renderer.render(state.scene, state.camera);
+    if (state.bloomManager && state.bloomManager.isEnabled()) {
+      state.bloomManager.render(state.scene, state.camera);
+    } else {
+      state.renderer.render(state.scene, state.camera);
+    }
   }
 
   state.visibilityDirty = true;
 }
 
 /**
- * Applies scene background & environment settings from current scene document
+ * Applies bloom parameters from scene settings or manual call
+ */
+export function applyViewerBloomSettings(settings = {}) {
+  if (!state.bloom) state.bloom = {};
+  Object.assign(state.bloom, settings);
+  if (state.bloomManager) {
+    state.bloomManager.applySettings(state.bloom);
+  }
+}
+
+/**
+ * Toggles bloom on/off in the viewer
+ */
+export function setViewerBloomEnabled(enabled) {
+  if (!state.bloom) state.bloom = {};
+  state.bloom.enabled = Boolean(enabled);
+  if (state.bloomManager) {
+    state.bloomManager.setEnabled(Boolean(enabled));
+  }
+}
+
+export function getViewerBloomSettings() {
+  return state.bloom || { enabled: false, strength: 0.6, radius: 0.4, threshold: 0.85 };
+}
+
+/**
+ * Applies scene background, environment & bloom settings from current scene document
  */
 export function applyViewerSceneSettings() {
   if (!state.sceneDocument || !state.environmentManager) return;
@@ -124,6 +170,12 @@ export function applyViewerSceneSettings() {
       state.environmentManager.applyBackground(sceneConfig);
     });
   }
+
+  // 4. Bloom & Post-processing
+  const bloomConfig = sceneConfig.rendering?.bloom || sceneConfig.bloom || state.sceneDocument.bloom;
+  if (bloomConfig && typeof bloomConfig === "object") {
+    applyViewerBloomSettings(bloomConfig);
+  }
 }
 
 /**
@@ -143,7 +195,11 @@ export function startViewerLoop(onFrame) {
     }
 
     if (state.renderer && state.scene && state.camera) {
-      state.renderer.render(state.scene, state.camera);
+      if (state.bloomManager && state.bloomManager.isEnabled()) {
+        state.bloomManager.render(state.scene, state.camera);
+      } else {
+        state.renderer.render(state.scene, state.camera);
+      }
     }
   }
 

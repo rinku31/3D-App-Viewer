@@ -116,10 +116,12 @@ function renderHierarchy() {
       if (Array.isArray(state.lights)) {
         state.lights.forEach((l, idx) => {
           const colorSwatch = `<span class="color-swatch-sm" style="background:${l.color}"></span>`;
+          const rawType = (l.type || "directional").toLowerCase();
           let icon = "&#9889;"; // Directional
-          if (l.type === "point") icon = "&#128161;";
-          else if (l.type === "spot") icon = "&#128294;";
-          else if (l.type === "ambient") icon = "&#9728;";
+          if (rawType.includes("point")) icon = "&#128161;";
+          else if (rawType.includes("spot")) icon = "&#128294;";
+          else if (rawType.includes("area") || rawType.includes("rect")) icon = "&#128396;"; // Softbox
+          else if (rawType.includes("ambient")) icon = "&#9728;";
 
           const hasTarget = Boolean(l.target);
           const isExpanded = expandedNodes.has(`light_${l.id}`);

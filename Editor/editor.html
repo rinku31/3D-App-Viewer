@@ -92,7 +92,7 @@
     <div class="editor-modal-header">
       <div class="editor-modal-title">
         <span class="modal-title-icon">&#128190;</span>
-        <h3>Export Scene JSON</h3>
+        <h3>Export Scene Document</h3>
       </div>
       <button id="closeExportModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
     </div>
@@ -118,14 +118,33 @@
           <span id="exportModalLightsCount" class="info-value">0</span>
         </div>
         <div class="modal-info-row">
-          <span class="info-label">Output Filename</span>
-          <span id="exportModalFilename" class="info-value code-font">scene.json</span>
+          <span class="info-label">Schema Version</span>
+          <span class="info-value code-font">v2.0.0</span>
         </div>
+      </div>
+
+      <div class="modal-filename-group">
+        <label for="exportModalFilenameInput" class="modal-filename-label">File Name</label>
+        <div class="modal-filename-input-wrap">
+          <input id="exportModalFilenameInput" type="text" class="modal-filename-input" value="scene.json" placeholder="filename.json" spellcheck="false">
+        </div>
+      </div>
+
+      <div id="exportModalNotice" class="modal-notice-banner" style="display: none;">
+        <span id="exportModalNoticeText"></span>
+      </div>
+
+      <div class="modal-extra-actions">
+        <button id="copyExportJsonBtn" class="modal-secondary-action-btn" type="button">
+          <span id="copyBtnIcon">&#128203;</span>
+          <span id="copyBtnText">Copy JSON</span>
+        </button>
       </div>
     </div>
     <div class="editor-modal-footer">
       <button id="cancelExportModalBtn" class="secondary" type="button">Cancel</button>
-      <button id="confirmExportModalBtn" class="primary-btn" type="button">&#128190; Confirm &amp; Download</button>
+      <button id="downloadExportModalBtn" class="secondary-accent-btn" type="button" title="Download directly to downloads folder">&#129095; Download</button>
+      <button id="confirmExportModalBtn" class="primary-btn" type="button" title="Open native Save File dialog">&#128194; Save As...</button>
     </div>
   </div>
 </div>
@@ -358,6 +377,37 @@ class="sidebar-tab-panel scrollable-tab-panel"
     <div class="param-row">
       <div class="slider-header"><label>Camera Exposure</label><span class="value-badge" id="envTabExposureVal">1.6</span></div>
       <input id="envTabExposure" type="range" min="0.1" max="4.0" step="0.1" value="1.6">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Bloom &amp; Glow Effect</h3>
+      <span class="hierarchy-badge">Post-FX</span>
+    </div>
+
+    <div class="param-row-checkbox">
+      <label>
+        <input id="envTabBloomEnabled" type="checkbox">
+        Enable Bloom Glow
+      </label>
+    </div>
+
+    <div id="envTabBloomControls" style="display:none;">
+      <div class="param-row">
+        <div class="slider-header"><label>Bloom Strength</label><span class="value-badge" id="envTabBloomStrengthVal">0.60</span></div>
+        <input id="envTabBloomStrength" type="range" min="0" max="3.0" step="0.05" value="0.60">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Bloom Radius</label><span class="value-badge" id="envTabBloomRadiusVal">0.40</span></div>
+        <input id="envTabBloomRadius" type="range" min="0" max="2.0" step="0.05" value="0.40">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Bloom Threshold</label><span class="value-badge" id="envTabBloomThresholdVal">0.85</span></div>
+        <input id="envTabBloomThreshold" type="range" min="0" max="2.0" step="0.05" value="0.85">
+      </div>
     </div>
   </div>
 

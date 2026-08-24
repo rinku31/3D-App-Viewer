@@ -5,6 +5,7 @@
  */
 
 import { state } from "../state/state.js";
+import { setViewerBloomEnabled } from "../render/render.js";
 
 const BASE_AUTOROTATE_SPEED = 0.016;
 const SPEED_MULTIPLIERS = [
@@ -197,6 +198,22 @@ function createHUDMarkup() {
         <span id="hudSpeedLabel" class="hud-btn-label hud-speed-label">1x</span>
       </button>
 
+      <!-- Bloom Glow Toggle Button -->
+      <button id="hudBloomBtn" class="hud-btn" type="button" title="Toggle Bloom Glow [Key: B]" aria-label="Toggle Bloom Glow">
+        <svg id="hudBloomIcon" class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2"></path>
+          <path d="M12 20v2"></path>
+          <path d="m4.93 4.93 1.41 1.41"></path>
+          <path d="m17.66 17.66 1.41 1.41"></path>
+          <path d="M2 12h2"></path>
+          <path d="M20 12h2"></path>
+          <path d="m6.34 17.66-1.41 1.41"></path>
+          <path d="m19.07 4.93-1.41 1.41"></path>
+        </svg>
+        <span id="hudBloomLabel" class="hud-btn-label">Bloom</span>
+      </button>
+
       <div class="hud-divider"></div>
 
       <!-- Fullscreen Toggle -->
@@ -244,7 +261,16 @@ function bindHUDActions() {
     });
   }
 
-  // 4. Fullscreen Toggle Button
+  // 4. Bloom Glow Toggle Button
+  const bloomBtn = document.getElementById("hudBloomBtn");
+  if (bloomBtn) {
+    bloomBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleViewerBloom();
+    });
+  }
+
+  // 5. Fullscreen Toggle Button
   const fsBtn = document.getElementById("hudFullscreenBtn");
   if (fsBtn) {
     fsBtn.addEventListener("click", (e) => {
@@ -430,6 +456,22 @@ export function toggleFullscreen() {
 }
 
 /**
+ * Toggles Bloom Glow post-processing on/off in the viewer
+ */
+export function toggleViewerBloom() {
+  const current = Boolean(state.bloom?.enabled);
+  const next = !current;
+  setViewerBloomEnabled(next);
+
+  const bloomBtn = document.getElementById("hudBloomBtn");
+  if (bloomBtn) {
+    bloomBtn.classList.toggle("active", next);
+    bloomBtn.classList.add("btn-pulsed");
+    setTimeout(() => bloomBtn.classList.remove("btn-pulsed"), 400);
+  }
+}
+
+/**
  * Updates the fullscreen button icon and label based on active status.
  */
 function updateFullscreenUI(isFullscreen) {
@@ -459,7 +501,7 @@ function updateFullscreenUI(isFullscreen) {
 
 /**
  * Sanitizes and updates the product showcase title, removing trailing " Scene",
- * and syncs active environment preset button.
+ * and syncs active environment preset button and bloom button.
  */
 export function updateHudSceneInfo() {
   const titleEl = document.getElementById("hudSceneTitle");
@@ -473,6 +515,12 @@ export function updateHudSceneInfo() {
   // Sync active environment preset indicator
   const activePreset = state.sceneDocument?.scene?.environment?.preset || state.environmentManager?.getCurrentPreset() || "studio_small_09";
   updateActiveEnvButton(activePreset);
+
+  // Sync Bloom button active status
+  const bloomBtn = document.getElementById("hudBloomBtn");
+  if (bloomBtn) {
+    bloomBtn.classList.toggle("active", Boolean(state.bloom?.enabled));
+  }
 }
 
 /**
@@ -574,6 +622,11 @@ function setupKeyboardShortcuts() {
       case "KeyF":
         e.preventDefault();
         toggleFullscreen();
+        break;
+
+      case "KeyB":
+        e.preventDefault();
+        toggleViewerBloom();
         break;
 
       case "Escape":

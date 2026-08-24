@@ -20,7 +20,19 @@
     },
     "rendering": {
       "shadows": true,
-      "shadowType": "pcfsoft"
+      "shadowType": "pcfsoft",
+      "bloom": {
+        "enabled": true,
+        "strength": 0.55,
+        "radius": 0.35,
+        "threshold": 0.8
+      }
+    },
+    "bloom": {
+      "enabled": true,
+      "strength": 0.55,
+      "radius": 0.35,
+      "threshold": 0.8
     },
     "helpers": {
       "grid": false,

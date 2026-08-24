@@ -13,8 +13,15 @@ export const state = {
   renderer: null,
   raycaster: new THREE.Raycaster(),
 
-  // Environment & Lights
+  // Environment, Lights & Post-Processing
   environmentManager: null,
+  bloomManager: null,
+  bloom: {
+    enabled: false,
+    strength: 0.6,
+    radius: 0.4,
+    threshold: 0.85
+  },
   defaultAmbientLight: null,
   defaultDirectionalLight: null,
   customLights: [],

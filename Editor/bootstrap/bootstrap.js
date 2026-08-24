@@ -20,10 +20,12 @@ import { bindIO } from "../io/io.js";
 import { bindUI, showSidebarTab } from "../ui/ui.js";
 import {
   applyBackgroundSettings,
+  applyBloomSettings,
   applyEnvironmentParams,
   loadEnvironment,
   resizeRenderer,
   setAxesVisible,
+  setBloomEnabled,
   setGridVisible,
   setShadowsEnabled,
   startAnimation
@@ -99,6 +101,32 @@ function syncEnvironmentTabUI() {
   const axesCheck = document.getElementById("envTabAxes");
   if (axesCheck) {
     axesCheck.checked = Boolean(state.sceneSettings.helpers?.axes);
+  }
+
+  // Bloom Sync
+  const bloomCheck = document.getElementById("envTabBloomEnabled");
+  const bloomControls = document.getElementById("envTabBloomControls");
+  const bloomStrength = document.getElementById("envTabBloomStrength");
+  const bloomStrengthVal = document.getElementById("envTabBloomStrengthVal");
+  const bloomRadius = document.getElementById("envTabBloomRadius");
+  const bloomRadiusVal = document.getElementById("envTabBloomRadiusVal");
+  const bloomThreshold = document.getElementById("envTabBloomThreshold");
+  const bloomThresholdVal = document.getElementById("envTabBloomThresholdVal");
+
+  const bloom = state.sceneSettings.bloom || {};
+  if (bloomCheck) bloomCheck.checked = Boolean(bloom.enabled);
+  if (bloomControls) bloomControls.style.display = bloom.enabled ? "block" : "none";
+  if (bloomStrength) {
+    bloomStrength.value = bloom.strength ?? 0.6;
+    if (bloomStrengthVal) bloomStrengthVal.textContent = Number(bloom.strength ?? 0.6).toFixed(2);
+  }
+  if (bloomRadius) {
+    bloomRadius.value = bloom.radius ?? 0.4;
+    if (bloomRadiusVal) bloomRadiusVal.textContent = Number(bloom.radius ?? 0.4).toFixed(2);
+  }
+  if (bloomThreshold) {
+    bloomThreshold.value = bloom.threshold ?? 0.85;
+    if (bloomThresholdVal) bloomThresholdVal.textContent = Number(bloom.threshold ?? 0.85).toFixed(2);
   }
 }
 
@@ -239,6 +267,65 @@ function bindEnvironmentTab() {
     axesCheck.checked = Boolean(state.sceneSettings.helpers?.axes);
     axesCheck.addEventListener("change", (e) => {
       setAxesVisible(e.target.checked);
+    });
+  }
+
+  // Bloom & Glow Event Handlers
+  const bloomCheck = document.getElementById("envTabBloomEnabled");
+  const bloomControls = document.getElementById("envTabBloomControls");
+  const bloomStrength = document.getElementById("envTabBloomStrength");
+  const bloomStrengthVal = document.getElementById("envTabBloomStrengthVal");
+  const bloomRadius = document.getElementById("envTabBloomRadius");
+  const bloomRadiusVal = document.getElementById("envTabBloomRadiusVal");
+  const bloomThreshold = document.getElementById("envTabBloomThreshold");
+  const bloomThresholdVal = document.getElementById("envTabBloomThresholdVal");
+
+  if (bloomCheck) {
+    bloomCheck.addEventListener("change", (e) => {
+      const enabled = Boolean(e.target.checked);
+      setBloomEnabled(enabled);
+      if (bloomControls) bloomControls.style.display = enabled ? "block" : "none";
+      // Synchronize Inspector if scene is selected
+      const inspectorBloomCheck = document.getElementById("prop_scene_bloom_enable");
+      if (inspectorBloomCheck) inspectorBloomCheck.checked = enabled;
+      const inspectorBloomControls = document.getElementById("inspector_bloom_controls");
+      if (inspectorBloomControls) inspectorBloomControls.style.display = enabled ? "" : "none";
+    });
+  }
+
+  if (bloomStrength) {
+    bloomStrength.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (bloomStrengthVal) bloomStrengthVal.textContent = val.toFixed(2);
+      applyBloomSettings({ strength: val });
+      const insp = document.getElementById("prop_scene_bloom_strength");
+      if (insp) insp.value = val;
+      const inspVal = document.getElementById("val_bloom_strength");
+      if (inspVal) inspVal.textContent = val.toFixed(2);
+    });
+  }
+
+  if (bloomRadius) {
+    bloomRadius.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (bloomRadiusVal) bloomRadiusVal.textContent = val.toFixed(2);
+      applyBloomSettings({ radius: val });
+      const insp = document.getElementById("prop_scene_bloom_radius");
+      if (insp) insp.value = val;
+      const inspVal = document.getElementById("val_bloom_radius");
+      if (inspVal) inspVal.textContent = val.toFixed(2);
+    });
+  }
+
+  if (bloomThreshold) {
+    bloomThreshold.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (bloomThresholdVal) bloomThresholdVal.textContent = val.toFixed(2);
+      applyBloomSettings({ threshold: val });
+      const insp = document.getElementById("prop_scene_bloom_threshold");
+      if (insp) insp.value = val;
+      const inspVal = document.getElementById("val_bloom_threshold");
+      if (inspVal) inspVal.textContent = val.toFixed(2);
     });
   }
 }

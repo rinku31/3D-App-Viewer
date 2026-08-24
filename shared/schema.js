@@ -63,7 +63,19 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       },
       rendering: {
         shadows: true,
-        shadowType: "pcfsoft"
+        shadowType: "pcfsoft",
+        bloom: {
+          enabled: false,
+          strength: 0.6,
+          radius: 0.4,
+          threshold: 0.85
+        }
+      },
+      bloom: {
+        enabled: false,
+        strength: 0.6,
+        radius: 0.4,
+        threshold: 0.85
       },
       helpers: {
         grid: true,
@@ -208,6 +220,19 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
     };
   }
 
+  const rawBloom = raw.scene?.rendering?.bloom || raw.scene?.bloom || raw.bloom;
+  if (rawBloom && typeof rawBloom === "object") {
+    const bloomObj = {
+      enabled: Boolean(rawBloom.enabled),
+      strength: typeof rawBloom.strength === "number" ? rawBloom.strength : 0.6,
+      radius: typeof rawBloom.radius === "number" ? rawBloom.radius : 0.4,
+      threshold: typeof rawBloom.threshold === "number" ? rawBloom.threshold : 0.85,
+    };
+    if (!scene.rendering) scene.rendering = {};
+    scene.rendering.bloom = bloomObj;
+    scene.bloom = bloomObj;
+  }
+
   const camera = {
     ...base.camera,
     ...(raw.camera || {})
@@ -235,12 +260,12 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
   let lights = [];
   if (Array.isArray(raw.lights) && raw.lights.length > 0) {
     lights = raw.lights.map((l, idx) => {
-      const rawType = (l.type || "directional").toLowerCase();
+      const rawType = String(l.type || "directional").toLowerCase();
       let type = "directional";
-      if (rawType === "point" || rawType === "pointlight") type = "point";
-      else if (rawType === "spot" || rawType === "spotlight") type = "spot";
-      else if (rawType === "area" || rawType === "arealight" || rawType === "rectarea" || rawType === "rectarealight") type = "area";
-      else if (rawType === "ambient" || rawType === "ambientlight") type = "ambient";
+      if (rawType.includes("point")) type = "point";
+      else if (rawType.includes("spot")) type = "spot";
+      else if (rawType.includes("area") || rawType.includes("rect")) type = "area";
+      else if (rawType.includes("ambient")) type = "ambient";
 
       const defaultName = type === "area" ? "Area Softbox" : `${type.charAt(0).toUpperCase() + type.slice(1)} Light`;
       const lightEntry = {
@@ -269,7 +294,11 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       if (typeof l.angle === "number") lightEntry.angle = l.angle;
       if (typeof l.penumbra === "number") lightEntry.penumbra = l.penumbra;
       if (typeof l.width === "number") lightEntry.width = l.width;
+      else if (type === "area") lightEntry.width = 2.5;
+
       if (typeof l.height === "number") lightEntry.height = l.height;
+      else if (type === "area") lightEntry.height = 2.5;
+
       if (typeof l.radius === "number") lightEntry.radius = l.radius;
 
       return lightEntry;

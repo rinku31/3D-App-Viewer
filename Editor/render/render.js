@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { CameraRig } from "../camera/CameraRig.js";
 import { state } from "../state/state.js";
 import { HDR_PRESETS, createEnvironmentManager } from "../../shared/environment.js";
+import { createBloomManager } from "../../shared/bloom.js";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
 
 // Initialize uniform library for Blender-style RectAreaLights
@@ -12,6 +13,7 @@ try {
 }
 
 let envManager = null;
+let bloomManager = null;
 
 function initializeRender() {
   const viewport = state.viewport;
@@ -91,6 +93,21 @@ function initializeRender() {
   envManager = createEnvironmentManager({ scene, renderer });
   state.environmentManager = envManager;
 
+  // Bloom Post-Processing Manager
+  bloomManager = createBloomManager({
+    renderer,
+    scene,
+    camera: cameraRig.camera,
+    width: viewport.clientWidth,
+    height: viewport.clientHeight
+  });
+  state.bloomManager = bloomManager;
+
+  // Apply initial bloom settings if defined
+  if (state.sceneSettings?.bloom) {
+    bloomManager.applySettings(state.sceneSettings.bloom);
+  }
+
   // Load initial environment and preload remaining presets for 0ms instant switching
   const initialPreset = state.sceneSettings?.environment?.preset || "studio_small_09";
   loadEnvironment(initialPreset);
@@ -105,6 +122,7 @@ function initializeRender() {
     renderer,
     cameraRig,
     controls: cameraRig,
+    bloomManager,
   };
 }
 
@@ -186,6 +204,27 @@ function setAxesVisible(visible) {
   }
 }
 
+function applyBloomSettings(settings = state.sceneSettings?.bloom) {
+  if (!settings) return;
+  if (!state.sceneSettings.bloom) state.sceneSettings.bloom = {};
+  Object.assign(state.sceneSettings.bloom, settings);
+  if (bloomManager) {
+    bloomManager.applySettings(state.sceneSettings.bloom);
+  }
+}
+
+function setBloomEnabled(enabled) {
+  if (!state.sceneSettings.bloom) state.sceneSettings.bloom = {};
+  state.sceneSettings.bloom.enabled = Boolean(enabled);
+  if (bloomManager) {
+    bloomManager.setEnabled(Boolean(enabled));
+  }
+}
+
+function getBloomSettings() {
+  return state.sceneSettings?.bloom || { enabled: false, strength: 0.6, radius: 0.4, threshold: 0.85 };
+}
+
 function setShadowsEnabled(enabled) {
   if (state.renderer) {
     state.renderer.shadowMap.enabled = Boolean(enabled);
@@ -230,10 +269,17 @@ function resizeRenderer() {
   camera.updateProjectionMatrix();
 
   renderer.setSize(width, height);
+  if (bloomManager) {
+    bloomManager.setSize(width, height);
+  }
 
   // Immediately render to prevent unpainted/black buffer frames
   if (scene) {
-    renderer.render(scene, camera);
+    if (bloomManager && bloomManager.isEnabled()) {
+      bloomManager.render(scene, camera);
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 }
 
@@ -249,7 +295,11 @@ function startAnimation(onFrame) {
     const camera = state.camera;
 
     if (renderer && scene && camera) {
-      renderer.render(scene, camera);
+      if (bloomManager && bloomManager.isEnabled()) {
+        bloomManager.render(scene, camera);
+      } else {
+        renderer.render(scene, camera);
+      }
     }
 
     requestAnimationFrame(step);
@@ -261,13 +311,16 @@ function startAnimation(onFrame) {
 export {
   HDR_PRESETS,
   applyBackgroundSettings,
+  applyBloomSettings,
   applyEnvironmentParams,
   fitDirectionalShadowCamera,
   frameModel,
+  getBloomSettings,
   initializeRender,
   loadEnvironment,
   resizeRenderer,
   setAxesVisible,
+  setBloomEnabled,
   setGridVisible,
   setShadowsEnabled,
   startAnimation

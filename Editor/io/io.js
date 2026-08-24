@@ -12,6 +12,7 @@ import {
 } from "../lights/lights.js";
 import {
   applyBackgroundSettings,
+  applyBloomSettings,
   applyEnvironmentParams,
   frameModel,
   loadEnvironment,
@@ -177,6 +178,10 @@ async function importJsonData(rawData, fileName = "scene.json") {
     if (data.scene.rendering) {
       setShadowsEnabled(data.scene.rendering.shadows !== false);
     }
+    const importedBloom = data.scene.rendering?.bloom || data.scene.bloom || data.bloom;
+    if (importedBloom && typeof importedBloom === "object") {
+      applyBloomSettings(importedBloom);
+    }
     if (data.scene.helpers) {
       setGridVisible(data.scene.helpers.grid !== false);
       setAxesVisible(Boolean(data.scene.helpers.axes));
@@ -230,19 +235,23 @@ async function importJsonData(rawData, fileName = "scene.json") {
   if (Array.isArray(data.lights)) {
     clearAllLights();
     data.lights.forEach((l) => {
-      const typeLower = (l.type || "directional").toLowerCase();
-      if (typeLower === "point" || typeLower === "pointlight") {
-        createPointLight(l);
-      } else if (typeLower === "spot" || typeLower === "spotlight") {
-        createSpotLight(l);
-      } else if (typeLower === "area" || typeLower === "arealight" || typeLower === "rectarea" || typeLower === "rectarealight") {
-        createAreaLight(l);
-      } else if (typeLower === "ambient" || typeLower === "ambientlight") {
-        createAmbientLight(l);
+      const typeLower = String(l.type || "directional").toLowerCase();
+      if (typeLower.includes("point")) {
+        createPointLight({ ...l, select: false });
+      } else if (typeLower.includes("spot")) {
+        createSpotLight({ ...l, select: false });
+      } else if (typeLower.includes("area") || typeLower.includes("rect")) {
+        createAreaLight({ ...l, select: false });
+      } else if (typeLower.includes("ambient")) {
+        createAmbientLight({ ...l, select: false });
       } else {
-        createDirectionalLight(l);
+        createDirectionalLight({ ...l, select: false });
       }
     });
+
+    if (state.lights.length > 0) {
+      select("light", state.lights[0]);
+    }
   }
 
   // 5. Restore Hotspots
@@ -288,40 +297,7 @@ async function importJson(file) {
   return importJsonData(rawData, file.name);
 }
 
-function showExportConfirmationDialog() {
-  const modal = document.getElementById("exportModal");
-  if (!modal) {
-    exportJson();
-    return;
-  }
-
-  const modelNameElem = document.getElementById("exportModalModelName");
-  const hotspotsCountElem = document.getElementById("exportModalHotspotsCount");
-  const lightsCountElem = document.getElementById("exportModalLightsCount");
-  const filenameElem = document.getElementById("exportModalFilename");
-  const warningElem = document.getElementById("exportModalWarning");
-
-  const modelName = state.currentModel?.name || null;
-  const outputFilename = state.importedJsonFileName || (modelName ? `${modelName}.json` : "scene.json");
-
-  if (modelNameElem) modelNameElem.textContent = modelName || "None (No 3D Model Loaded)";
-  if (hotspotsCountElem) hotspotsCountElem.textContent = state.hotspots.length.toString();
-  if (lightsCountElem) lightsCountElem.textContent = state.lights.length.toString();
-  if (filenameElem) filenameElem.textContent = outputFilename;
-
-  if (warningElem) {
-    warningElem.style.display = modelName ? "none" : "flex";
-  }
-
-  modal.style.display = "flex";
-}
-
-function hideExportConfirmationDialog() {
-  const modal = document.getElementById("exportModal");
-  if (modal) modal.style.display = "none";
-}
-
-async function exportJson() {
+function serializeSceneDocument() {
   const defaultCam = state.cameraRig?.getDefaultState?.() || {
     target: [0, 0, 0],
     yaw: 0.0,
@@ -345,7 +321,7 @@ async function exportJson() {
       ? state.cameraSettings.maxDistance
       : (typeof defaultCam.maxDistance === "number" ? defaultCam.maxDistance : 16.0));
 
-  const exportData = {
+  return {
     version: CURRENT_SCHEMA_VERSION,
     metadata: {
       title: cleanTitle,
@@ -371,7 +347,19 @@ async function exportJson() {
       },
       rendering: {
         shadows: Boolean(state.sceneSettings.rendering?.shadows !== false),
-        shadowType: "pcfsoft"
+        shadowType: "pcfsoft",
+        bloom: {
+          enabled: Boolean(state.sceneSettings.bloom?.enabled),
+          strength: Number(state.sceneSettings.bloom?.strength ?? 0.6),
+          radius: Number(state.sceneSettings.bloom?.radius ?? 0.4),
+          threshold: Number(state.sceneSettings.bloom?.threshold ?? 0.85)
+        }
+      },
+      bloom: {
+        enabled: Boolean(state.sceneSettings.bloom?.enabled),
+        strength: Number(state.sceneSettings.bloom?.strength ?? 0.6),
+        radius: Number(state.sceneSettings.bloom?.radius ?? 0.4),
+        threshold: Number(state.sceneSettings.bloom?.threshold ?? 0.85)
       },
       helpers: {
         grid: Boolean(state.sceneSettings.helpers?.grid !== false),
@@ -402,24 +390,48 @@ async function exportJson() {
       scale: state.currentModel ? [state.currentModel.scale.x, state.currentModel.scale.y, state.currentModel.scale.z] : [1, 1, 1]
     },
     lights: state.lights.map((l) => {
+      const rawType = (l.type || "directional").toLowerCase();
+      let type = "directional";
+      if (rawType.includes("point")) type = "point";
+      else if (rawType.includes("spot")) type = "spot";
+      else if (rawType.includes("area") || rawType.includes("rect")) type = "area";
+      else if (rawType.includes("ambient")) type = "ambient";
+
+      const defaultName = type === "area" ? "Area Softbox" : `${type.charAt(0).toUpperCase() + type.slice(1)} Light`;
       const entry = {
         id: l.id,
-        name: l.name || `${l.type} light`,
-        type: l.type || "directional",
-        color: l.color,
-        intensity: l.intensity,
+        name: l.name || defaultName,
+        type: type,
+        color: l.color || "#ffffff",
+        intensity: typeof l.intensity === "number" ? l.intensity : (type === "area" ? 15.0 : 2.0),
         castShadow: Boolean(l.castShadow),
       };
       if (l.light?.position) {
         entry.position = [l.light.position.x, l.light.position.y, l.light.position.z];
+      } else if (Array.isArray(l.position)) {
+        entry.position = [...l.position];
       }
       if (l.target?.position) {
         entry.target = [l.target.position.x, l.target.position.y, l.target.position.z];
+      } else if (Array.isArray(l.target)) {
+        entry.target = [...l.target];
       }
-      if (l.distance !== undefined) entry.distance = l.distance;
-      if (l.decay !== undefined) entry.decay = l.decay;
-      if (l.angle !== undefined) entry.angle = l.angle;
-      if (l.penumbra !== undefined) entry.penumbra = l.penumbra;
+
+      if (type === "area") {
+        entry.width = typeof l.width === "number" ? l.width : (l.light?.width !== undefined ? Number(l.light.width) : 2.5);
+        entry.height = typeof l.height === "number" ? l.height : (l.light?.height !== undefined ? Number(l.light.height) : 2.5);
+      }
+      if (type === "point" || type === "spot") {
+        if (l.distance !== undefined) entry.distance = l.distance;
+        if (l.decay !== undefined) entry.decay = l.decay;
+      }
+      if (type === "spot") {
+        if (l.angle !== undefined) entry.angle = l.angle;
+        if (l.penumbra !== undefined) entry.penumbra = l.penumbra;
+      }
+      if (type !== "ambient" && type !== "area") {
+        if (l.radius !== undefined) entry.radius = l.radius;
+      }
       return entry;
     }),
     settings: {
@@ -444,15 +456,88 @@ async function exportJson() {
       ...(h.cameraViewpointId ? { cameraViewpointId: h.cameraViewpointId } : {})
     })),
   };
+}
 
-  const defaultFilename = state.importedJsonFileName || (state.currentModel?.name ? `${state.currentModel.name}.json` : "scene.json");
-  const jsonContent = JSON.stringify(exportData, null, 2);
+function getSuggestedFilename() {
+  if (state.importedJsonFileName) {
+    return state.importedJsonFileName.endsWith(".json")
+      ? state.importedJsonFileName
+      : `${state.importedJsonFileName}.json`;
+  }
+  if (state.currentModel?.name) {
+    return `${state.currentModel.name}.json`;
+  }
+  return "scene.json";
+}
 
-  // 1. Try File System Access API (showSaveFilePicker) to let user choose exact location & filename
+function showExportConfirmationDialog() {
+  const modal = document.getElementById("exportModal");
+  if (!modal) {
+    exportJson();
+    return;
+  }
+
+  const modelNameElem = document.getElementById("exportModalModelName");
+  const hotspotsCountElem = document.getElementById("exportModalHotspotsCount");
+  const lightsCountElem = document.getElementById("exportModalLightsCount");
+  const filenameInput = document.getElementById("exportModalFilenameInput");
+  const warningElem = document.getElementById("exportModalWarning");
+  const noticeElem = document.getElementById("exportModalNotice");
+  const noticeTextElem = document.getElementById("exportModalNoticeText");
+
+  const modelName = state.currentModel?.name || null;
+  const suggestedFilename = getSuggestedFilename();
+
+  if (modelNameElem) modelNameElem.textContent = modelName || "None (No 3D Model Loaded)";
+  if (hotspotsCountElem) hotspotsCountElem.textContent = state.hotspots.length.toString();
+  if (lightsCountElem) lightsCountElem.textContent = state.lights.length.toString();
+  if (filenameInput) filenameInput.value = suggestedFilename;
+
+  if (warningElem) {
+    warningElem.style.display = modelName ? "none" : "flex";
+  }
+
+  if (noticeElem) {
+    const isIframe = window.self !== window.top;
+    if (isIframe && typeof window.showSaveFilePicker !== "undefined") {
+      noticeElem.style.display = "block";
+      if (noticeTextElem) {
+        noticeTextElem.textContent = "Tip: When inside embedded preview frames, browser security may restrict the OS picker and fallback to direct download. Open directly in a browser tab for full native OS Save As dialog.";
+      }
+    } else {
+      noticeElem.style.display = "none";
+    }
+  }
+
+  modal.style.display = "flex";
+  setTimeout(() => {
+    if (filenameInput) {
+      filenameInput.focus();
+      filenameInput.select();
+    }
+  }, 50);
+}
+
+function hideExportConfirmationDialog() {
+  const modal = document.getElementById("exportModal");
+  if (modal) modal.style.display = "none";
+}
+
+function sanitizeFilename(rawName) {
+  let name = (rawName || "").trim();
+  if (!name) name = getSuggestedFilename();
+  if (!/\.json$/i.test(name)) {
+    name += ".json";
+  }
+  return name.replace(/[/\\?%*:|"<>]/g, "_");
+}
+
+async function exportWithSaveFilePicker(filename, jsonContent) {
+  // Try File System Access API (showSaveFilePicker) in Chromium / Supported Browsers
   if (typeof window.showSaveFilePicker === "function") {
     try {
       const fileHandle = await window.showSaveFilePicker({
-        suggestedName: defaultFilename,
+        suggestedName: filename,
         types: [
           {
             description: "JSON Scene Document (*.json)",
@@ -463,46 +548,118 @@ async function exportJson() {
       const writableStream = await fileHandle.createWritable();
       await writableStream.write(jsonContent);
       await writableStream.close();
-      return;
+      hideExportConfirmationDialog();
+      return true;
     } catch (err) {
-      // If user canceled the save dialog, do nothing
       if (err.name === "AbortError") {
-        return;
+        // User clicked cancel in OS file picker dialog
+        return false;
       }
-      console.warn("showSaveFilePicker unavailable or denied, falling back to download:", err);
+      console.warn("showSaveFilePicker not permitted in this context, falling back to download:", err);
     }
   }
 
-  // 2. Fallback: Browser anchor download
-  const blob = new Blob([jsonContent], { type: "application/json" });
+  // Fallback for browsers or embedded contexts without File System Access API
+  triggerBrowserDownload(jsonContent, filename);
+  hideExportConfirmationDialog();
+  return true;
+}
+
+async function exportJson(requestedFilename) {
+  const filename = sanitizeFilename(
+    requestedFilename ||
+    document.getElementById("exportModalFilenameInput")?.value ||
+    getSuggestedFilename()
+  );
+
+  const exportData = serializeSceneDocument();
+  const jsonContent = JSON.stringify(exportData, null, 2);
+
+  await exportWithSaveFilePicker(filename, jsonContent);
+}
+
+function triggerBrowserDownload(content, filename) {
+  const blob = new Blob([content], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = defaultFilename;
+  a.download = sanitizeFilename(filename);
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function copyExportJsonToClipboard() {
+  const exportData = serializeSceneDocument();
+  const jsonContent = JSON.stringify(exportData, null, 2);
+  const copyBtnText = document.getElementById("copyBtnText");
+  const copyBtnIcon = document.getElementById("copyBtnIcon");
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(jsonContent);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = jsonContent;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    if (copyBtnText) copyBtnText.textContent = "Copied to Clipboard!";
+    if (copyBtnIcon) copyBtnIcon.textContent = "✓";
+    setTimeout(() => {
+      if (copyBtnText) copyBtnText.textContent = "Copy JSON";
+      if (copyBtnIcon) copyBtnIcon.textContent = "📋";
+    }, 2000);
+  } catch (err) {
+    console.error("Failed to copy JSON to clipboard:", err);
+    if (copyBtnText) copyBtnText.textContent = "Failed to copy";
+    setTimeout(() => {
+      if (copyBtnText) copyBtnText.textContent = "Copy JSON";
+    }, 2000);
+  }
 }
 
 function bindIO(loader) {
   const modelInput = document.getElementById("modelInput");
   const viewport = document.getElementById("viewport");
   const exportModal = document.getElementById("exportModal");
+  const filenameInput = document.getElementById("exportModalFilenameInput");
 
-  // Wire export JSON confirmation triggers
-  const triggerExportJson = () => {
+  // Wire export JSON triggers to confirmation dialog
+  const triggerExportDialog = (e) => {
+    if (e) e.preventDefault();
     showExportConfirmationDialog();
   };
-  document.getElementById("exportBtn")?.addEventListener("click", triggerExportJson);
-  document.getElementById("menuExportJsonBtn")?.addEventListener("click", triggerExportJson);
 
-  // Modal event bindings
+  document.getElementById("exportBtn")?.addEventListener("click", triggerExportDialog);
+  document.getElementById("menuExportJsonBtn")?.addEventListener("click", triggerExportDialog);
+
+  // Modal actions
   document.getElementById("confirmExportModalBtn")?.addEventListener("click", () => {
-    hideExportConfirmationDialog();
     exportJson();
   });
+
+  document.getElementById("downloadExportModalBtn")?.addEventListener("click", () => {
+    const filename = sanitizeFilename(filenameInput?.value || getSuggestedFilename());
+    const exportData = serializeSceneDocument();
+    triggerBrowserDownload(JSON.stringify(exportData, null, 2), filename);
+    hideExportConfirmationDialog();
+  });
+
+  document.getElementById("copyExportJsonBtn")?.addEventListener("click", () => {
+    copyExportJsonToClipboard();
+  });
+
   document.getElementById("cancelExportModalBtn")?.addEventListener("click", hideExportConfirmationDialog);
   document.getElementById("closeExportModalBtn")?.addEventListener("click", hideExportConfirmationDialog);
-  
+
+  // Close modal on backdrop click
   if (exportModal) {
     exportModal.addEventListener("click", (e) => {
       if (e.target === exportModal) {
@@ -511,9 +668,22 @@ function bindIO(loader) {
     });
   }
 
+  // Keyboard shortcut Ctrl+S / Cmd+S to export scene JSON, Enter to confirm, Escape to cancel
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && exportModal && exportModal.style.display !== "none") {
-      hideExportConfirmationDialog();
+    if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+      e.preventDefault();
+      showExportConfirmationDialog();
+      return;
+    }
+
+    if (exportModal && exportModal.style.display !== "none") {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hideExportConfirmationDialog();
+      } else if (e.key === "Enter" && document.activeElement === filenameInput) {
+        e.preventDefault();
+        exportJson();
+      }
     }
   });
 

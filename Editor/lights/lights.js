@@ -437,15 +437,19 @@ function createSpotLight(options = {}) {
 function createAreaLight(options = {}) {
   const color = options.color || "#ffffff";
   const intensity = options.intensity !== undefined ? Number(options.intensity) : 15.0;
-  const width = options.width !== undefined ? Number(options.width) : 2.5;
-  const height = options.height !== undefined ? Number(options.height) : 2.5;
+  const width = options.width !== undefined ? Number(options.width) : (options.light?.width !== undefined ? Number(options.light.width) : 2.5);
+  const height = options.height !== undefined ? Number(options.height) : (options.light?.height !== undefined ? Number(options.light.height) : 2.5);
 
   const light = new THREE.RectAreaLight(new THREE.Color(color), intensity, width, height);
-  const pos = options.position || [-2.5, 3.0, 2.5];
+  const pos = Array.isArray(options.position) 
+    ? options.position 
+    : (options.position && typeof options.position === "object" ? [options.position.x || 0, options.position.y || 0, options.position.z || 0] : [-2.5, 3.0, 2.5]);
   light.position.set(pos[0], pos[1], pos[2]);
 
   const target = new THREE.Object3D();
-  const targetPos = options.target || [0, 0, 0];
+  const targetPos = Array.isArray(options.target) 
+    ? options.target 
+    : (options.target && typeof options.target === "object" ? [options.target.x || 0, options.target.y || 0, options.target.z || 0] : [0, 0, 0]);
   target.position.set(targetPos[0], targetPos[1], targetPos[2]);
   state.scene.add(target);
   light.lookAt(target.position);

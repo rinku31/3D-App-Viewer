@@ -43,6 +43,8 @@ const state = {
   gridHelper: null,
   axesHelper: null,
 
+  bloomManager: null,
+
   sceneSettings: {
     background: "#222228",
     backgroundType: "color", // "color" | "environment" | "transparent"
@@ -63,6 +65,12 @@ const state = {
       contactShadows: true,
       shadowSoftness: 2.0,
       blenderCyclesMode: true,
+    },
+    bloom: {
+      enabled: false,
+      strength: 0.6,
+      radius: 0.4,
+      threshold: 0.85,
     },
     helpers: {
       grid: true,
