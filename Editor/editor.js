@@ -8,9 +8,11 @@ state.viewport = document.getElementById("viewport");
 initializeRender();
 
 const draco = new DRACOLoader();
-draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
+draco.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+draco.preload();
 
 const loader = new GLTFLoader();
+loader.setCrossOrigin("anonymous");
 loader.setDRACOLoader(draco);
 
 initializeEditor(loader);

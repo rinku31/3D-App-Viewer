@@ -16,7 +16,8 @@ import { buildHotspotOverlays, clearHotspotOverlays } from "../overlay/overlay.j
 import { refreshTourSteps } from "../ui/hud.js";
 
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+dracoLoader.preload();
 
 const gltfLoader = new GLTFLoader();
 gltfLoader.setCrossOrigin("anonymous");
