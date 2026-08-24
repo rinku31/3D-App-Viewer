@@ -5,7 +5,7 @@
  */
 
 import { state } from "../state/state.js";
-import { initializeRender, setEmbedBloomEnabled, startViewerLoop } from "../render/render.js";
+import { initializeRender, startViewerLoop } from "../render/render.js";
 import { initializeViewerLights } from "../lights/lights.js";
 import { loadViewerModel, loadViewerSceneJson } from "../loading/loader.js";
 import { updateHotspotVisibility } from "../visibility/visibility.js";
@@ -15,7 +15,6 @@ import {
   initializeViewerHUD,
   resetViewerCamera,
   toggleAutoRotate,
-  toggleEmbedBloom,
   setTurntableSpeed,
   setEnvironmentPreset,
   updateHudSceneInfo,
@@ -60,7 +59,6 @@ export async function bootstrapEmbedViewer() {
   const turntableParam = params.get("turntable") || params.get("autorotate");
   const speedParam = params.get("speed");
   const bgParam = params.get("bg") || params.get("background") || "#222228";
-  const bloomParam = params.get("bloom");
 
   // 7. Apply background & trigger non-blocking environment load
   if (bgParam) {
@@ -72,13 +70,7 @@ export async function bootstrapEmbedViewer() {
   // 8. Ingest Assets according to query params
   await ingestQueryParams({ glbParam, jsonParam, titleParam });
 
-  // 9. Apply bloom query param if specified
-  if (bloomParam !== null) {
-    const isBloom = bloomParam === "true" || bloomParam === "1";
-    setEmbedBloomEnabled(isBloom);
-  }
-
-  // 10. Apply turntable and speed query params
+  // 9. Apply turntable and speed query params
   if (turntableParam === "true" || turntableParam === "1") {
     if (speedParam) setTurntableSpeed(speedParam);
     toggleAutoRotate(true);
@@ -90,7 +82,7 @@ export async function bootstrapEmbedViewer() {
     updateHudSceneInfo(titleParam);
   }
 
-  // 11. Emit ready message to host iframe container
+  // 10. Emit ready message to host iframe container
   try {
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({ type: "3D_VIEWER_READY", payload: { title: titleParam || state.currentModel?.name } }, "*");
@@ -213,18 +205,6 @@ function setupPostMessageAPI() {
 
       case "SET_SPEED":
         if (data.speed) setTurntableSpeed(data.speed);
-        break;
-
-      case "SET_BLOOM":
-        if (typeof data.enabled === "boolean") {
-          setEmbedBloomEnabled(data.enabled);
-        } else {
-          toggleEmbedBloom();
-        }
-        break;
-
-      case "TOGGLE_BLOOM":
-        toggleEmbedBloom();
         break;
 
       case "SET_ENVIRONMENT":

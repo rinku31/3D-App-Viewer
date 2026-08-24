@@ -5,7 +5,6 @@
  */
 
 import { state } from "../state/state.js";
-import { setEmbedBloomEnabled } from "../render/render.js";
 
 const BASE_AUTOROTATE_SPEED = 0.016;
 export const SPEED_MULTIPLIERS = [
@@ -210,19 +209,15 @@ function createHUDMarkup() {
   hudContainer.setAttribute("aria-label", "Viewer Controls");
 
   hudContainer.innerHTML = `
-    <!-- 1. Brand / Title Pill with Dynamic Long-Name Tooltip -->
-    <div class="hud-item hud-brand" id="hudBrandBadge" tabindex="0" role="status" aria-label="Current Product">
+    <!-- 1. Brand / Title Pill -->
+    <div class="hud-item hud-brand" id="hudBrandBadge" title="Current Product">
       <span class="hud-brand-dot"></span>
       <span class="hud-brand-text" id="hudSceneTitle">Product Showcase</span>
-      <div class="hud-brand-tooltip" id="hudBrandTooltip" role="tooltip" aria-hidden="true">
-        <span class="hud-brand-tooltip-text" id="hudBrandTooltipText">Product Showcase</span>
-        <span class="hud-brand-tooltip-arrow"></span>
-      </div>
     </div>
 
     <div class="hud-divider"></div>
 
-    <!-- 2. Controls Group: Reset, Play/Pause Turntable, Speed Multiplier, Bloom, Fullscreen -->
+    <!-- 2. Controls Group: Reset, Play/Pause Turntable, Speed Multiplier, Fullscreen -->
     <div class="hud-group" role="toolbar" aria-label="Scene Controls">
       <!-- Reset Camera View -->
       <button id="hudResetViewBtn" class="hud-btn" type="button" title="Reset View [Key: R]" aria-label="Reset Camera View">
@@ -247,22 +242,6 @@ function createHUDMarkup() {
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
         <span id="hudSpeedLabel" class="hud-btn-label hud-speed-label">1x</span>
-      </button>
-
-      <!-- Bloom Glow Toggle Button -->
-      <button id="hudBloomBtn" class="hud-btn" type="button" title="Toggle Bloom Glow [Key: B]" aria-label="Toggle Bloom Glow">
-        <svg id="hudBloomIcon" class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2"></path>
-          <path d="M12 20v2"></path>
-          <path d="m4.93 4.93 1.41 1.41"></path>
-          <path d="m17.66 17.66 1.41 1.41"></path>
-          <path d="M2 12h2"></path>
-          <path d="M20 12h2"></path>
-          <path d="m6.34 17.66-1.41 1.41"></path>
-          <path d="m19.07 4.93-1.41 1.41"></path>
-        </svg>
-        <span id="hudBloomLabel" class="hud-btn-label">Bloom</span>
       </button>
 
       <div class="hud-divider"></div>
@@ -309,29 +288,11 @@ function bindHUDActions() {
     });
   }
 
-  const bloomBtn = document.getElementById("hudBloomBtn");
-  if (bloomBtn) {
-    bloomBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleEmbedBloom();
-    });
-  }
-
   const fullscreenBtn = document.getElementById("hudFullscreenBtn");
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       toggleFullscreen();
-    });
-  }
-
-  // Mobile / keyboard tap on brand badge to toggle tooltip if long
-  const brandBadge = document.getElementById("hudBrandBadge");
-  if (brandBadge) {
-    brandBadge.addEventListener("click", (e) => {
-      if (brandBadge.classList.contains("has-long-title")) {
-        brandBadge.classList.toggle("tooltip-active");
-      }
     });
   }
 
@@ -342,7 +303,6 @@ function bindHUDActions() {
   const rendererDom = state.renderer?.domElement;
   if (rendererDom) {
     rendererDom.addEventListener("click", () => {
-      if (brandBadge) brandBadge.classList.remove("tooltip-active");
       if (state.hotspots) {
         state.hotspots.forEach((h) => {
           if (h.active && h.panel) {
@@ -358,75 +318,19 @@ function bindHUDActions() {
 }
 
 /**
- * Toggles Bloom Glow post-processing on/off in the Embed viewer
- */
-export function toggleEmbedBloom() {
-  const current = Boolean(state.bloom?.enabled);
-  const next = !current;
-  setEmbedBloomEnabled(next);
-
-  const bloomBtn = document.getElementById("hudBloomBtn");
-  if (bloomBtn) {
-    bloomBtn.classList.toggle("active", next);
-    bloomBtn.classList.add("btn-pulsed");
-    setTimeout(() => bloomBtn.classList.remove("btn-pulsed"), 400);
-  }
-}
-
-/**
  * Updates the Scene Title displayed on the HUD brand pill.
- * Automatically activates rich tooltip if the name is truncated or long.
  */
 export function updateHudSceneInfo(title) {
   const titleEl = document.getElementById("hudSceneTitle");
-  const brandBadge = document.getElementById("hudBrandBadge");
-  const tooltip = document.getElementById("hudBrandTooltip");
-  const tooltipText = document.getElementById("hudBrandTooltipText");
+  if (!titleEl) return;
 
-  const raw = title
+  const resolved = title
     || state.sceneDocument?.metadata?.title
     || state.currentModel?.name
     || "Product Showcase";
 
-  // Clean title
-  const resolved = String(raw).replace(/\s+Scene$/i, "").trim() || "Product Showcase";
-
-  if (titleEl) {
-    titleEl.textContent = resolved;
-  }
-  if (tooltipText) {
-    tooltipText.textContent = resolved;
-  }
-
-  // Check if product name overflows / is long
-  if (brandBadge && titleEl) {
-    // Request animation frame or immediate measure
-    requestAnimationFrame(() => {
-      const isOverflowing = titleEl.scrollWidth > titleEl.clientWidth || resolved.length >= 14;
-      if (isOverflowing) {
-        brandBadge.classList.add("has-long-title");
-        brandBadge.setAttribute("title", resolved);
-        brandBadge.setAttribute("aria-label", `Current Product: ${resolved}`);
-        if (tooltip) tooltip.setAttribute("aria-hidden", "false");
-      } else {
-        brandBadge.classList.remove("has-long-title");
-        brandBadge.classList.remove("tooltip-active");
-        brandBadge.removeAttribute("title");
-        brandBadge.setAttribute("aria-label", `Current Product: ${resolved}`);
-        if (tooltip) tooltip.setAttribute("aria-hidden", "true");
-      }
-    });
-  }
-
-  // Sync active environment preset indicator
-  const activePreset = state.sceneDocument?.scene?.environment?.preset || state.environmentManager?.getCurrentPreset() || "studio_small_09";
-  updateActiveEnvButton(activePreset);
-
-  // Sync Bloom button active status
-  const bloomBtn = document.getElementById("hudBloomBtn");
-  if (bloomBtn) {
-    bloomBtn.classList.toggle("active", Boolean(state.bloom?.enabled));
-  }
+  titleEl.textContent = resolved;
+  titleEl.setAttribute("title", resolved);
 }
 
 /**
@@ -594,8 +498,6 @@ function setupKeyboardShortcuts() {
       resetViewerCamera();
     } else if (e.key === "f" || e.key === "F") {
       toggleFullscreen();
-    } else if (e.key === "b" || e.key === "B" || e.code === "KeyB") {
-      toggleEmbedBloom();
     }
   });
 }

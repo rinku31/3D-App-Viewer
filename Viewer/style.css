@@ -287,26 +287,11 @@ canvas {
 }
 
 .hud-brand {
-  position: relative;
   padding: 4px 10px 4px 6px;
   color: #e4e4e7;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  cursor: default;
-  outline: none;
-  border-radius: 9999px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.hud-brand.has-long-title {
-  cursor: help;
-}
-
-.hud-brand.has-long-title:hover,
-.hud-brand.has-long-title:focus,
-.hud-brand.has-long-title.tooltip-active {
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .hud-brand-dot {
@@ -316,7 +301,6 @@ canvas {
   background: #44D62C;
   box-shadow: 0 0 8px rgba(68, 214, 44, 0.7);
   display: inline-block;
-  flex-shrink: 0;
 }
 
 .hud-brand-text {
@@ -324,63 +308,6 @@ canvas {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: inline-block;
-}
-
-@media (max-width: 640px) {
-  .hud-brand-text {
-    max-width: 90px;
-  }
-}
-
-/* Floating Rich Tooltip for Long Product Names */
-.hud-brand-tooltip {
-  position: absolute;
-  bottom: calc(100% + 9px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: rgba(18, 18, 24, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  padding: 5px 11px;
-  color: #ffffff;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  max-width: min(340px, 85vw);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 50;
-}
-
-.hud-brand-tooltip-arrow {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid rgba(18, 18, 24, 0.96);
-}
-
-.hud-brand.has-long-title:hover .hud-brand-tooltip,
-.hud-brand.has-long-title:focus .hud-brand-tooltip,
-.hud-brand.has-long-title.tooltip-active .hud-brand-tooltip {
-  opacity: 1;
-  pointer-events: auto;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
 }
 
 .hud-divider {
