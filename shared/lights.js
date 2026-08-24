@@ -235,6 +235,24 @@ export function createLightFromData(lightData) {
       }
       break;
 
+    case "area":
+    case "arealight":
+    case "rectarea":
+    case "rectarealight":
+      light = new THREE.RectAreaLight(
+        color,
+        intensity,
+        Number(lightData.width || 2.5),
+        Number(lightData.height || 2.5)
+      );
+      if (Array.isArray(lightData.position)) {
+        light.position.set(...lightData.position);
+      }
+      if (Array.isArray(lightData.target)) {
+        light.lookAt(new THREE.Vector3(...lightData.target));
+      }
+      break;
+
     case "directional":
     case "directionallight":
     default:

@@ -235,14 +235,21 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
   let lights = [];
   if (Array.isArray(raw.lights) && raw.lights.length > 0) {
     lights = raw.lights.map((l, idx) => {
-      const type = ["directional", "point", "spot", "ambient"].includes(l.type) ? l.type : "directional";
+      const rawType = (l.type || "directional").toLowerCase();
+      let type = "directional";
+      if (rawType === "point" || rawType === "pointlight") type = "point";
+      else if (rawType === "spot" || rawType === "spotlight") type = "spot";
+      else if (rawType === "area" || rawType === "arealight" || rawType === "rectarea" || rawType === "rectarealight") type = "area";
+      else if (rawType === "ambient" || rawType === "ambientlight") type = "ambient";
+
+      const defaultName = type === "area" ? "Area Softbox" : `${type.charAt(0).toUpperCase() + type.slice(1)} Light`;
       const lightEntry = {
         id: l.id || `light_${idx + 1}_${Date.now().toString(36)}`,
-        name: l.name || `${type.charAt(0).toUpperCase() + type.slice(1)} Light`,
+        name: l.name || defaultName,
         type,
         color: l.color || "#ffffff",
-        intensity: typeof l.intensity === "number" ? l.intensity : 2.0,
-        castShadow: l.castShadow !== undefined ? Boolean(l.castShadow) : true,
+        intensity: typeof l.intensity === "number" ? l.intensity : (type === "area" ? 15.0 : 2.0),
+        castShadow: l.castShadow !== undefined ? Boolean(l.castShadow) : (type !== "ambient" && type !== "area"),
       };
 
       if (Array.isArray(l.position) && l.position.length === 3) {
@@ -261,6 +268,9 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       if (typeof l.decay === "number") lightEntry.decay = l.decay;
       if (typeof l.angle === "number") lightEntry.angle = l.angle;
       if (typeof l.penumbra === "number") lightEntry.penumbra = l.penumbra;
+      if (typeof l.width === "number") lightEntry.width = l.width;
+      if (typeof l.height === "number") lightEntry.height = l.height;
+      if (typeof l.radius === "number") lightEntry.radius = l.radius;
 
       return lightEntry;
     });

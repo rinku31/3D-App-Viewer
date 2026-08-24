@@ -5,6 +5,7 @@ import { buildHotspot, removeHotspot } from "../hotspots/hotspots.js";
 import {
   clearAllLights,
   createAmbientLight,
+  createAreaLight,
   createDirectionalLight,
   createPointLight,
   createSpotLight
@@ -229,11 +230,14 @@ async function importJsonData(rawData, fileName = "scene.json") {
   if (Array.isArray(data.lights)) {
     clearAllLights();
     data.lights.forEach((l) => {
-      if (l.type === "point") {
+      const typeLower = (l.type || "directional").toLowerCase();
+      if (typeLower === "point" || typeLower === "pointlight") {
         createPointLight(l);
-      } else if (l.type === "spot") {
+      } else if (typeLower === "spot" || typeLower === "spotlight") {
         createSpotLight(l);
-      } else if (l.type === "ambient") {
+      } else if (typeLower === "area" || typeLower === "arealight" || typeLower === "rectarea" || typeLower === "rectarealight") {
+        createAreaLight(l);
+      } else if (typeLower === "ambient" || typeLower === "ambientlight") {
         createAmbientLight(l);
       } else {
         createDirectionalLight(l);
@@ -360,8 +364,10 @@ async function exportJson() {
         customHdrUrl: null,
         intensity: Number(state.sceneSettings.environment?.intensity ?? 1.0),
         rotation: Number(state.sceneSettings.environment?.rotation ?? 0.0),
-        exposure: Number(state.sceneSettings.environment?.exposure ?? 1.6),
-        toneMapping: state.sceneSettings.environment?.toneMapping || "ACESFilmic"
+        exposure: Number(state.sceneSettings.environment?.exposure ?? 1.0),
+        exposureEV: Number(state.sceneSettings.environment?.exposureEV ?? 0.0),
+        toneMapping: state.sceneSettings.environment?.toneMapping || "AgX",
+        look: state.sceneSettings.environment?.look || "None"
       },
       rendering: {
         shadows: Boolean(state.sceneSettings.rendering?.shadows !== false),
