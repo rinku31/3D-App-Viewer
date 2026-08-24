@@ -16,18 +16,23 @@ export function initializeRender() {
   scene.background = new THREE.Color(0x222228);
   state.scene = scene;
 
+  const width = Math.max(window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 300, 10);
+  const height = Math.max(window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 150, 10);
+  const aspect = height > 0 ? (width / height) : 1;
+
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
   });
 
   renderer.setSize(
-    window.innerWidth * state.qualityScale,
-    window.innerHeight * state.qualityScale,
+    width * state.qualityScale,
+    height * state.qualityScale,
     false
   );
   renderer.domElement.style.width = "100%";
   renderer.domElement.style.height = "100%";
+  renderer.domElement.style.display = "block";
   renderer.domElement.style.imageRendering = "auto";
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -43,7 +48,7 @@ export function initializeRender() {
   const cameraRig = new CameraRig({
     scene,
     domElement: renderer.domElement,
-    aspect: window.innerWidth / window.innerHeight,
+    aspect: aspect,
     fov: 45,
     near: 0.01,
     far: 1000,
@@ -59,8 +64,20 @@ export function initializeRender() {
   // Environment Manager
   state.environmentManager = createEnvironmentManager({ scene, renderer });
 
-  // Initial resize event listener
+  // Initial resize event listeners
   window.addEventListener("resize", handleResize);
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => {
+      handleResize();
+    });
+    ro.observe(document.body);
+  }
+
+  // Defer an initial resize check in case iframe dimensions calculate asynchronously in Firefox
+  requestAnimationFrame(() => {
+    handleResize();
+  });
 
   return { scene, camera: cameraRig.camera, cameraRig, renderer };
 }
@@ -71,14 +88,19 @@ export function initializeRender() {
 export function handleResize() {
   if (!state.camera || !state.renderer) return;
 
-  state.camera.aspect = window.innerWidth / window.innerHeight;
-  state.camera.updateProjectionMatrix();
+  const width = Math.max(window.innerWidth || document.documentElement.clientWidth || document.body?.clientWidth || 300, 10);
+  const height = Math.max(window.innerHeight || document.documentElement.clientHeight || document.body?.clientHeight || 150, 10);
 
-  state.renderer.setSize(
-    window.innerWidth * state.qualityScale,
-    window.innerHeight * state.qualityScale,
-    false
-  );
+  if (width > 0 && height > 0) {
+    state.camera.aspect = width / height;
+    state.camera.updateProjectionMatrix();
+
+    state.renderer.setSize(
+      width * state.qualityScale,
+      height * state.qualityScale,
+      false
+    );
+  }
 
   state.visibilityDirty = true;
 }

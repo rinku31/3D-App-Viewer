@@ -298,6 +298,23 @@ function bindHUDActions() {
 
   document.addEventListener("fullscreenchange", updateFullscreenUIState);
   document.addEventListener("webkitfullscreenchange", updateFullscreenUIState);
+
+  // Canvas click to deselect active hotspot panels
+  const rendererDom = state.renderer?.domElement;
+  if (rendererDom) {
+    rendererDom.addEventListener("click", () => {
+      if (state.hotspots) {
+        state.hotspots.forEach((h) => {
+          if (h.active && h.panel) {
+            h.active = false;
+            h.panel.style.display = "none";
+            if (h.line) h.line.style.display = "none";
+            if (h.dot) h.dot.classList.remove("active");
+          }
+        });
+      }
+    });
+  }
 }
 
 /**
@@ -317,18 +334,35 @@ export function updateHudSceneInfo(title) {
 }
 
 /**
- * Smoothly resets the CameraRig to its default viewing angle and focus distance.
+ * Smoothly resets the CameraRig to its default viewing angle and focus distance,
+ * pauses turntable auto-rotation, and dismisses active hotspot popups.
  */
 export function resetViewerCamera() {
-  if (state.cameraRig) {
-    state.cameraRig.reset();
-    state.visibilityDirty = true;
+  if (!state.cameraRig) return;
 
-    const resetBtn = document.getElementById("hudResetViewBtn");
-    if (resetBtn) {
-      resetBtn.classList.add("btn-pulsed");
-      setTimeout(() => resetBtn.classList.remove("btn-pulsed"), 400);
-    }
+  // 1. Pause 360 auto-rotation when resetting
+  state.cameraRig.autoRotate = false;
+  updateAutoRotateUIState(false);
+
+  // 2. Smoothly reset camera orientation & distance
+  state.cameraRig.reset();
+  state.visibilityDirty = true;
+
+  // 3. Dismiss active hotspot panels & markers
+  if (state.hotspots) {
+    state.hotspots.forEach((h) => {
+      if (h.panel) h.panel.style.display = "none";
+      if (h.line) h.line.style.display = "none";
+      if (h.dot) h.dot.classList.remove("active");
+      h.active = false;
+    });
+  }
+
+  // 4. Pulse visual feedback on the reset button
+  const resetBtn = document.getElementById("hudResetViewBtn");
+  if (resetBtn) {
+    resetBtn.classList.add("btn-pulsed");
+    setTimeout(() => resetBtn.classList.remove("btn-pulsed"), 400);
   }
 }
 

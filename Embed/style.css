@@ -2,15 +2,16 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: #18181c;
   color: #f1f1f3;
   user-select: none;
-  width: 100vw;
-  height: 100vh;
 }
 
 #overlay {
