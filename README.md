@@ -131,6 +131,10 @@ Embed the viewer into any HTML page, CMS (WordPress, Shopify, Webflow), or web a
 | `speed` | &mdash; | Initial turntable rotation speed (`0.5x`, `1x`, `1.5x`, `2x`, `3x`) | `?speed=1.5x` |
 | `bg` | `background` | Viewport background color in hex format | `?bg=%2318181b` |
 
+### Test Embed Functionality
+
+If you want to see Embed in action, [Click this link](https://quietlang13.github.io/3D-IPE-Files/).
+
 ## How Calling a JS function work when Hotspot Show article button and Viewer Simulator button is clicked
 
 The viewer supports bidirectional integration with the host webpage through direct window function invocation and cross-origin `postMessage` events.

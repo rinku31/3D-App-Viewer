@@ -93,18 +93,29 @@ export function testHotspotOcclusion(position, camera, model, raycaster, toleran
 }
 
 /**
- * Calculates 2D connector line endpoint positions from hotspot marker to panel
- * @param {number} markerX 
- * @param {number} markerY 
- * @param {number} panelX 
- * @param {number} panelY 
- * @param {{ x: number, y: number }} lineOffset 
+ * Calculates 2D connector line endpoint positions from hotspot marker center to panel center.
+ * @param {number} markerX - Hotspot marker center X
+ * @param {number} markerY - Hotspot marker center Y
+ * @param {number} panelX - Panel top-left X coordinate
+ * @param {number} panelY - Panel top-left Y coordinate
+ * @param {number|object} [panelWidth=0] - Panel width in px, or lineOffset object for backward compatibility
+ * @param {number} [panelHeight=0] - Panel height in px
+ * @param {{ x: number, y: number }} [lineOffset={ x: 0, y: 0 }] - Optional line offset
  */
-export function calculateConnectorLine(markerX, markerY, panelX, panelY, lineOffset = { x: 0, y: 0 }) {
+export function calculateConnectorLine(markerX, markerY, panelX, panelY, panelWidth = 0, panelHeight = 0, lineOffset = { x: 0, y: 0 }) {
+  let w = typeof panelWidth === "number" ? panelWidth : 0;
+  let h = typeof panelHeight === "number" ? panelHeight : 0;
+  let offset = (typeof panelWidth === "object" && panelWidth !== null) 
+    ? panelWidth 
+    : (typeof lineOffset === "object" && lineOffset !== null ? lineOffset : { x: 0, y: 0 });
+
+  const targetX = w > 0 ? (panelX + w * 0.5) : panelX;
+  const targetY = h > 0 ? (panelY + h * 0.5) : (panelY + 40);
+
   return {
-    x1: markerX + (lineOffset.x || 0),
-    y1: markerY + (lineOffset.y || 0),
-    x2: panelX,
-    y2: panelY + 40
+    x1: markerX + (offset.x || 0),
+    y1: markerY + (offset.y || 0),
+    x2: targetX,
+    y2: targetY
   };
 }

@@ -91,6 +91,8 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       distance: 4.0,
       minDistance: 1.35,
       maxDistance: 16.0,
+      minPitch: -82,
+      maxPitch: 82,
       yaw: 0.0,
       pitch: 0.2
     },
@@ -126,10 +128,12 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
     settings: {
       line: {
         color: "#44D62C",
+        style: "dashed", // "dashed" | "solid"
         width: 1.5,
         offset: { x: 0, y: 0 }
       },
       hotspots: {
+        panelColor: "rgba(30, 30, 36, 0.95)",
         pulseAnimation: true,
         theme: "default",
         occlusionTolerance: 0.08
@@ -248,6 +252,12 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
   if (typeof raw.camera?.maxDistance === "number") {
     camera.maxDistance = Math.max((camera.minDistance || 0.1) + 0.05, raw.camera.maxDistance);
   }
+  if (typeof raw.camera?.minPitch === "number") {
+    camera.minPitch = raw.camera.minPitch;
+  }
+  if (typeof raw.camera?.maxPitch === "number") {
+    camera.maxPitch = raw.camera.maxPitch;
+  }
   delete camera.viewpoints;
 
   const model = {
@@ -314,8 +324,9 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
 
   const settings = {
     line: {
-      color: raw.settings?.line?.color || base.settings.line.color,
-      width: typeof raw.settings?.line?.width === "number" ? raw.settings.line.width : base.settings.line.width,
+      color: raw.settings?.line?.color || base.settings.line.color || "#44D62C",
+      style: raw.settings?.line?.style || base.settings.line.style || "dashed",
+      width: typeof raw.settings?.line?.width === "number" ? raw.settings.line.width : (base.settings.line?.width || 1.5),
       offset: {
         x: Number(raw.settings?.line?.offset?.x) || 0,
         y: Number(raw.settings?.line?.offset?.y) || 0
@@ -323,12 +334,15 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
     },
     hotspots: {
       ...base.settings.hotspots,
+      panelColor: raw.settings?.hotspots?.panelColor || base.settings.hotspots?.panelColor || "rgba(30, 30, 36, 0.95)",
       ...(raw.settings?.hotspots || {})
     },
     controls: {
       defaultEnabled: raw.settings?.controls?.defaultEnabled !== undefined ? Boolean(raw.settings.controls.defaultEnabled) : true,
       explodeEnabled: raw.settings?.controls?.explodeEnabled !== undefined ? Boolean(raw.settings.controls.explodeEnabled) : true,
-      simulatorEnabled: raw.settings?.controls?.simulatorEnabled !== undefined ? Boolean(raw.settings.controls.simulatorEnabled) : true
+      simulatorEnabled: raw.settings?.controls?.simulatorEnabled !== undefined ? Boolean(raw.settings.controls.simulatorEnabled) : true,
+      simulatorJsFunction: raw.settings?.controls?.simulatorJsFunction || "onSimulatorToggle",
+      simulatorUrl: raw.settings?.controls?.simulatorUrl || ""
     }
   };
 

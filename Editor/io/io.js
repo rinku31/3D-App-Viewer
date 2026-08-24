@@ -110,11 +110,26 @@ async function importModel(loader, file, companionJson = null, allFiles = []) {
     state.currentModel.name = modelName;
     state.scene.add(state.currentModel);
 
+    const maxAnisotropy = state.renderer?.capabilities?.getMaxAnisotropy?.() || 8;
     state.currentModel.traverse((obj) => {
-      if (obj.isMesh && obj.material) {
-        obj.material.envMapIntensity = 2.5;
+      if (obj.isMesh) {
         obj.castShadow = true;
         obj.receiveShadow = true;
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+        materials.forEach((mat) => {
+          if (!mat) return;
+          mat.envMapIntensity = 2.5;
+          const texKeys = ["map", "normalMap", "roughnessMap", "metalnessMap", "emissiveMap", "aoMap", "clearcoatMap", "clearcoatNormalMap", "transmissionMap", "thicknessMap"];
+          texKeys.forEach((key) => {
+            if (mat[key] && mat[key].isTexture) {
+              mat[key].anisotropy = maxAnisotropy;
+              mat[key].minFilter = THREE.LinearMipmapLinearFilter;
+              mat[key].magFilter = THREE.LinearFilter;
+              mat[key].generateMipmaps = true;
+              mat[key].needsUpdate = true;
+            }
+          });
+        });
       }
     });
 
@@ -166,9 +181,6 @@ async function importJsonData(rawData, fileName = "scene.json") {
   // 1. Restore Scene Settings
   if (data.scene) {
     Object.assign(state.sceneSettings, data.scene);
-    state.sceneSettings.controls = (data.settings && data.settings.controls) 
-      ? { ...data.settings.controls } 
-      : (data.scene.controls ? { ...data.scene.controls } : { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true });
 
     if (data.scene.environment) {
       Object.assign(state.sceneSettings.environment, data.scene.environment);
@@ -190,12 +202,31 @@ async function importJsonData(rawData, fileName = "scene.json") {
       setGridVisible(data.scene.helpers.grid !== false);
       setAxesVisible(Boolean(data.scene.helpers.axes));
     }
-  } else if (data.settings?.controls) {
-    state.sceneSettings.controls = { ...data.settings.controls };
+  }
+
+  // Restore line, hotspots and controls settings
+  if (data.settings) {
+    if (data.settings.line) {
+      if (!state.sceneSettings.line) state.sceneSettings.line = {};
+      Object.assign(state.sceneSettings.line, data.settings.line);
+    }
+    if (data.settings.hotspots) {
+      if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+      Object.assign(state.sceneSettings.hotspots, data.settings.hotspots);
+    }
+    if (data.settings.controls) {
+      if (!state.sceneSettings.controls) state.sceneSettings.controls = {};
+      Object.assign(state.sceneSettings.controls, data.settings.controls);
+    }
+  } else if (data.scene?.controls) {
+    if (!state.sceneSettings.controls) state.sceneSettings.controls = {};
+    Object.assign(state.sceneSettings.controls, data.scene.controls);
   }
 
   // 2. Restore Camera Settings & Default View
   if (data.camera && state.cameraRig) {
+    const minPitch = typeof data.camera.minPitch === "number" ? data.camera.minPitch : -82;
+    const maxPitch = typeof data.camera.maxPitch === "number" ? data.camera.maxPitch : 82;
     const camState = {
       target: Array.isArray(data.camera.target) ? data.camera.target : [0, 0, 0],
       yaw: typeof data.camera.yaw === "number" ? data.camera.yaw : 0.0,
@@ -203,13 +234,17 @@ async function importJsonData(rawData, fileName = "scene.json") {
       distance: typeof data.camera.distance === "number" ? data.camera.distance : 4.0,
       fov: typeof data.camera.fov === "number" ? data.camera.fov : 45,
       minDistance: typeof data.camera.minDistance === "number" ? data.camera.minDistance : undefined,
-      maxDistance: typeof data.camera.maxDistance === "number" ? data.camera.maxDistance : undefined
+      maxDistance: typeof data.camera.maxDistance === "number" ? data.camera.maxDistance : undefined,
+      minPitch: minPitch,
+      maxPitch: maxPitch
     };
     state.cameraRig.setDefaultState(camState);
     state.cameraRig.setState(camState);
     state.cameraSettings.fov = camState.fov;
     if (typeof camState.minDistance === "number") state.cameraSettings.minDistance = camState.minDistance;
     if (typeof camState.maxDistance === "number") state.cameraSettings.maxDistance = camState.maxDistance;
+    state.cameraSettings.minPitch = minPitch;
+    state.cameraSettings.maxPitch = maxPitch;
   }
 
   // 3. Restore Model Transforms
@@ -340,6 +375,18 @@ function serializeSceneDocument() {
       ? state.cameraSettings.maxDistance
       : (typeof defaultCam.maxDistance === "number" ? defaultCam.maxDistance : 16.0));
 
+  const minPitch = typeof state.cameraRig?.getMinPitchDeg === "function"
+    ? state.cameraRig.getMinPitchDeg()
+    : (typeof state.cameraSettings?.minPitch === "number"
+      ? state.cameraSettings.minPitch
+      : -82);
+
+  const maxPitch = typeof state.cameraRig?.getMaxPitchDeg === "function"
+    ? state.cameraRig.getMaxPitchDeg()
+    : (typeof state.cameraSettings?.maxPitch === "number"
+      ? state.cameraSettings.maxPitch
+      : 82);
+
   return {
     version: CURRENT_SCHEMA_VERSION,
     metadata: {
@@ -391,6 +438,8 @@ function serializeSceneDocument() {
       far: state.camera?.far || 1000,
       minDistance: Number(minDistance),
       maxDistance: Number(maxDistance),
+      minPitch: Number(minPitch),
+      maxPitch: Number(maxPitch),
       target: defaultCam.target || [0, 0, 0],
       distance: typeof defaultCam.distance === "number" ? defaultCam.distance : 4.0,
       yaw: typeof defaultCam.yaw === "number" ? defaultCam.yaw : 0.0,
@@ -455,14 +504,16 @@ function serializeSceneDocument() {
     }),
     settings: {
       line: {
-        color: "#44D62C",
-        width: 1.5,
-        offset: { x: 0, y: 0 }
+        color: state.sceneSettings?.line?.color || "#44D62C",
+        style: state.sceneSettings?.line?.style || "dashed",
+        width: typeof state.sceneSettings?.line?.width === "number" ? state.sceneSettings.line.width : 1.5,
+        offset: state.sceneSettings?.line?.offset || { x: 0, y: 0 }
       },
       hotspots: {
-        pulseAnimation: true,
-        theme: "default",
-        occlusionTolerance: 0.08
+        panelColor: state.sceneSettings?.hotspots?.panelColor || "rgba(30, 30, 36, 0.95)",
+        pulseAnimation: state.sceneSettings?.hotspots?.pulseAnimation !== false,
+        theme: state.sceneSettings?.hotspots?.theme || "default",
+        occlusionTolerance: typeof state.sceneSettings?.hotspots?.occlusionTolerance === "number" ? state.sceneSettings.hotspots.occlusionTolerance : 0.08
       },
       controls: {
         defaultEnabled: state.sceneSettings?.controls?.defaultEnabled !== false,

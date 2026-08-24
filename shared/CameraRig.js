@@ -61,6 +61,22 @@ export class CameraRig {
     this.maxDistance = typeof options.maxDistance === "number" ? options.maxDistance : 16.0;
     this.hasExplicitLimits = typeof options.minDistance === "number" || typeof options.maxDistance === "number";
 
+    // Pitch (vertical rotation) limits - bounded between -82° (-1.4312 rad) and +82° (1.4312 rad) by default
+    const defaultMinPitchRad = (-82 * Math.PI) / 180;
+    const defaultMaxPitchRad = (82 * Math.PI) / 180;
+
+    const parsePitchLimit = (val, fallback) => {
+      if (typeof val !== "number" || isNaN(val)) return fallback;
+      return Math.abs(val) > Math.PI ? THREE.MathUtils.degToRad(val) : val;
+    };
+
+    this.minPitch = typeof options.minPitch === "number" ? parsePitchLimit(options.minPitch, defaultMinPitchRad) : defaultMinPitchRad;
+    this.maxPitch = typeof options.maxPitch === "number" ? parsePitchLimit(options.maxPitch, defaultMaxPitchRad) : defaultMaxPitchRad;
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      this.pitch = THREE.MathUtils.clamp(this.pitch, this.minPitch, this.maxPitch);
+      this.targetPitch = this.pitch;
+    }
+
     // Anti-clipping mesh collision configuration (active in Viewer and Embed)
     this.collisionCheck = Boolean(options.collisionCheck || false);
     this.collisionMargin = typeof options.collisionMargin === "number" ? options.collisionMargin : 0.15;
@@ -225,6 +241,10 @@ export class CameraRig {
   rotateYaw(delta) {
     this.targetYaw += delta;
     if (typeof this.onChange === "function") this.onChange();
+    if (typeof this.onRotate === "function") this.onRotate();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("modelrotated"));
+    }
   }
 
   /**
@@ -232,7 +252,18 @@ export class CameraRig {
    */
   rotatePitch(delta) {
     this.targetPitch += delta;
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      this.targetPitch = THREE.MathUtils.clamp(this.targetPitch, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      this.targetPitch = Math.max(this.minPitch, this.targetPitch);
+    } else if (this.maxPitch !== null) {
+      this.targetPitch = Math.min(this.maxPitch, this.targetPitch);
+    }
     if (typeof this.onChange === "function") this.onChange();
+    if (typeof this.onRotate === "function") this.onRotate();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("modelrotated"));
+    }
   }
 
   /**
@@ -322,6 +353,16 @@ export class CameraRig {
     if (typeof savedState.pitch === "number") this.initialState.pitch = savedState.pitch;
     if (typeof savedState.distance === "number") this.initialState.distance = savedState.distance;
     if (typeof savedState.fov === "number") this.initialState.fov = savedState.fov;
+    if (typeof savedState.minPitch === "number") {
+      const minP = Math.abs(savedState.minPitch) > Math.PI ? THREE.MathUtils.degToRad(savedState.minPitch) : savedState.minPitch;
+      this.initialState.minPitch = minP;
+      this.minPitch = minP;
+    }
+    if (typeof savedState.maxPitch === "number") {
+      const maxP = Math.abs(savedState.maxPitch) > Math.PI ? THREE.MathUtils.degToRad(savedState.maxPitch) : savedState.maxPitch;
+      this.initialState.maxPitch = maxP;
+      this.maxPitch = maxP;
+    }
     if (typeof savedState.minDistance === "number") {
       this.initialState.minDistance = savedState.minDistance;
       this.minDistance = savedState.minDistance;
@@ -344,9 +385,58 @@ export class CameraRig {
       pitch: this.initialState.pitch,
       distance: this.initialState.distance,
       fov: this.initialState.fov,
+      minPitch: typeof this.initialState.minPitch === "number" ? this.initialState.minPitch : this.minPitch,
+      maxPitch: typeof this.initialState.maxPitch === "number" ? this.initialState.maxPitch : this.maxPitch,
+      minPitchDeg: this.getMinPitchDeg(),
+      maxPitchDeg: this.getMaxPitchDeg(),
       minDistance: typeof this.initialState.minDistance === "number" ? this.initialState.minDistance : this.minDistance,
       maxDistance: typeof this.initialState.maxDistance === "number" ? this.initialState.maxDistance : this.maxDistance
     };
+  }
+
+  getMinPitchDeg() {
+    return this.minPitch !== null ? Math.round(THREE.MathUtils.radToDeg(this.minPitch)) : -82;
+  }
+
+  getMaxPitchDeg() {
+    return this.maxPitch !== null ? Math.round(THREE.MathUtils.radToDeg(this.maxPitch)) : 82;
+  }
+
+  setMinPitch(val, inDegrees = false) {
+    if (val === null || val === undefined) {
+      this.minPitch = null;
+      return;
+    }
+    const num = Number(val);
+    this.minPitch = inDegrees || Math.abs(num) > Math.PI ? THREE.MathUtils.degToRad(num) : num;
+    this.targetPitch = this.clampPitch(this.targetPitch);
+    this.pitch = this.clampPitch(this.pitch);
+    if (this.initialState) this.initialState.minPitch = this.minPitch;
+    if (typeof this.onChange === "function") this.onChange();
+  }
+
+  setMaxPitch(val, inDegrees = false) {
+    if (val === null || val === undefined) {
+      this.maxPitch = null;
+      return;
+    }
+    const num = Number(val);
+    this.maxPitch = inDegrees || Math.abs(num) > Math.PI ? THREE.MathUtils.degToRad(num) : num;
+    this.targetPitch = this.clampPitch(this.targetPitch);
+    this.pitch = this.clampPitch(this.pitch);
+    if (this.initialState) this.initialState.maxPitch = this.maxPitch;
+    if (typeof this.onChange === "function") this.onChange();
+  }
+
+  clampPitch(pitchVal) {
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      return THREE.MathUtils.clamp(pitchVal, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      return Math.max(this.minPitch, pitchVal);
+    } else if (this.maxPitch !== null) {
+      return Math.min(this.maxPitch, pitchVal);
+    }
+    return pitchVal;
   }
 
   /**
@@ -358,7 +448,15 @@ export class CameraRig {
     // Shortest angular distance to prevent unnecessary full spins
     const twoPi = Math.PI * 2;
     const targetYawVal = typeof this.initialState.yaw === "number" ? this.initialState.yaw : 0;
-    const targetPitchVal = typeof this.initialState.pitch === "number" ? this.initialState.pitch : 0.2;
+    let targetPitchVal = typeof this.initialState.pitch === "number" ? this.initialState.pitch : 0.2;
+
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      targetPitchVal = THREE.MathUtils.clamp(targetPitchVal, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      targetPitchVal = Math.max(this.minPitch, targetPitchVal);
+    } else if (this.maxPitch !== null) {
+      targetPitchVal = Math.min(this.maxPitch, targetPitchVal);
+    }
 
     const yawDiff = (targetYawVal - this.targetYaw) % twoPi;
     const shortestYawDiff = ((yawDiff + Math.PI * 3) % twoPi) - Math.PI;
@@ -413,6 +511,14 @@ export class CameraRig {
         return;
     }
 
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      destPitch = THREE.MathUtils.clamp(destPitch, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      destPitch = Math.max(this.minPitch, destPitch);
+    } else if (this.maxPitch !== null) {
+      destPitch = Math.min(this.maxPitch, destPitch);
+    }
+
     const twoPi = Math.PI * 2;
     const yawDiff = (destYaw - this.targetYaw) % twoPi;
     const shortestYawDiff = ((yawDiff + Math.PI * 3) % twoPi) - Math.PI;
@@ -445,8 +551,16 @@ export class CameraRig {
     }
 
     if (typeof viewpoint.pitch === "number") {
+      let destPitch = viewpoint.pitch;
+      if (this.minPitch !== null && this.maxPitch !== null) {
+        destPitch = THREE.MathUtils.clamp(destPitch, this.minPitch, this.maxPitch);
+      } else if (this.minPitch !== null) {
+        destPitch = Math.max(this.minPitch, destPitch);
+      } else if (this.maxPitch !== null) {
+        destPitch = Math.min(this.maxPitch, destPitch);
+      }
       const twoPi = Math.PI * 2;
-      const pitchDiff = (viewpoint.pitch - this.targetPitch) % twoPi;
+      const pitchDiff = (destPitch - this.targetPitch) % twoPi;
       const shortestPitchDiff = ((pitchDiff + Math.PI * 3) % twoPi) - Math.PI;
       this.targetPitch = this.targetPitch + shortestPitchDiff;
     }
@@ -509,6 +623,10 @@ export class CameraRig {
       pitch: this.targetPitch,
       distance: this.targetDistance,
       fov: this.camera.fov,
+      minPitch: this.minPitch,
+      maxPitch: this.maxPitch,
+      minPitchDeg: this.getMinPitchDeg(),
+      maxPitchDeg: this.getMaxPitchDeg(),
       minDistance: this.minDistance,
       maxDistance: this.maxDistance
     };
@@ -523,13 +641,11 @@ export class CameraRig {
     if (Array.isArray(savedState.target) && savedState.target.length === 3) {
       this.target.set(savedState.target[0], savedState.target[1], savedState.target[2]);
     }
-    if (typeof savedState.yaw === "number") {
-      this.yaw = savedState.yaw;
-      this.targetYaw = savedState.yaw;
+    if (typeof savedState.minPitch === "number") {
+      this.minPitch = Math.abs(savedState.minPitch) > Math.PI ? THREE.MathUtils.degToRad(savedState.minPitch) : savedState.minPitch;
     }
-    if (typeof savedState.pitch === "number") {
-      this.pitch = savedState.pitch;
-      this.targetPitch = savedState.pitch;
+    if (typeof savedState.maxPitch === "number") {
+      this.maxPitch = Math.abs(savedState.maxPitch) > Math.PI ? THREE.MathUtils.degToRad(savedState.maxPitch) : savedState.maxPitch;
     }
     if (typeof savedState.minDistance === "number") {
       this.minDistance = savedState.minDistance;
@@ -538,6 +654,15 @@ export class CameraRig {
     if (typeof savedState.maxDistance === "number") {
       this.maxDistance = savedState.maxDistance;
       this.hasExplicitLimits = true;
+    }
+    if (typeof savedState.yaw === "number") {
+      this.yaw = savedState.yaw;
+      this.targetYaw = savedState.yaw;
+    }
+    if (typeof savedState.pitch === "number") {
+      const p = this.clampPitch(savedState.pitch);
+      this.pitch = p;
+      this.targetPitch = p;
     }
     if (typeof savedState.distance === "number") {
       const minAllowed = this.collisionCheck && this.collisionObject
@@ -563,6 +688,15 @@ export class CameraRig {
       this.targetYaw += this.autoRotateSpeed;
     }
 
+    // Pitch bounds enforcement
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      this.targetPitch = THREE.MathUtils.clamp(this.targetPitch, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      this.targetPitch = Math.max(this.minPitch, this.targetPitch);
+    } else if (this.maxPitch !== null) {
+      this.targetPitch = Math.min(this.maxPitch, this.targetPitch);
+    }
+
     const prevYaw = this.yaw;
     const prevPitch = this.pitch;
     const prevDist = this.distance;
@@ -583,6 +717,13 @@ export class CameraRig {
     if (this.enableDamping) {
       this.yaw += (this.targetYaw - this.yaw) * this.dampingFactor;
       this.pitch += (this.targetPitch - this.pitch) * this.dampingFactor;
+      if (this.minPitch !== null && this.maxPitch !== null) {
+        this.pitch = THREE.MathUtils.clamp(this.pitch, this.minPitch, this.maxPitch);
+      } else if (this.minPitch !== null) {
+        this.pitch = Math.max(this.minPitch, this.pitch);
+      } else if (this.maxPitch !== null) {
+        this.pitch = Math.min(this.maxPitch, this.pitch);
+      }
       this.distance += (this.targetDistance - this.distance) * this.dampingFactor;
       this.distance = THREE.MathUtils.clamp(this.distance, this.minDistance, this.maxDistance);
       if (this.currentTarget) {
@@ -597,11 +738,11 @@ export class CameraRig {
       }
     }
 
-    // Secondary collision safeguard: ensure current camera distance never penetrates surface during orbital motion
+    // Secondary collision safeguard: ensure current camera distance smoothly never penetrates surface during orbital motion
     if (this.collisionCheck && this.collisionObject) {
       const safeCurrentDist = this.getMinSafeDistance(this.yaw, this.pitch);
       if (this.distance < safeCurrentDist) {
-        this.distance = safeCurrentDist;
+        this.distance += (safeCurrentDist - this.distance) * Math.max(this.dampingFactor * 2.0, 0.25);
         if (this.targetDistance < safeCurrentDist) {
           this.targetDistance = safeCurrentDist;
         }
@@ -630,6 +771,13 @@ export class CameraRig {
   // --- Internal transform execution ---
 
   applyImmediateTransforms() {
+    if (this.minPitch !== null && this.maxPitch !== null) {
+      this.targetPitch = THREE.MathUtils.clamp(this.targetPitch, this.minPitch, this.maxPitch);
+    } else if (this.minPitch !== null) {
+      this.targetPitch = Math.max(this.minPitch, this.targetPitch);
+    } else if (this.maxPitch !== null) {
+      this.targetPitch = Math.min(this.maxPitch, this.targetPitch);
+    }
     this.yaw = this.targetYaw;
     this.pitch = this.targetPitch;
     this.distance = this.targetDistance;

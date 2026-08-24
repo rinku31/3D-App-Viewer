@@ -24,10 +24,11 @@ function initializeRender() {
     antialias: true,
     alpha: true,
     powerPreference: "high-performance",
+    logarithmicDepthBuffer: true,
   });
 
   renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   // Blender 4.0+ AgX Color Management by default
@@ -48,9 +49,11 @@ function initializeRender() {
     domElement: renderer.domElement,
     aspect: viewport.clientWidth / viewport.clientHeight,
     fov: state.cameraSettings?.fov || 45,
-    near: state.cameraSettings?.near || 0.02,
+    near: state.cameraSettings?.near || 0.05,
     far: state.cameraSettings?.far || 1000,
     distance: 4,
+    minPitch: typeof state.cameraSettings?.minPitch === "number" ? state.cameraSettings.minPitch : (-82 * Math.PI) / 180,
+    maxPitch: typeof state.cameraSettings?.maxPitch === "number" ? state.cameraSettings.maxPitch : (82 * Math.PI) / 180,
   });
 
   state.cameraRig = cameraRig;

@@ -76,12 +76,27 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
     state.currentModel = model;
     state.scene.add(model);
 
-    // 3. Enhance materials & shadows
+    // 3. Enhance materials, anti-aliased textures & shadows
+    const maxAnisotropy = state.renderer?.capabilities?.getMaxAnisotropy?.() || 8;
     model.traverse((obj) => {
-      if (obj.isMesh && obj.material) {
-        obj.material.envMapIntensity = 2.5;
+      if (obj.isMesh) {
         obj.castShadow = true;
         obj.receiveShadow = true;
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+        materials.forEach((mat) => {
+          if (!mat) return;
+          mat.envMapIntensity = 2.5;
+          const texKeys = ["map", "normalMap", "roughnessMap", "metalnessMap", "emissiveMap", "aoMap", "clearcoatMap", "clearcoatNormalMap", "transmissionMap", "thicknessMap"];
+          texKeys.forEach((key) => {
+            if (mat[key] && mat[key].isTexture) {
+              mat[key].anisotropy = maxAnisotropy;
+              mat[key].minFilter = THREE.LinearMipmapLinearFilter;
+              mat[key].magFilter = THREE.LinearFilter;
+              mat[key].generateMipmaps = true;
+              mat[key].needsUpdate = true;
+            }
+          });
+        });
       }
     });
 
@@ -297,7 +312,9 @@ function applyCameraAndModelTransforms() {
       distance: typeof camData.distance === "number" ? camData.distance : 4.0,
       fov: typeof camData.fov === "number" ? camData.fov : 45,
       minDistance: typeof camData.minDistance === "number" ? camData.minDistance : undefined,
-      maxDistance: typeof camData.maxDistance === "number" ? camData.maxDistance : undefined
+      maxDistance: typeof camData.maxDistance === "number" ? camData.maxDistance : undefined,
+      minPitch: typeof camData.minPitch === "number" ? camData.minPitch : undefined,
+      maxPitch: typeof camData.maxPitch === "number" ? camData.maxPitch : undefined
     };
 
     if (Array.isArray(camData.position) && !camData.yaw && !camData.pitch) {

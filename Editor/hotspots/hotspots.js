@@ -43,6 +43,12 @@ function buildHotspot(h){
     selectHotspot(h);
   });
 
+  // Completely remove and prevent double click actions on hotspot dot
+  dot.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
   state.overlay.appendChild(dot);
   makeHotspotDraggable(dot, h);
 
@@ -51,6 +57,12 @@ function buildHotspot(h){
 
   const panel = document.createElement("div");
   panel.className = "panel";
+
+  // Completely remove and prevent double click actions on hotspot panel
+  panel.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
 
   updatePanelHTML(h, panel);
 
@@ -68,13 +80,16 @@ function updatePanelHTML(h, panel){
   const title = document.createElement("div");
   title.className = "panel-title";
   title.style.fontWeight = "bold";
-  title.style.marginBottom = "8px";
+  title.style.fontSize = "14px";
+  title.style.marginBottom = "5px";
   title.textContent = h.title || "";
   children.push(title);
 
   if (h.description) {
     const description = document.createElement("div");
     description.className = "panel-desc";
+    description.style.fontSize = "12.5px";
+    description.style.marginBottom = "4px";
     description.textContent = h.description;
     children.push(description);
   }
@@ -86,8 +101,10 @@ function updatePanelHTML(h, panel){
   if (validItems.length > 0) {
     const ul = document.createElement("ul");
     ul.className = "panel-list";
-    ul.style.margin = "8px 0 0 0";
-    ul.style.paddingLeft = "18px";
+    ul.style.margin = "6px 0 0 0";
+    ul.style.padding = "0 0 0 16px";
+    ul.style.listStyle = "none";
+    ul.style.listStyleType = "none";
     ul.style.display = "flex";
     ul.style.flexDirection = "column";
     ul.style.gap = "4px";
@@ -95,7 +112,11 @@ function updatePanelHTML(h, panel){
     validItems.forEach((itemText) => {
       const li = document.createElement("li");
       li.className = "panel-list-item";
-      li.style.fontSize = "0.85rem";
+      li.style.listStyle = "none";
+      li.style.listStyleType = "none";
+      li.style.padding = "0";
+      li.style.margin = "0";
+      li.style.fontSize = "11px";
       li.style.lineHeight = "1.4";
       li.textContent = itemText;
       ul.appendChild(li);
@@ -337,12 +358,41 @@ function updateHotspots(){
     h.panel.style.left = `${panelX}px`;
     h.panel.style.top = `${panelY}px`;
 
+    // Apply global panel color if specified
+    if (state.sceneSettings?.hotspots?.panelColor) {
+      h.panel.style.backgroundColor = state.sceneSettings.hotspots.panelColor;
+    }
+
     if(h.line){
-      const coords = calculateConnectorLine(x, y, panelX, panelY);
+      const panelWidth = h.panel.offsetWidth || 220;
+      const panelHeight = h.panel.offsetHeight || 60;
+      const lineSettings = state.sceneSettings?.line || {};
+      const lineOffset = lineSettings.offset || { x: 0, y: 0 };
+      const lineStyle = lineSettings.style || "dashed";
+      const lineColor = lineSettings.color || "#44D62C";
+      const lineWidth = Number(lineSettings.width || 1.5);
+
+      const coords = calculateConnectorLine(x, y, panelX, panelY, panelWidth, panelHeight, lineOffset);
       h.line.setAttribute("x1", coords.x1);
       h.line.setAttribute("y1", coords.y1);
       h.line.setAttribute("x2", coords.x2);
       h.line.setAttribute("y2", coords.y2);
+      h.line.setAttribute("stroke", lineColor);
+      h.line.setAttribute("stroke-width", String(lineWidth));
+      h.line.style.stroke = lineColor;
+      h.line.style.strokeWidth = `${lineWidth}px`;
+
+      if (lineStyle === "solid") {
+        h.line.classList.remove("dashed-line");
+        h.line.classList.add("solid-line");
+        h.line.style.strokeDasharray = "none";
+        h.line.style.animation = "none";
+      } else {
+        h.line.classList.remove("solid-line");
+        h.line.classList.add("dashed-line");
+        h.line.style.strokeDasharray = "4, 3";
+        h.line.style.animation = "dash 1s linear infinite";
+      }
     }
   });
 }

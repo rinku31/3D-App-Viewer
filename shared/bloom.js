@@ -9,6 +9,8 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 
 export function createBloomManager({ renderer, scene, camera, width, height }) {
   const w = width || window.innerWidth || 300;
@@ -25,14 +27,24 @@ export function createBloomManager({ renderer, scene, camera, width, height }) {
   let composer = null;
   let renderPass = null;
   let bloomPass = null;
+  let fxaaPass = null;
   let outputPass = null;
 
   function initComposer() {
     if (!renderer || !scene || !camera) return;
 
     try {
-      composer = new EffectComposer(renderer);
-      composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
+      
+      // Multisampling render target to preserve 4x MSAA inside post-processing
+      const renderTarget = new THREE.WebGLRenderTarget(w * pixelRatio, h * pixelRatio, {
+        type: THREE.HalfFloatType,
+        format: THREE.RGBAFormat,
+        samples: 4
+      });
+
+      composer = new EffectComposer(renderer, renderTarget);
+      composer.setPixelRatio(pixelRatio);
       composer.setSize(w, h);
 
       renderPass = new RenderPass(scene, camera);
@@ -42,6 +54,12 @@ export function createBloomManager({ renderer, scene, camera, width, height }) {
       bloomPass = new UnrealBloomPass(resolution, config.strength, config.radius, config.threshold);
       bloomPass.enabled = config.enabled;
       composer.addPass(bloomPass);
+
+      // Subpixel FXAA Anti-Aliasing pass to eliminate edge crawling & shimmering during model movement
+      fxaaPass = new ShaderPass(FXAAShader);
+      fxaaPass.material.uniforms["resolution"].value.x = 1 / (w * pixelRatio);
+      fxaaPass.material.uniforms["resolution"].value.y = 1 / (h * pixelRatio);
+      composer.addPass(fxaaPass);
 
       outputPass = new OutputPass();
       composer.addPass(outputPass);
@@ -55,8 +73,14 @@ export function createBloomManager({ renderer, scene, camera, width, height }) {
 
   function setSize(newWidth, newHeight) {
     if (newWidth <= 0 || newHeight <= 0) return;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
+
     if (bloomPass && bloomPass.resolution) {
       bloomPass.resolution.set(newWidth, newHeight);
+    }
+    if (fxaaPass && fxaaPass.material && fxaaPass.material.uniforms["resolution"]) {
+      fxaaPass.material.uniforms["resolution"].value.x = 1 / (newWidth * pixelRatio);
+      fxaaPass.material.uniforms["resolution"].value.y = 1 / (newHeight * pixelRatio);
     }
     if (composer) {
       composer.setSize(newWidth, newHeight);

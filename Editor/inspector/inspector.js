@@ -330,6 +330,39 @@ function buildHotspotInspector(hotspot) {
         </div>
       </div>
     </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Hotspots &amp; Connector Line (Global)</div>
+
+      <div class="param-row-flex">
+        <label>Panel Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_panel_color" type="color" value="${(state.sceneSettings?.hotspots?.panelColor || '#1e1e24').startsWith('#') ? (state.sceneSettings?.hotspots?.panelColor || '#1e1e24') : '#1e1e24'}">
+          <input id="prop_hotspot_panel_color_text" type="text" value="${state.sceneSettings?.hotspots?.panelColor || 'rgba(30, 30, 35, 0.92)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <label>Connector Line Style</label>
+        <select id="prop_line_style" class="inspector-select">
+          <option value="dashed" ${(state.sceneSettings?.line?.style || 'dashed') === 'dashed' ? 'selected' : ''}>Broken / Dashed Line</option>
+          <option value="solid" ${state.sceneSettings?.line?.style === 'solid' ? 'selected' : ''}>Solid Line</option>
+        </select>
+      </div>
+
+      <div class="param-row-flex">
+        <label>Connector Line Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_line_color" type="color" value="${(state.sceneSettings?.line?.color || '#44D62C').startsWith('#') ? (state.sceneSettings?.line?.color || '#44D62C') : '#44D62C'}">
+          <input id="prop_line_color_text" type="text" value="${state.sceneSettings?.line?.color || '#44D62C'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_line_width">${Number(state.sceneSettings?.line?.width || 1.5).toFixed(1)}px</span></div>
+        <input id="prop_line_width" type="range" min="1" max="6" step="0.5" value="${state.sceneSettings?.line?.width || 1.5}">
+      </div>
+    </div>
   `;
 }
 
@@ -495,6 +528,8 @@ function buildCameraInspector(camera) {
   camera.getWorldPosition(camWorldPos);
 
   const viewpoints = state.cameraSettings?.viewpoints || [];
+  const currentMinPitchDeg = state.cameraRig ? state.cameraRig.getMinPitchDeg() : (state.cameraSettings?.minPitch ?? -82);
+  const currentMaxPitchDeg = state.cameraRig ? state.cameraRig.getMaxPitchDeg() : (state.cameraSettings?.maxPitch ?? 82);
 
   return `
     ${buildHeader("CAMERA", "Perspective Camera & Default View")}
@@ -540,6 +575,33 @@ function buildCameraInspector(camera) {
           <div class="vec-item"><span class="vec-label x">X</span><input id="prop_cam_target_x" type="number" step="0.1" value="${target.x.toFixed(2)}"></div>
           <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_cam_target_y" type="number" step="0.1" value="${target.y.toFixed(2)}"></div>
           <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_cam_target_z" type="number" step="0.1" value="${target.z.toFixed(2)}"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Vertical Pitch Limits (Rotation Clamping)</div>
+      <div class="param-row">
+        <div class="slider-header"><label>Min Pitch (Look Down / Bottom Limit)</label><span class="value-badge" id="val_cam_min_pitch">${currentMinPitchDeg}°</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_cam_min_pitch" type="range" min="-89" max="0" step="1" value="${currentMinPitchDeg}" style="flex:1;">
+          <input id="prop_cam_min_pitch_num" type="number" min="-89" max="89" step="1" value="${currentMinPitchDeg}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Max Pitch (Look Up / Top Limit)</label><span class="value-badge" id="val_cam_max_pitch">${currentMaxPitchDeg > 0 ? `+${currentMaxPitchDeg}` : currentMaxPitchDeg}°</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_cam_max_pitch" type="range" min="0" max="89" step="1" value="${currentMaxPitchDeg}" style="flex:1;">
+          <input id="prop_cam_max_pitch_num" type="number" min="-89" max="89" step="1" value="${currentMaxPitchDeg}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row" style="margin-top:6px;">
+        <div class="button-group" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+          <button class="secondary inspector-pitch-preset-btn" data-min="-82" data-max="82" title="Standard Clamping (-82° to +82°)">-82° / +82°</button>
+          <button class="secondary inspector-pitch-preset-btn" data-min="0" data-max="82" title="Horizon to Sky (0° to +82°)">0° / +82°</button>
+          <button class="secondary inspector-pitch-preset-btn" data-min="-89" data-max="89" title="Full Orbit (-89° to +89°)">-89° / +89°</button>
         </div>
       </div>
     </div>
@@ -759,6 +821,39 @@ function buildSceneInspector() {
             Calls function on parent page outside embed iframe or dispatches message.
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Hotspots &amp; Connector Line (Global)</div>
+
+      <div class="param-row-flex">
+        <label>Panel Background Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_panel_color" type="color" value="${(sceneSettings.hotspots?.panelColor || '#1e1e24').startsWith('#') ? (sceneSettings.hotspots?.panelColor || '#1e1e24') : '#1e1e24'}">
+          <input id="prop_hotspot_panel_color_text" type="text" value="${sceneSettings.hotspots?.panelColor || 'rgba(30, 30, 35, 0.92)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <label>Connector Line Style</label>
+        <select id="prop_line_style" class="inspector-select">
+          <option value="dashed" ${(sceneSettings.line?.style || 'dashed') === 'dashed' ? 'selected' : ''}>Broken / Dashed Line</option>
+          <option value="solid" ${sceneSettings.line?.style === 'solid' ? 'selected' : ''}>Solid Line</option>
+        </select>
+      </div>
+
+      <div class="param-row-flex">
+        <label>Connector Line Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_line_color" type="color" value="${(sceneSettings.line?.color || '#44D62C').startsWith('#') ? (sceneSettings.line?.color || '#44D62C') : '#44D62C'}">
+          <input id="prop_line_color_text" type="text" value="${sceneSettings.line?.color || '#44D62C'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_line_width">${Number(sceneSettings.line?.width || 1.5).toFixed(1)}px</span></div>
+        <input id="prop_line_width" type="range" min="1" max="6" step="0.5" value="${sceneSettings.line?.width || 1.5}">
       </div>
     </div>
   `;
@@ -1252,6 +1347,62 @@ function bindInspectorEvents(type, object, target) {
       if (badge) badge.textContent = `${num.toFixed(1)}m`;
     };
 
+    const camMinPitch = document.getElementById("prop_cam_min_pitch");
+    const camMinPitchNum = document.getElementById("prop_cam_min_pitch_num");
+    const camMaxPitch = document.getElementById("prop_cam_max_pitch");
+    const camMaxPitchNum = document.getElementById("prop_cam_max_pitch_num");
+
+    const updateCamMinPitch = (val) => {
+      let num = parseInt(val, 10);
+      if (isNaN(num)) return;
+      num = Math.max(-89, Math.min(89, num));
+      if (state.cameraRig) {
+        state.cameraRig.setMinPitch(num, true);
+      }
+      if (state.cameraSettings) state.cameraSettings.minPitch = num;
+      if (!state.sceneDocument) state.sceneDocument = {};
+      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
+      state.sceneDocument.camera.minPitch = num;
+
+      if (camMinPitch && parseInt(camMinPitch.value, 10) !== num && num <= 0 && num >= -89) camMinPitch.value = num;
+      if (camMinPitchNum && parseInt(camMinPitchNum.value, 10) !== num) camMinPitchNum.value = num;
+      const badge = document.getElementById("val_cam_min_pitch");
+      if (badge) badge.textContent = `${num}°`;
+    };
+
+    const updateCamMaxPitch = (val) => {
+      let num = parseInt(val, 10);
+      if (isNaN(num)) return;
+      num = Math.max(-89, Math.min(89, num));
+      if (state.cameraRig) {
+        state.cameraRig.setMaxPitch(num, true);
+      }
+      if (state.cameraSettings) state.cameraSettings.maxPitch = num;
+      if (!state.sceneDocument) state.sceneDocument = {};
+      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
+      state.sceneDocument.camera.maxPitch = num;
+
+      if (camMaxPitch && parseInt(camMaxPitch.value, 10) !== num && num >= 0 && num <= 89) camMaxPitch.value = num;
+      if (camMaxPitchNum && parseInt(camMaxPitchNum.value, 10) !== num) camMaxPitchNum.value = num;
+      const badge = document.getElementById("val_cam_max_pitch");
+      if (badge) badge.textContent = `${num > 0 ? `+${num}` : num}°`;
+    };
+
+    camMinPitch?.addEventListener("input", (e) => updateCamMinPitch(e.target.value));
+    camMinPitchNum?.addEventListener("input", (e) => updateCamMinPitch(e.target.value));
+    camMaxPitch?.addEventListener("input", (e) => updateCamMaxPitch(e.target.value));
+    camMaxPitchNum?.addEventListener("input", (e) => updateCamMaxPitch(e.target.value));
+
+    document.querySelectorAll(".inspector-pitch-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const minP = parseInt(btn.dataset.min, 10);
+        const maxP = parseInt(btn.dataset.max, 10);
+        updateCamMinPitch(minP);
+        updateCamMaxPitch(maxP);
+      });
+    });
+
     camMinDist?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
     camMinDistNum?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
     camMaxDist?.addEventListener("input", (e) => updateCamMaxDist(e.target.value));
@@ -1282,6 +1433,8 @@ function bindInspectorEvents(type, object, target) {
           distance: camState.distance,
           minDistance: state.cameraRig.minDistance,
           maxDistance: state.cameraRig.maxDistance,
+          minPitch: state.cameraRig.getMinPitchDeg(),
+          maxPitch: state.cameraRig.getMaxPitchDeg(),
           target: camState.target,
           fov: camState.fov
         };
@@ -1305,6 +1458,17 @@ function bindInspectorEvents(type, object, target) {
         if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
         if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
         if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
+
+        const curMinPitch = state.cameraRig.getMinPitchDeg();
+        const curMaxPitch = state.cameraRig.getMaxPitchDeg();
+        const minPitchBadge = document.getElementById("val_cam_min_pitch");
+        if (minPitchBadge) minPitchBadge.textContent = `${curMinPitch}°`;
+        if (camMinPitch && curMinPitch <= 0 && curMinPitch >= -89) camMinPitch.value = curMinPitch;
+        if (camMinPitchNum) camMinPitchNum.value = curMinPitch;
+        const maxPitchBadge = document.getElementById("val_cam_max_pitch");
+        if (maxPitchBadge) maxPitchBadge.textContent = `${curMaxPitch > 0 ? `+${curMaxPitch}` : curMaxPitch}°`;
+        if (camMaxPitch && curMaxPitch >= 0 && curMaxPitch <= 89) camMaxPitch.value = curMaxPitch;
+        if (camMaxPitchNum) camMaxPitchNum.value = curMaxPitch;
       }
     });
 
@@ -1502,6 +1666,102 @@ function bindInspectorEvents(type, object, target) {
       state.sceneSettings.controls.simulatorJsFunction = e.target.value;
     });
   }
+
+  // Global Hotspot & Line controls (available when inspecting a hotspot or the scene)
+  const panelColorPicker = document.getElementById("prop_hotspot_panel_color");
+  const panelColorText = document.getElementById("prop_hotspot_panel_color_text");
+  const lineStyleSelect = document.getElementById("prop_line_style");
+  const lineColorPicker = document.getElementById("prop_line_color");
+  const lineColorText = document.getElementById("prop_line_color_text");
+  const lineWidthSlider = document.getElementById("prop_line_width");
+  const valLineWidth = document.getElementById("val_line_width");
+
+  const applyGlobalHotspotSettings = () => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    if (!state.sceneDocument) state.sceneDocument = {};
+    if (!state.sceneDocument.settings) state.sceneDocument.settings = state.sceneSettings;
+    state.sceneDocument.settings.hotspots = state.sceneSettings.hotspots;
+    state.sceneDocument.settings.line = state.sceneSettings.line;
+
+    const panelBg = state.sceneSettings.hotspots.panelColor;
+    const lStyle = state.sceneSettings.line.style || "dashed";
+    const lColor = state.sceneSettings.line.color || "#44D62C";
+    const lWidth = Number(state.sceneSettings.line.width || 1.5);
+
+    // Update all hotspot panels in editor
+    document.querySelectorAll(".panel").forEach((p) => {
+      if (panelBg) p.style.backgroundColor = panelBg;
+    });
+
+    // Update all SVG connector lines in editor
+    document.querySelectorAll("svg line").forEach((l) => {
+      l.setAttribute("stroke", lColor);
+      l.setAttribute("stroke-width", String(lWidth));
+      l.style.stroke = lColor;
+      l.style.strokeWidth = `${lWidth}px`;
+      if (lStyle === "solid") {
+        l.classList.remove("dashed-line");
+        l.classList.add("solid-line");
+        l.style.strokeDasharray = "none";
+        l.style.animation = "none";
+      } else {
+        l.classList.remove("solid-line");
+        l.classList.add("dashed-line");
+        l.style.strokeDasharray = "4, 3";
+        l.style.animation = "dash 1s linear infinite";
+      }
+    });
+  };
+
+  panelColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.panelColor = e.target.value;
+    if (panelColorText) panelColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  panelColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.panelColor = e.target.value;
+    if (panelColorPicker && e.target.value.startsWith("#")) panelColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  lineStyleSelect?.addEventListener("change", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.style = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  lineColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.color = e.target.value;
+    if (lineColorText) lineColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  lineColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.color = e.target.value;
+    if (lineColorPicker && e.target.value.startsWith("#")) lineColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  lineWidthSlider?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.width = val;
+    if (valLineWidth) valLineWidth.textContent = `${val.toFixed(1)}px`;
+    applyGlobalHotspotSettings();
+  });
 }
 
 function escapeHTML(str) {

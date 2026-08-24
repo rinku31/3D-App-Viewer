@@ -76,6 +76,25 @@ const state = {
       grid: true,
       axes: false,
     },
+    line: {
+      color: "#44D62C",
+      style: "dashed",
+      width: 1.5,
+      offset: { x: 0, y: 0 }
+    },
+    hotspots: {
+      panelColor: "rgba(30, 30, 36, 0.95)",
+      pulseAnimation: true,
+      theme: "default",
+      occlusionTolerance: 0.08
+    },
+    controls: {
+      defaultEnabled: true,
+      explodeEnabled: true,
+      simulatorEnabled: true,
+      simulatorJsFunction: "onSimulatorToggle",
+      simulatorUrl: ""
+    }
   },
 
   cameraSettings: {

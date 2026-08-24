@@ -25,6 +25,7 @@ export function initializeRender() {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
+    logarithmicDepthBuffer: true,
   });
 
   renderer.setSize(width, height);
@@ -38,15 +39,17 @@ export function initializeRender() {
   viewport.appendChild(renderer.domElement);
   state.renderer = renderer;
 
-  // Initialize shared CameraRig with collision proximity prevention
+  // Initialize shared CameraRig with collision proximity prevention and bounded vertical rotation
   const cameraRig = new CameraRig({
     scene,
     domElement: renderer.domElement,
     aspect: aspect,
     fov: 45,
-    near: 0.005,
+    near: 0.05,
     far: 1000,
     distance: 4.0,
+    minPitch: -Math.PI / 4,
+    maxPitch: Math.PI / 2.2,
     collisionCheck: true,
     onChange: () => {
       state.visibilityDirty = true;

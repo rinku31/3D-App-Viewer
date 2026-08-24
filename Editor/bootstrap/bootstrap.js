@@ -437,6 +437,8 @@ function initializeEditor(loader) {
         distance: camState.distance,
         minDistance: state.cameraRig.minDistance,
         maxDistance: state.cameraRig.maxDistance,
+        minPitch: state.cameraRig.getMinPitchDeg(),
+        maxPitch: state.cameraRig.getMaxPitchDeg(),
         target: camState.target,
         fov: camState.fov
       };

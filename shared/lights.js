@@ -215,9 +215,11 @@ export function createLightFromData(lightData) {
       }
       light.castShadow = Boolean(lightData.castShadow);
       if (light.castShadow) {
-        light.shadow.mapSize.width = 1024;
-        light.shadow.mapSize.height = 1024;
-        light.shadow.bias = -0.0005;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        light.shadow.bias = -0.0001;
+        light.shadow.normalBias = 0.02;
+        light.shadow.radius = 2.0;
       }
       break;
 
@@ -239,9 +241,11 @@ export function createLightFromData(lightData) {
       }
       light.castShadow = Boolean(lightData.castShadow);
       if (light.castShadow) {
-        light.shadow.mapSize.width = 1024;
-        light.shadow.mapSize.height = 1024;
-        light.shadow.bias = -0.0005;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        light.shadow.bias = -0.0001;
+        light.shadow.normalBias = 0.02;
+        light.shadow.radius = 2.0;
       }
       break;
 
@@ -275,11 +279,13 @@ export function createLightFromData(lightData) {
       }
       light.castShadow = Boolean(lightData.castShadow);
       if (light.castShadow) {
-        light.shadow.mapSize.width = 1024;
-        light.shadow.mapSize.height = 1024;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
         light.shadow.camera.near = 0.1;
         light.shadow.camera.far = 40;
-        light.shadow.bias = -0.0005;
+        light.shadow.bias = -0.0001;
+        light.shadow.normalBias = 0.02;
+        light.shadow.radius = 2.0;
       }
       break;
   }

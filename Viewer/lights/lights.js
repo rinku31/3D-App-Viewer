@@ -18,11 +18,13 @@ export function initializeViewerLights() {
   const dir = new THREE.DirectionalLight(0xffffff, 2.0);
   dir.position.set(5, 10, 5);
   dir.castShadow = true;
-  dir.shadow.mapSize.width = 1024;
-  dir.shadow.mapSize.height = 1024;
+  dir.shadow.mapSize.width = 2048;
+  dir.shadow.mapSize.height = 2048;
   dir.shadow.camera.near = 0.1;
   dir.shadow.camera.far = 30;
-  dir.shadow.bias = -0.0005;
+  dir.shadow.bias = -0.0001;
+  dir.shadow.normalBias = 0.02;
+  dir.shadow.radius = 2.0;
   state.scene.add(dir);
   state.defaultDirectionalLight = dir;
 }
