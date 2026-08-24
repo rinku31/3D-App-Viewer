@@ -94,12 +94,31 @@ export async function bootstrapEmbedViewer() {
 async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
   let companionJsonObject = null;
 
-  // If a JSON scene parameter is provided, fetch it first
+  // If a JSON scene parameter is provided, fetch it
   if (jsonParam) {
     showLoading("Fetching Scene Data...");
     try {
-      const res = await fetch(jsonParam);
-      if (res.ok) {
+      const candidates = [
+        jsonParam,
+        `.${jsonParam.startsWith('/') ? '' : '/'}${jsonParam}`,
+        `../${jsonParam.replace(/^\/+/, '')}`
+      ];
+
+      let res = null;
+      for (const p of candidates) {
+        try {
+          const attempt = await fetch(p);
+          if (attempt.ok) {
+            const contentType = attempt.headers.get("content-type");
+            if (!contentType || contentType.includes("json") || contentType.includes("text")) {
+              res = attempt;
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (res && res.ok) {
         companionJsonObject = await res.json();
       } else {
         console.warn(`Could not fetch scene JSON from: ${jsonParam}`);
@@ -114,16 +133,16 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
   // Case 1: GLB URL provided
   if (glbParam) {
     try {
-      const modelName = titleParam || glbParam.split("/").pop().replace(/\.[^/.]+$/, "") || "Product";
+      const modelName = titleParam || (companionJsonObject?.metadata?.title) || glbParam.split("/").pop().replace(/\.[^/.]+$/, "") || "Product";
       await loadViewerModel(glbParam, modelName, companionJsonObject);
       if (titleParam) updateHudSceneInfo(titleParam);
       return;
     } catch (err) {
-      console.error(`Failed to load GLB model from '${glbParam}':`, err);
+      console.warn(`Failed to load GLB model from '${glbParam}' (will check companion JSON):`, err);
     }
   }
 
-  // Case 2: Only JSON URL provided
+  // Case 2: JSON URL provided (or fallback if GLB 404'd)
   if (companionJsonObject) {
     const modelName = titleParam || companionJsonObject.metadata?.title || "Product";
     loadViewerSceneJson(companionJsonObject, modelName);
@@ -131,17 +150,26 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
     return;
   }
 
-  // Case 3: No parameters provided -> Fall back to default demo scene
-  try {
-    const res = await fetch("/Viewer/assets/Products/Viper V4 Pro.json");
-    if (res.ok) {
-      const data = await res.json();
-      if (data) {
-        loadViewerSceneJson(data, titleParam || "Viper V4 Pro");
-        return;
+  // Case 3: No parameters provided -> Try loading demo scene
+  const defaultCandidates = [
+    "/Viewer/assets/Products/Viper V4 Pro.json",
+    "../Viewer/assets/Products/Viper V4 Pro.json",
+    "./assets/Products/Viper V4 Pro.json",
+    "/assets/Products/Viper V4 Pro.json"
+  ];
+
+  for (const path of defaultCandidates) {
+    try {
+      const res = await fetch(path);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          loadViewerSceneJson(data, titleParam || "Viper V4 Pro");
+          return;
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // Case 4: Procedural fallback
   loadViewerSceneJson({}, titleParam || "Product Showcase");
