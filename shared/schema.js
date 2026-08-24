@@ -9,6 +9,33 @@ export const CURRENT_SCHEMA_VERSION = "2.0.0";
 export const SUPPORTED_SCHEMA_VERSIONS = ["1.0.0", "1.1.0", "2.0.0"];
 
 /**
+ * Normalizes and sanitizes asset URLs for cross-browser safety (Firefox, Chrome, Safari, Edge).
+ * Corrects unencoded whitespace, special characters, and handles both absolute URLs and relative paths.
+ * @param {string} url - Raw URL string
+ * @returns {string} Safe normalized URL
+ */
+export function sanitizeAssetUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return trimmed;
+
+  try {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+      const parsed = new URL(trimmed);
+      return parsed.href;
+    }
+    return encodeURI(decodeURI(trimmed));
+  } catch (_) {
+    try {
+      return encodeURI(decodeURI(trimmed));
+    } catch (_) {
+      return encodeURI(trimmed);
+    }
+  }
+}
+
+/**
  * Creates default scene document v2
  */
 export function createDefaultSceneDocument(modelName = "Product Model") {

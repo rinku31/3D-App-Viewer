@@ -10,7 +10,8 @@ import { initializeViewerLights } from "../lights/lights.js";
 import { loadViewerModel, loadViewerSceneJson } from "../loading/loader.js";
 import { updateHotspotVisibility } from "../visibility/visibility.js";
 import { updateOverlayPositions } from "../overlay/overlay.js";
-import { initializeViewerHUD } from "../ui/hud.js";
+import { initializeViewerHUD, updateHudSceneInfo } from "../ui/hud.js";
+import { sanitizeAssetUrl } from "../../shared/schema.js";
 
 /**
  * Bootstraps the entire 3D Viewer application
@@ -41,23 +42,79 @@ export async function bootstrapViewer() {
     updateOverlayPositions();
   });
 
-  // 6. Load Default Environment, Warm Preset Cache & Initial Showcase Scene
-  state.environmentManager.loadEnvironment("studio_small_09", async () => {
-    state.environmentManager.applyBackground({ background: "#222228", backgroundType: "color" });
-    // Preload remaining environment presets in the background for 0ms instantaneous switching
-    state.environmentManager.preloadPresets();
-    
-    // Auto-load default demo showcase if present
-    try {
-      const res = await fetch("/Viewer/assets/Products/Viper V4 Pro.json");
-      if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          loadViewerSceneJson(data, "Viper V4 Pro");
+  // 6. Check URL query parameters for dynamic model / scene injection
+  const params = new URLSearchParams(window.location.search);
+  const glbRaw = params.get("glb") || params.get("model") || params.get("gltf");
+  const jsonRaw = params.get("json") || params.get("scene");
+  const glbParam = glbRaw ? sanitizeAssetUrl(glbRaw) : null;
+  const jsonParam = jsonRaw ? sanitizeAssetUrl(jsonRaw) : null;
+  const titleParam = params.get("title");
+  const envParam = params.get("env") || params.get("preset") || "studio_small_09";
+  const bgParam = params.get("bg") || params.get("background") || "#222228";
+
+  // 7. Load Environment asynchronously
+  state.environmentManager.applyBackground({ background: bgParam, backgroundType: "color" });
+  state.environmentManager.loadEnvironment(envParam);
+  state.environmentManager.preloadPresets();
+
+  // 8. Ingest query parameters or default demo showcase
+  if (glbParam || jsonParam) {
+    let companionJsonObject = null;
+    if (jsonParam) {
+      try {
+        const candidates = [
+          jsonParam,
+          decodeURI(jsonParam),
+          `.${jsonParam.startsWith('/') ? '' : '/'}${jsonParam}`,
+          `../${jsonParam.replace(/^\/+/, '')}`
+        ];
+        for (const p of candidates) {
+          try {
+            const attempt = await fetch(p, { mode: "cors" });
+            if (attempt.ok) {
+              const contentType = attempt.headers.get("content-type");
+              if (!contentType || contentType.includes("json") || contentType.includes("text") || contentType.includes("octet-stream")) {
+                companionJsonObject = await attempt.json();
+                break;
+              }
+            }
+          } catch (_) {}
         }
+      } catch (err) {
+        console.warn("Failed to fetch scene JSON:", err);
       }
-    } catch (_) {}
-  });
+    }
+
+    if (glbParam) {
+      try {
+        const cleanNameFromUrl = decodeURIComponent(glbParam.split("/").pop().replace(/\.[^/.]+$/, ""));
+        const modelName = titleParam || (companionJsonObject?.metadata?.title) || cleanNameFromUrl || "Product";
+        await loadViewerModel(glbParam, modelName, companionJsonObject);
+        if (titleParam) updateHudSceneInfo(titleParam);
+        return;
+      } catch (err) {
+        console.warn(`Failed to load GLB model from '${glbParam}':`, err);
+      }
+    }
+
+    if (companionJsonObject) {
+      const modelName = titleParam || companionJsonObject.metadata?.title || "Product";
+      loadViewerSceneJson(companionJsonObject, modelName);
+      if (titleParam) updateHudSceneInfo(titleParam);
+      return;
+    }
+  }
+
+  // Auto-load default demo showcase if present
+  try {
+    const res = await fetch("/Viewer/assets/Products/Viper V4 Pro.json");
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        loadViewerSceneJson(data, "Viper V4 Pro");
+      }
+    }
+  } catch (_) {}
 }
 
 /**

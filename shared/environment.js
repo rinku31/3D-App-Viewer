@@ -69,7 +69,9 @@ export function createEnvironmentManager({ scene, renderer }) {
    */
   function preloadPresets() {
     HDR_PRESETS.forEach((preset) => {
-      loadHdrTexture(preset.id);
+      loadHdrTexture(preset.id).catch((err) => {
+        // Silently catch preload failures without failing main thread
+      });
     });
   }
 
@@ -114,7 +116,10 @@ export function createEnvironmentManager({ scene, renderer }) {
 
   function loadEnvironment(presetOrUrl, onLoaded, onError) {
     const url = HDR_PRESET_MAP[presetOrUrl] || (HDR_PRESETS.find(p => p.id === presetOrUrl)?.url) || presetOrUrl;
-    if (!url) return;
+    if (!url) {
+      if (typeof onLoaded === "function") onLoaded(null);
+      return;
+    }
 
     currentPreset = presetOrUrl;
 
@@ -152,6 +157,9 @@ export function createEnvironmentManager({ scene, renderer }) {
       .catch((err) => {
         if (typeof onError === "function") {
           onError(err);
+        }
+        if (typeof onLoaded === "function") {
+          onLoaded(null);
         }
       });
   }

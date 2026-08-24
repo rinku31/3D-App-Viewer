@@ -5,8 +5,14 @@
 
 import { bootstrapEmbedViewer } from "./bootstrap/bootstrap.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+function start() {
   bootstrapEmbedViewer().catch((err) => {
     console.error("Fatal error during Embed Viewer bootstrap:", err);
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", start);
+} else {
+  start();
+}

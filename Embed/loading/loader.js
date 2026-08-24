@@ -9,7 +9,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { state } from "../state/state.js";
 import { disposeHierarchy } from "../../shared/disposal.js";
-import { createDefaultSceneDocument, migrateSceneDocument, validateSceneDocument } from "../../shared/schema.js";
+import { createDefaultSceneDocument, migrateSceneDocument, validateSceneDocument, sanitizeAssetUrl } from "../../shared/schema.js";
 import { applyViewerSceneSettings } from "../render/render.js";
 import { syncViewerLights } from "../lights/lights.js";
 import { buildHotspotOverlays, clearHotspotOverlays } from "../overlay/overlay.js";
@@ -19,6 +19,7 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
 
 const gltfLoader = new GLTFLoader();
+gltfLoader.setCrossOrigin("anonymous");
 gltfLoader.setDRACOLoader(dracoLoader);
 
 /**
@@ -35,6 +36,8 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
     url = URL.createObjectURL(source);
     isBlob = true;
     modelName = source.name.replace(/\.[^/.]+$/, "");
+  } else if (typeof source === "string") {
+    url = sanitizeAssetUrl(source);
   }
 
   showLoading(`Loading 3D Model...`);

@@ -10,6 +10,7 @@ import { initializeViewerLights } from "../lights/lights.js";
 import { loadViewerModel, loadViewerSceneJson } from "../loading/loader.js";
 import { updateHotspotVisibility } from "../visibility/visibility.js";
 import { updateOverlayPositions } from "../overlay/overlay.js";
+import { sanitizeAssetUrl } from "../../shared/schema.js";
 import {
   initializeViewerHUD,
   resetViewerCamera,
@@ -49,43 +50,44 @@ export async function bootstrapEmbedViewer() {
 
   // 6. Parse URL Query Parameters
   const params = new URLSearchParams(window.location.search);
-  const glbParam = params.get("glb") || params.get("model") || params.get("gltf");
-  const jsonParam = params.get("json") || params.get("scene");
+  const glbRaw = params.get("glb") || params.get("model") || params.get("gltf");
+  const jsonRaw = params.get("json") || params.get("scene");
+  const glbParam = glbRaw ? sanitizeAssetUrl(glbRaw) : null;
+  const jsonParam = jsonRaw ? sanitizeAssetUrl(jsonRaw) : null;
   const titleParam = params.get("title");
   const envParam = params.get("env") || params.get("preset") || "studio_small_09";
   const turntableParam = params.get("turntable") || params.get("autorotate");
   const speedParam = params.get("speed");
   const bgParam = params.get("bg") || params.get("background") || "#222228";
 
-  // 7. Load Environment & Warm Preset Cache
-  state.environmentManager.loadEnvironment(envParam, async () => {
-    if (bgParam) {
-      state.environmentManager.applyBackground({ background: bgParam, backgroundType: "color" });
+  // 7. Apply background & trigger non-blocking environment load
+  if (bgParam) {
+    state.environmentManager.applyBackground({ background: bgParam, backgroundType: "color" });
+  }
+  state.environmentManager.loadEnvironment(envParam);
+  state.environmentManager.preloadPresets();
+
+  // 8. Ingest Assets according to query params
+  await ingestQueryParams({ glbParam, jsonParam, titleParam });
+
+  // 9. Apply turntable and speed query params
+  if (turntableParam === "true" || turntableParam === "1") {
+    if (speedParam) setTurntableSpeed(speedParam);
+    toggleAutoRotate(true);
+  } else if (speedParam) {
+    setTurntableSpeed(speedParam);
+  }
+
+  if (titleParam) {
+    updateHudSceneInfo(titleParam);
+  }
+
+  // 10. Emit ready message to host iframe container
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "3D_VIEWER_READY", payload: { title: titleParam || state.currentModel?.name } }, "*");
     }
-    state.environmentManager.preloadPresets();
-
-    // 8. Ingest Assets according to query params
-    await ingestQueryParams({ glbParam, jsonParam, titleParam });
-
-    // 9. Apply turntable and speed query params
-    if (turntableParam === "true" || turntableParam === "1") {
-      if (speedParam) setTurntableSpeed(speedParam);
-      toggleAutoRotate(true);
-    } else if (speedParam) {
-      setTurntableSpeed(speedParam);
-    }
-
-    if (titleParam) {
-      updateHudSceneInfo(titleParam);
-    }
-
-    // 10. Emit ready message to host iframe container
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "3D_VIEWER_READY", payload: { title: titleParam || state.currentModel?.name } }, "*");
-      }
-    } catch (_) {}
-  });
+  } catch (_) {}
 }
 
 /**
@@ -100,6 +102,7 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
     try {
       const candidates = [
         jsonParam,
+        decodeURI(jsonParam),
         `.${jsonParam.startsWith('/') ? '' : '/'}${jsonParam}`,
         `../${jsonParam.replace(/^\/+/, '')}`
       ];
@@ -107,10 +110,10 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
       let res = null;
       for (const p of candidates) {
         try {
-          const attempt = await fetch(p);
+          const attempt = await fetch(p, { mode: "cors" });
           if (attempt.ok) {
             const contentType = attempt.headers.get("content-type");
-            if (!contentType || contentType.includes("json") || contentType.includes("text")) {
+            if (!contentType || contentType.includes("json") || contentType.includes("text") || contentType.includes("octet-stream")) {
               res = attempt;
               break;
             }
@@ -133,7 +136,8 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
   // Case 1: GLB URL provided
   if (glbParam) {
     try {
-      const modelName = titleParam || (companionJsonObject?.metadata?.title) || glbParam.split("/").pop().replace(/\.[^/.]+$/, "") || "Product";
+      const cleanNameFromUrl = decodeURIComponent(glbParam.split("/").pop().replace(/\.[^/.]+$/, ""));
+      const modelName = titleParam || (companionJsonObject?.metadata?.title) || cleanNameFromUrl || "Product";
       await loadViewerModel(glbParam, modelName, companionJsonObject);
       if (titleParam) updateHudSceneInfo(titleParam);
       return;
