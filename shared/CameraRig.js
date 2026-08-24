@@ -61,6 +61,15 @@ export class CameraRig {
     this.maxDistance = typeof options.maxDistance === "number" ? options.maxDistance : 16.0;
     this.hasExplicitLimits = typeof options.minDistance === "number" || typeof options.maxDistance === "number";
 
+    // Anti-clipping mesh collision configuration (active in Viewer and Embed)
+    this.collisionCheck = Boolean(options.collisionCheck || false);
+    this.collisionMargin = typeof options.collisionMargin === "number" ? options.collisionMargin : 0.15;
+    this.collisionObject = options.collisionObject || null;
+    this._raycaster = new THREE.Raycaster();
+    this._rayDir = new THREE.Vector3();
+    this._farOrigin = new THREE.Vector3();
+    this._euler = new THREE.Euler(0, 0, 0, "YXZ");
+
     // Auto rotate turntable
     this.autoRotate = Boolean(options.autoRotate || false);
     this.autoRotateSpeed = typeof options.autoRotateSpeed === "number" ? options.autoRotateSpeed : 0.016;
@@ -100,6 +109,86 @@ export class CameraRig {
   // --- Public API ---
 
   /**
+   * Set the 3D model/mesh object used for anti-clipping collision detection.
+   * @param {THREE.Object3D|null} object3D 
+   * @param {number|null} [margin]
+   */
+  setCollisionObject(object3D, margin = null) {
+    this.collisionObject = object3D || null;
+    if (typeof margin === "number") {
+      this.collisionMargin = margin;
+    } else if (object3D && object3D.isObject3D) {
+      const box = new THREE.Box3().setFromObject(object3D);
+      if (!box.isEmpty()) {
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        this.collisionMargin = THREE.MathUtils.clamp(maxDim * 0.04, 0.08, 0.35);
+      }
+    }
+  }
+
+  /**
+   * Calculates the minimum collision-free distance from target along given yaw/pitch angles.
+   * @param {number} [yaw]
+   * @param {number} [pitch]
+   * @returns {number}
+   */
+  getMinSafeDistance(yaw = this.targetYaw, pitch = this.targetPitch) {
+    if (!this.collisionCheck || !this.collisionObject) {
+      return this.minDistance;
+    }
+
+    const centerPos = this.currentTarget || this.target;
+    this._euler.set(pitch, yaw, 0, "YXZ");
+    this._rayDir.set(0, 0, 1).applyEuler(this._euler).normalize();
+
+    const testDist = Math.max(this.maxDistance * 2.0, 50.0);
+    this._farOrigin.copy(centerPos).addScaledVector(this._rayDir, testDist);
+
+    // 1. Inward ray from outside the bounding envelope towards target center
+    this._raycaster.set(this._farOrigin, this._rayDir.clone().negate());
+    this._raycaster.near = 0;
+    this._raycaster.far = testDist;
+
+    const hits = this._raycaster.intersectObject(this.collisionObject, true);
+    let closestHit = null;
+    for (let i = 0; i < hits.length; i++) {
+      const h = hits[i];
+      if (h.object && h.object.isMesh && h.object.visible) {
+        closestHit = h;
+        break;
+      }
+    }
+
+    if (closestHit) {
+      const surfaceDist = centerPos.distanceTo(closestHit.point);
+      return Math.max(this.minDistance, surfaceDist + this.collisionMargin);
+    }
+
+    // 2. Outward fallback ray from target center
+    this._raycaster.set(centerPos, this._rayDir);
+    this._raycaster.near = 0;
+    this._raycaster.far = testDist;
+
+    const outHits = this._raycaster.intersectObject(this.collisionObject, true);
+    let farthestOutHit = null;
+    for (let i = 0; i < outHits.length; i++) {
+      const h = outHits[i];
+      if (h.object && h.object.isMesh && h.object.visible) {
+        if (!farthestOutHit || h.distance > farthestOutHit.distance) {
+          farthestOutHit = h;
+        }
+      }
+    }
+
+    if (farthestOutHit) {
+      return Math.max(this.minDistance, farthestOutHit.distance + this.collisionMargin);
+    }
+
+    return this.minDistance;
+  }
+
+  /**
    * Rotate horizontally around the target by delta radians.
    */
   rotateYaw(delta) {
@@ -116,13 +205,17 @@ export class CameraRig {
   }
 
   /**
-   * Adjust camera distance (zoom).
+   * Adjust camera distance (zoom) with collision clamping.
    */
   zoom(delta) {
     const factor = Math.exp(delta);
+    const minAllowed = this.collisionCheck && this.collisionObject
+      ? this.getMinSafeDistance(this.targetYaw, this.targetPitch)
+      : this.minDistance;
+
     this.targetDistance = THREE.MathUtils.clamp(
       this.targetDistance * factor,
-      this.minDistance,
+      minAllowed,
       this.maxDistance
     );
     if (typeof this.onChange === "function") this.onChange();
@@ -140,6 +233,10 @@ export class CameraRig {
     if (targetObjectOrVec.isVector3) {
       center.copy(targetObjectOrVec);
     } else if (targetObjectOrVec.isObject3D) {
+      if (this.collisionCheck) {
+        this.setCollisionObject(targetObjectOrVec);
+      }
+
       const box = new THREE.Box3().setFromObject(targetObjectOrVec);
       if (!box.isEmpty()) {
         box.getCenter(center);
@@ -167,7 +264,10 @@ export class CameraRig {
 
     this.target.copy(center);
     if (distance !== null && !isNaN(distance)) {
-      this.targetDistance = THREE.MathUtils.clamp(distance, this.minDistance, this.maxDistance);
+      const minAllowed = this.collisionCheck && this.collisionObject
+        ? this.getMinSafeDistance(this.targetYaw, this.targetPitch)
+        : this.minDistance;
+      this.targetDistance = THREE.MathUtils.clamp(distance, minAllowed, this.maxDistance);
     }
 
     // Set as new default reference
@@ -306,10 +406,6 @@ export class CameraRig {
       this.target.copy(viewpoint.target);
     }
 
-    if (typeof viewpoint.distance === "number") {
-      this.targetDistance = THREE.MathUtils.clamp(viewpoint.distance, this.minDistance, this.maxDistance);
-    }
-
     if (typeof viewpoint.yaw === "number") {
       const twoPi = Math.PI * 2;
       const yawDiff = (viewpoint.yaw - this.targetYaw) % twoPi;
@@ -322,6 +418,13 @@ export class CameraRig {
       const pitchDiff = (viewpoint.pitch - this.targetPitch) % twoPi;
       const shortestPitchDiff = ((pitchDiff + Math.PI * 3) % twoPi) - Math.PI;
       this.targetPitch = this.targetPitch + shortestPitchDiff;
+    }
+
+    if (typeof viewpoint.distance === "number") {
+      const minAllowed = this.collisionCheck && this.collisionObject
+        ? this.getMinSafeDistance(this.targetYaw, this.targetPitch)
+        : this.minDistance;
+      this.targetDistance = THREE.MathUtils.clamp(viewpoint.distance, minAllowed, this.maxDistance);
     }
 
     if (typeof viewpoint.fov === "number" && viewpoint.fov > 5 && viewpoint.fov < 140) {
@@ -343,10 +446,16 @@ export class CameraRig {
 
     this.target.copy(pos);
 
+    const minAllowed = this.collisionCheck && this.collisionObject
+      ? this.getMinSafeDistance(this.targetYaw, this.targetPitch)
+      : this.minDistance;
+
     if (typeof customDistance === "number") {
-      this.targetDistance = THREE.MathUtils.clamp(customDistance, this.minDistance, this.maxDistance);
+      this.targetDistance = THREE.MathUtils.clamp(customDistance, minAllowed, this.maxDistance);
     } else if (this.targetDistance > 3.2) {
-      this.targetDistance = 2.8;
+      this.targetDistance = Math.max(minAllowed, 2.8);
+    } else {
+      this.targetDistance = Math.max(minAllowed, this.targetDistance);
     }
 
     if (typeof this.onChange === "function") this.onChange();
@@ -400,7 +509,10 @@ export class CameraRig {
       this.hasExplicitLimits = true;
     }
     if (typeof savedState.distance === "number") {
-      this.distance = THREE.MathUtils.clamp(savedState.distance, this.minDistance, this.maxDistance);
+      const minAllowed = this.collisionCheck && this.collisionObject
+        ? this.getMinSafeDistance(this.targetYaw, this.targetPitch)
+        : this.minDistance;
+      this.distance = THREE.MathUtils.clamp(savedState.distance, minAllowed, this.maxDistance);
       this.targetDistance = this.distance;
     }
     if (typeof savedState.fov === "number") {
@@ -427,6 +539,14 @@ export class CameraRig {
     const prevTargetY = this.currentTarget ? this.currentTarget.y : this.target.y;
     const prevTargetZ = this.currentTarget ? this.currentTarget.z : this.target.z;
 
+    // Enforce dynamic anti-clipping collision bounds
+    if (this.collisionCheck && this.collisionObject) {
+      const safeTargetDist = this.getMinSafeDistance(this.targetYaw, this.targetPitch);
+      if (this.targetDistance < safeTargetDist) {
+        this.targetDistance = safeTargetDist;
+      }
+    }
+
     this.targetDistance = THREE.MathUtils.clamp(this.targetDistance, this.minDistance, this.maxDistance);
 
     if (this.enableDamping) {
@@ -443,6 +563,17 @@ export class CameraRig {
       this.distance = this.targetDistance;
       if (this.currentTarget) {
         this.currentTarget.copy(this.target);
+      }
+    }
+
+    // Secondary collision safeguard: ensure current camera distance never penetrates surface during orbital motion
+    if (this.collisionCheck && this.collisionObject) {
+      const safeCurrentDist = this.getMinSafeDistance(this.yaw, this.pitch);
+      if (this.distance < safeCurrentDist) {
+        this.distance = safeCurrentDist;
+        if (this.targetDistance < safeCurrentDist) {
+          this.targetDistance = safeCurrentDist;
+        }
       }
     }
 

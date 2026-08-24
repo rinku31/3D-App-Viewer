@@ -37,15 +37,16 @@ export function initializeRender() {
   viewport.appendChild(renderer.domElement);
   state.renderer = renderer;
 
-  // Initialize shared CameraRig
+  // Initialize shared CameraRig with collision proximity prevention
   const cameraRig = new CameraRig({
     scene,
     domElement: renderer.domElement,
     aspect: aspect,
     fov: 45,
-    near: 0.01,
+    near: 0.005,
     far: 1000,
     distance: 4.0,
+    collisionCheck: true,
     onChange: () => {
       state.visibilityDirty = true;
     }

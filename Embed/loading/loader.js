@@ -135,6 +135,7 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
  */
 export function frameViewerModel(model = state.currentModel) {
   if (!model || !state.cameraRig) return;
+  state.cameraRig.setCollisionObject(model);
   state.cameraRig.focus(model);
   state.visibilityDirty = true;
 }
@@ -294,6 +295,9 @@ function applyCameraAndModelTransforms() {
   // Camera Settings
   const camData = state.sceneDocument.camera;
   if (camData && state.cameraRig) {
+    if (state.currentModel) {
+      state.cameraRig.setCollisionObject(state.currentModel);
+    }
     const camState = {
       target: Array.isArray(camData.target) ? camData.target : [0, 0, 0],
       yaw: typeof camData.yaw === "number" ? camData.yaw : 0,
