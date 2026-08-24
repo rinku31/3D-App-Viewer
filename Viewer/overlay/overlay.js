@@ -109,9 +109,8 @@ export function buildHotspotOverlays() {
 export function updateOverlayPositions() {
   if (!state.camera || !state.overlay || !state.hotspots.length) return;
 
-  const overlayRect = state.overlay.getBoundingClientRect();
-  const width = overlayRect.width || window.innerWidth;
-  const height = overlayRect.height || window.innerHeight;
+  const width = state.overlay.clientWidth || window.innerWidth;
+  const height = state.overlay.clientHeight || window.innerHeight;
 
   const lineSettings = state.sceneDocument?.settings?.line || {};
   const lineOffset = lineSettings.offset || { x: 0, y: 0 };
@@ -122,22 +121,22 @@ export function updateOverlayPositions() {
     if (!h.dot || !h.panel || !h.line) return;
 
     if (!h.visible) {
-      h.dot.style.display = "none";
-      h.panel.style.display = "none";
-      h.line.style.display = "none";
+      if (h.dot.style.display !== "none") h.dot.style.display = "none";
+      if (h.panel.style.display !== "none") h.panel.style.display = "none";
+      if (h.line.style.display !== "none") h.line.style.display = "none";
       return;
     }
 
     const { x, y, inFrustum } = projectToScreen(h.position, state.camera, width, height);
 
     if (!inFrustum) {
-      h.dot.style.display = "none";
-      h.panel.style.display = "none";
-      h.line.style.display = "none";
+      if (h.dot.style.display !== "none") h.dot.style.display = "none";
+      if (h.panel.style.display !== "none") h.panel.style.display = "none";
+      if (h.line.style.display !== "none") h.line.style.display = "none";
       return;
     }
 
-    h.dot.style.display = "block";
+    if (h.dot.style.display !== "block") h.dot.style.display = "block";
     h.dot.style.left = `${x}px`;
     h.dot.style.top = `${y}px`;
 
@@ -152,7 +151,6 @@ export function updateOverlayPositions() {
 
     h.panel.style.left = `${panelX}px`;
     h.panel.style.top = `${panelY}px`;
-    h.panel.style.transform = "none";
 
     const coords = calculateConnectorLine(x, y, panelX, panelY, lineOffset);
 

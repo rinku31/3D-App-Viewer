@@ -10,10 +10,10 @@ import { testHotspotOcclusion } from "../../shared/hotspotMath.js";
  * Updates the visibility status of all active hotspots.
  */
 export function updateHotspotVisibility(force = false) {
-  if (!state.sceneDocument || !state.camera) return;
+  if (!state.sceneDocument || !state.camera || !state.currentModel || !state.hotspots.length) return;
 
   const now = performance.now();
-  if (!force && !state.visibilityDirty && now - state.lastVisibilityUpdate < state.visibilityInterval) {
+  if (!force && (now - state.lastVisibilityUpdate < state.visibilityInterval)) {
     return;
   }
 

@@ -69,6 +69,7 @@ export class CameraRig {
     this._rayDir = new THREE.Vector3();
     this._farOrigin = new THREE.Vector3();
     this._euler = new THREE.Euler(0, 0, 0, "YXZ");
+    this._safeDistCache = [];
 
     // Auto rotate turntable
     this.autoRotate = Boolean(options.autoRotate || false);
@@ -115,6 +116,7 @@ export class CameraRig {
    */
   setCollisionObject(object3D, margin = null) {
     this.collisionObject = object3D || null;
+    this._safeDistCache = [];
     if (typeof margin === "number") {
       this.collisionMargin = margin;
     } else if (object3D && object3D.isObject3D) {
@@ -129,6 +131,7 @@ export class CameraRig {
 
   /**
    * Calculates the minimum collision-free distance from target along given yaw/pitch angles.
+   * Uses a fast spatial cache to eliminate duplicate raycasts per frame.
    * @param {number} [yaw]
    * @param {number} [pitch]
    * @returns {number}
@@ -139,6 +142,21 @@ export class CameraRig {
     }
 
     const centerPos = this.currentTarget || this.target;
+
+    // Fast cache lookup (tolerance: ~0.25 degrees and 0.0001 distance^2)
+    if (this._safeDistCache && this._safeDistCache.length > 0) {
+      for (let i = 0; i < this._safeDistCache.length; i++) {
+        const entry = this._safeDistCache[i];
+        if (
+          Math.abs(yaw - entry.yaw) < 0.005 &&
+          Math.abs(pitch - entry.pitch) < 0.005 &&
+          centerPos.distanceToSquared(entry.center) < 0.0001
+        ) {
+          return entry.dist;
+        }
+      }
+    }
+
     this._euler.set(pitch, yaw, 0, "YXZ");
     this._rayDir.set(0, 0, 1).applyEuler(this._euler).normalize();
 
@@ -160,32 +178,45 @@ export class CameraRig {
       }
     }
 
+    let calculatedDist = this.minDistance;
     if (closestHit) {
       const surfaceDist = centerPos.distanceTo(closestHit.point);
-      return Math.max(this.minDistance, surfaceDist + this.collisionMargin);
-    }
+      calculatedDist = Math.max(this.minDistance, surfaceDist + this.collisionMargin);
+    } else {
+      // 2. Outward fallback ray from target center
+      this._raycaster.set(centerPos, this._rayDir);
+      this._raycaster.near = 0;
+      this._raycaster.far = testDist;
 
-    // 2. Outward fallback ray from target center
-    this._raycaster.set(centerPos, this._rayDir);
-    this._raycaster.near = 0;
-    this._raycaster.far = testDist;
-
-    const outHits = this._raycaster.intersectObject(this.collisionObject, true);
-    let farthestOutHit = null;
-    for (let i = 0; i < outHits.length; i++) {
-      const h = outHits[i];
-      if (h.object && h.object.isMesh && h.object.visible) {
-        if (!farthestOutHit || h.distance > farthestOutHit.distance) {
-          farthestOutHit = h;
+      const outHits = this._raycaster.intersectObject(this.collisionObject, true);
+      let farthestOutHit = null;
+      for (let i = 0; i < outHits.length; i++) {
+        const h = outHits[i];
+        if (h.object && h.object.isMesh && h.object.visible) {
+          if (!farthestOutHit || h.distance > farthestOutHit.distance) {
+            farthestOutHit = h;
+          }
         }
+      }
+
+      if (farthestOutHit) {
+        calculatedDist = Math.max(this.minDistance, farthestOutHit.distance + this.collisionMargin);
       }
     }
 
-    if (farthestOutHit) {
-      return Math.max(this.minDistance, farthestOutHit.distance + this.collisionMargin);
+    // Save into multi-entry ring cache
+    if (!this._safeDistCache) this._safeDistCache = [];
+    if (this._safeDistCache.length >= 6) {
+      this._safeDistCache.shift();
     }
+    this._safeDistCache.push({
+      yaw,
+      pitch,
+      center: centerPos.clone(),
+      dist: calculatedDist
+    });
 
-    return this.minDistance;
+    return calculatedDist;
   }
 
   /**

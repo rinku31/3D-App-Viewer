@@ -65,9 +65,13 @@ export function testHotspotOcclusion(position, camera, model, raycaster, toleran
     return false;
   }
 
-  // 2. Cull if out of NDC depth bounds [-1, 1]
+  // 2. Cull if out of NDC bounds [-1, 1] (off-screen)
   _projected.copy(_pos).project(camera);
-  if (_projected.z > 1 || _projected.z < -1) {
+  if (
+    _projected.z > 1 || _projected.z < -1 ||
+    _projected.x > 1.2 || _projected.x < -1.2 ||
+    _projected.y > 1.2 || _projected.y < -1.2
+  ) {
     return false;
   }
 
