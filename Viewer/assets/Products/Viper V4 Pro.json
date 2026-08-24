@@ -122,6 +122,11 @@
       "pulseAnimation": true,
       "theme": "default",
       "occlusionTolerance": 0.08
+    },
+    "controls": {
+      "defaultEnabled": true,
+      "explodeEnabled": true,
+      "simulatorEnabled": true
     }
   },
   "hotspots": [
@@ -129,6 +134,17 @@
       "id": "hotspot_1778478610537",
       "title": "DPI & Power LED",
       "description": "Multi-stage LED indicator for active DPI sensitivity stage and battery power status.",
+      "listItems": [
+        "Dynamic DPI stage indicator (400 - 35,000 DPI)",
+        "Multi-color battery level alerts (<10% warning)",
+        "Ultra-low latency power reporting"
+      ],
+      "button": {
+        "enabled": true,
+        "text": "Show Article",
+        "url": "https://www.razer.com",
+        "jsFunction": "onShowArticle"
+      },
       "position": [
         0.004160230515804056,
         0.026601059226252374,

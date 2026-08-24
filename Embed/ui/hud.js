@@ -5,6 +5,7 @@
  */
 
 import { state } from "../state/state.js";
+import { setEmbedBloomEnabled } from "../render/render.js";
 
 const BASE_AUTOROTATE_SPEED = 0.016;
 export const SPEED_MULTIPLIERS = [
@@ -16,19 +17,72 @@ export const SPEED_MULTIPLIERS = [
 ];
 let currentSpeedIndex = 1; // Default: 1x
 
+let isExploded = false;
+let isSimulating = false;
+const originalMeshTransforms = new Map();
+
 /**
  * Initializes the Viewer HUD overlay, event handlers, keyboard shortcuts,
  * environment preset selector, and auto-hide inactivity controller.
  */
 export function initializeViewerHUD() {
   createHUDMarkup();
+  createActionStackMarkup();
   createEnvironmentSelectorMarkup();
   createLoadingOverlayMarkup();
   bindHUDActions();
+  bindActionStackEvents();
   bindEnvironmentSelectorActions();
   setupInactivityAutoHide();
   setupKeyboardShortcuts();
   updateHudSceneInfo();
+}
+
+/**
+ * Injects the middle-right Quick Action stack (Explode, Default, Simulator) into the DOM.
+ */
+function createActionStackMarkup() {
+  const existing = document.getElementById("viewerActionStack");
+  if (existing) existing.remove();
+
+  const stack = document.createElement("nav");
+  stack.id = "viewerActionStack";
+  stack.className = "viewer-action-stack";
+  stack.setAttribute("aria-label", "Scene Actions");
+
+  stack.innerHTML = `
+    <!-- 1. Explode Button (Top) -->
+    <button id="hudExplodeBtn" class="hud-action-btn" type="button" title="Explode View (Toggle parts separation)" aria-label="Explode View">
+      <svg class="hud-action-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21 16-4 4-4-4"></path>
+        <path d="M17 20V4"></path>
+        <path d="m3 8 4-4 4 4"></path>
+        <path d="M7 4v16"></path>
+      </svg>
+      <span class="hud-action-label">Explode</span>
+    </button>
+
+    <!-- 2. Default View Button (Middle) -->
+    <button id="hudDefaultViewBtn" class="hud-action-btn" type="button" title="Default View (Reset Camera) [Key: R]" aria-label="Default Camera View">
+      <svg class="hud-action-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+      </svg>
+      <span class="hud-action-label">Default</span>
+    </button>
+
+    <!-- 3. Simulator Button (Bottom) -->
+    <button id="hudSimulatorBtn" class="hud-action-btn" type="button" title="Simulator (Interactive Testing)" aria-label="Simulator Mode">
+      <svg class="hud-action-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+      </svg>
+      <span class="hud-action-label">Simulator</span>
+    </button>
+  `;
+
+  document.body.appendChild(stack);
+  state.actionStack = stack;
 }
 
 /**
@@ -41,9 +95,27 @@ function createEnvironmentSelectorMarkup() {
   const envContainer = document.createElement("nav");
   envContainer.id = "viewerEnvSelector";
   envContainer.className = "viewer-env-selector";
-  envContainer.setAttribute("aria-label", "Lighting Environment Selector");
+  envContainer.setAttribute("aria-label", "Lighting and Effects Selector");
 
   envContainer.innerHTML = `
+    <!-- Bloom Glow Toggle Button beside Environment Options -->
+    <button id="hudBloomBtn" class="env-btn hud-bloom-btn" type="button" title="Toggle Bloom Glow [Key: B]" aria-label="Toggle Bloom Glow">
+      <svg id="hudBloomIcon" class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2"></path>
+        <path d="M12 20v2"></path>
+        <path d="m4.93 4.93 1.41 1.41"></path>
+        <path d="m17.66 17.66 1.41 1.41"></path>
+        <path d="M2 12h2"></path>
+        <path d="M20 12h2"></path>
+        <path d="m6.34 17.66-1.41 1.41"></path>
+        <path d="m19.07 4.93-1.41 1.41"></path>
+      </svg>
+      <span class="env-tooltip">Bloom Glow</span>
+    </button>
+
+    <div class="env-divider"></div>
+
     <div class="env-group" role="toolbar" aria-label="Environment Presets">
       <!-- 1. Balance (Studio Small 09) -->
       <button class="env-btn active" data-preset="studio_small_09" data-name="Balance" type="button" aria-label="Balance Environment" title="Balance Environment">
@@ -135,13 +207,42 @@ export function hideLoading() {
 }
 
 /**
- * Binds click events to switch environment HDR presets.
+ * Toggles bloom glow effect in Embed viewer.
+ */
+export function toggleEmbedBloom() {
+  const next = !Boolean(state.bloom?.enabled);
+  setEmbedBloomEnabled(next);
+  updateBloomBtnUI(next);
+  state.visibilityDirty = true;
+}
+
+/**
+ * Updates Bloom button visual state.
+ */
+export function updateBloomBtnUI(active) {
+  const btn = document.getElementById("hudBloomBtn");
+  if (btn) {
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  }
+}
+
+/**
+ * Binds click events to switch environment HDR presets and bloom toggle.
  */
 function bindEnvironmentSelectorActions() {
   const container = document.getElementById("viewerEnvSelector");
   if (!container) return;
 
-  container.querySelectorAll(".env-btn").forEach((btn) => {
+  const bloomBtn = document.getElementById("hudBloomBtn");
+  if (bloomBtn) {
+    bloomBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleEmbedBloom();
+    });
+  }
+
+  container.querySelectorAll(".env-btn[data-preset]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const preset = btn.getAttribute("data-preset");
@@ -217,17 +318,8 @@ function createHUDMarkup() {
 
     <div class="hud-divider"></div>
 
-    <!-- 2. Controls Group: Reset, Play/Pause Turntable, Speed Multiplier, Fullscreen -->
+    <!-- 2. Controls Group: Play/Pause Turntable, Speed Multiplier, Fullscreen -->
     <div class="hud-group" role="toolbar" aria-label="Scene Controls">
-      <!-- Reset Camera View -->
-      <button id="hudResetViewBtn" class="hud-btn" type="button" title="Reset View [Key: R]" aria-label="Reset Camera View">
-        <svg class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-        </svg>
-        <span class="hud-btn-label">Reset</span>
-      </button>
-
       <!-- Play / Pause Auto-Rotate Turntable -->
       <button id="hudAutoRotateBtn" class="hud-btn" type="button" title="Play Turntable [Key: Space]" aria-label="Play 360° Turntable">
         <svg id="hudAutoRotateIcon" class="hud-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -258,6 +350,192 @@ function createHUDMarkup() {
 
   document.body.appendChild(hudContainer);
   state.hud = hudContainer;
+}
+
+/**
+ * Binds middle-right Action Stack button events.
+ */
+function bindActionStackEvents() {
+  const explodeBtn = document.getElementById("hudExplodeBtn");
+  if (explodeBtn) {
+    explodeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleExplodedView();
+    });
+  }
+
+  const defaultBtn = document.getElementById("hudDefaultViewBtn");
+  if (defaultBtn) {
+    defaultBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetViewerCamera();
+    });
+  }
+
+  const simulatorBtn = document.getElementById("hudSimulatorBtn");
+  if (simulatorBtn) {
+    simulatorBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSimulatorMode();
+    });
+  }
+}
+
+/**
+ * Toggles Exploded View of the 3D model.
+ */
+export function toggleExplodedView() {
+  if (!state.currentModel) return;
+  isExploded = !isExploded;
+  applyExplosion(isExploded);
+  updateExplodeBtnUI(isExploded);
+}
+
+/**
+ * Smoothly explodes or collapses model parts.
+ */
+export function applyExplosion(exploded) {
+  if (!state.currentModel) return;
+
+  const meshes = [];
+  state.currentModel.traverse((child) => {
+    if (child.isMesh && child.geometry) {
+      meshes.push(child);
+    }
+  });
+
+  if (meshes.length === 0) return;
+
+  // Cache initial positions if not cached
+  meshes.forEach((mesh) => {
+    if (!originalMeshTransforms.has(mesh.uuid)) {
+      originalMeshTransforms.set(mesh.uuid, {
+        position: mesh.position.clone(),
+        scale: mesh.scale.clone()
+      });
+    }
+  });
+
+  if (window.THREE) {
+    const box = new window.THREE.Box3().setFromObject(state.currentModel);
+    const center = new window.THREE.Vector3();
+    box.getCenter(center);
+    const size = new window.THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1.0;
+
+    const duration = 500;
+    const startTime = performance.now();
+
+    const initialPositions = meshes.map((mesh) => mesh.position.clone());
+    const targetPositions = meshes.map((mesh) => {
+      const orig = originalMeshTransforms.get(mesh.uuid).position;
+      if (!exploded) {
+        return orig.clone();
+      }
+      const meshBox = new window.THREE.Box3().setFromObject(mesh);
+      const meshCenter = new window.THREE.Vector3();
+      meshBox.getCenter(meshCenter);
+
+      const offset = new window.THREE.Vector3().subVectors(meshCenter, center);
+      if (offset.lengthSq() < 0.0001) {
+        offset.set(Math.sin(mesh.id || 1), Math.cos(mesh.id || 1), Math.sin((mesh.id || 1) * 2));
+      }
+      offset.normalize().multiplyScalar(maxDim * 0.38);
+      return orig.clone().add(offset);
+    });
+
+    const animateExplosion = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1.0, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      meshes.forEach((mesh, idx) => {
+        mesh.position.lerpVectors(initialPositions[idx], targetPositions[idx], ease);
+      });
+
+      state.visibilityDirty = true;
+
+      if (progress < 1.0) {
+        requestAnimationFrame(animateExplosion);
+      }
+    };
+
+    requestAnimationFrame(animateExplosion);
+  }
+}
+
+/**
+ * Updates Explode button visual state.
+ */
+export function updateExplodeBtnUI(active) {
+  const btn = document.getElementById("hudExplodeBtn");
+  if (btn) {
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+    btn.classList.add("btn-pulsed");
+    setTimeout(() => btn.classList.remove("btn-pulsed"), 300);
+  }
+}
+
+/**
+ * Toggles interactive Simulator mode and triggers outside function/iframe messaging.
+ */
+export function toggleSimulatorMode() {
+  isSimulating = !isSimulating;
+  updateSimulatorBtnUI(isSimulating);
+
+  const controls = state.sceneDocument?.settings?.controls || state.sceneDocument?.scene?.controls || {};
+  const funcName = (controls.simulatorJsFunction || controls.jsFunction || "onSimulatorToggle").trim();
+  const url = (controls.simulatorUrl || controls.url || "").trim();
+
+  // If a URL is configured, open on activation
+  if (url && isSimulating) {
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (_) {}
+  }
+
+  const payload = {
+    type: "SIMULATOR_TOGGLE",
+    action: isSimulating ? "start" : "stop",
+    active: isSimulating,
+    functionName: funcName,
+    sceneTitle: state.sceneDocument?.metadata?.title || state.currentModel?.name || "Product Showcase",
+    modelName: state.currentModel?.name || "",
+    timestamp: Date.now()
+  };
+
+  // 1. Call function in parent window if available (e.g. window.parent[funcName])
+  try {
+    if (funcName) {
+      if (window.parent && typeof window.parent[funcName] === "function") {
+        window.parent[funcName](payload);
+      } else if (typeof window[funcName] === "function") {
+        window[funcName](payload);
+      }
+    }
+  } catch (_) {}
+
+  // 2. PostMessage to parent frame for iframe embedding
+  if (window.parent && window.parent !== window) {
+    try {
+      window.parent.postMessage(payload, "*");
+    } catch (_) {}
+  }
+}
+
+/**
+ * Updates Simulator button visual state.
+ */
+export function updateSimulatorBtnUI(active) {
+  const btn = document.getElementById("hudSimulatorBtn");
+  if (btn) {
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+    btn.classList.add("btn-pulsed");
+    setTimeout(() => btn.classList.remove("btn-pulsed"), 300);
+  }
 }
 
 /**
@@ -318,24 +596,52 @@ function bindHUDActions() {
 }
 
 /**
- * Updates the Scene Title displayed on the HUD brand pill.
+ * Updates the Scene Title displayed on the HUD brand pill and syncs action stack buttons.
  */
 export function updateHudSceneInfo(title) {
   const titleEl = document.getElementById("hudSceneTitle");
-  if (!titleEl) return;
+  if (titleEl) {
+    const resolved = title
+      || state.sceneDocument?.metadata?.title
+      || state.currentModel?.name
+      || "Product Showcase";
 
-  const resolved = title
-    || state.sceneDocument?.metadata?.title
-    || state.currentModel?.name
-    || "Product Showcase";
+    titleEl.textContent = resolved;
+    titleEl.setAttribute("title", resolved);
+  }
 
-  titleEl.textContent = resolved;
-  titleEl.setAttribute("title", resolved);
+  // Sync Action Stack (Explode, Default, Simulator) visibility based on controls configuration
+  const controls = state.sceneDocument?.settings?.controls || state.sceneDocument?.scene?.controls || {
+    defaultEnabled: true,
+    explodeEnabled: true,
+    simulatorEnabled: true
+  };
+
+  const explodeBtn = document.getElementById("hudExplodeBtn");
+  if (explodeBtn) {
+    explodeBtn.style.display = controls.explodeEnabled !== false ? "flex" : "none";
+  }
+
+  const defaultBtn = document.getElementById("hudDefaultViewBtn");
+  if (defaultBtn) {
+    defaultBtn.style.display = controls.defaultEnabled !== false ? "flex" : "none";
+  }
+
+  const simulatorBtn = document.getElementById("hudSimulatorBtn");
+  if (simulatorBtn) {
+    simulatorBtn.style.display = controls.simulatorEnabled !== false ? "flex" : "none";
+  }
+
+  const actionStack = document.getElementById("viewerActionStack");
+  if (actionStack) {
+    const anyVisible = controls.explodeEnabled !== false || controls.defaultEnabled !== false || controls.simulatorEnabled !== false;
+    actionStack.style.display = anyVisible ? "flex" : "none";
+  }
 }
 
 /**
  * Smoothly resets the CameraRig to its default viewing angle and focus distance,
- * pauses turntable auto-rotation, and dismisses active hotspot popups.
+ * pauses turntable auto-rotation, unexplodes model, and dismisses active hotspot popups.
  */
 export function resetViewerCamera() {
   if (!state.cameraRig) return;
@@ -344,11 +650,22 @@ export function resetViewerCamera() {
   state.cameraRig.autoRotate = false;
   updateAutoRotateUIState(false);
 
-  // 2. Smoothly reset camera orientation & distance
+  // 2. Return exploded parts to initial position
+  if (isExploded) {
+    isExploded = false;
+    applyExplosion(false);
+    updateExplodeBtnUI(false);
+  }
+  if (isSimulating) {
+    isSimulating = false;
+    updateSimulatorBtnUI(false);
+  }
+
+  // 3. Smoothly reset camera orientation & distance
   state.cameraRig.reset();
   state.visibilityDirty = true;
 
-  // 3. Dismiss active hotspot panels & markers
+  // 4. Dismiss active hotspot panels & markers
   if (state.hotspots) {
     state.hotspots.forEach((h) => {
       if (h.panel) h.panel.style.display = "none";
@@ -358,11 +675,11 @@ export function resetViewerCamera() {
     });
   }
 
-  // 4. Pulse visual feedback on the reset button
-  const resetBtn = document.getElementById("hudResetViewBtn");
-  if (resetBtn) {
-    resetBtn.classList.add("btn-pulsed");
-    setTimeout(() => resetBtn.classList.remove("btn-pulsed"), 400);
+  // 5. Pulse visual feedback on the default view button
+  const defaultBtn = document.getElementById("hudDefaultViewBtn") || document.getElementById("hudResetViewBtn");
+  if (defaultBtn) {
+    defaultBtn.classList.add("btn-pulsed");
+    setTimeout(() => defaultBtn.classList.remove("btn-pulsed"), 400);
   }
 }
 
@@ -525,7 +842,7 @@ function setupInactivityAutoHide() {
   window.addEventListener("touchstart", wakeUpChrome, { passive: true });
   window.addEventListener("pointerdown", wakeUpChrome, { passive: true });
 
-  [state.hud, state.envSelector].forEach((el) => {
+  [state.hud, state.actionStack, state.envSelector].forEach((el) => {
     if (el) {
       el.addEventListener("mouseenter", cancelInactivity);
       el.addEventListener("mouseleave", wakeUpChrome);
@@ -539,12 +856,14 @@ function setupInactivityAutoHide() {
 
 function showChrome() {
   if (state.hud) state.hud.classList.remove("viewer-chrome-hidden");
+  if (state.actionStack) state.actionStack.classList.remove("viewer-chrome-hidden");
   if (state.envSelector) state.envSelector.classList.remove("viewer-chrome-hidden");
 }
 
 function hideChrome() {
   if (state.isChromeHovered) return;
   if (state.hud) state.hud.classList.add("viewer-chrome-hidden");
+  if (state.actionStack) state.actionStack.classList.add("viewer-chrome-hidden");
   if (state.envSelector) state.envSelector.classList.add("viewer-chrome-hidden");
 }
 

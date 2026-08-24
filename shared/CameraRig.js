@@ -700,6 +700,16 @@ export class CameraRig {
     if (this.domElement && event.target !== this.domElement) return;
     if (event.button !== 0 && event.pointerType === "mouse") return;
 
+    // Prevent text selection from triggering when navigating 3D viewport
+    if (event.pointerType === "mouse" || event.pointerType === "touch" || event.pointerType === "pen") {
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+      }
+      try {
+        document.body.classList.add("navigating-viewport");
+      } catch (_) {}
+    }
+
     this.isDragging = true;
     this.activePointerId = event.pointerId;
     this.pointerStart = { x: event.clientX, y: event.clientY };
@@ -708,6 +718,11 @@ export class CameraRig {
   handlePointerMove(event) {
     if (!this.enabled || !this.isDragging) return;
     if (this.activePointerId !== null && event.pointerId !== this.activePointerId) return;
+
+    // Clear any accidental selection during fast mouse movements
+    if (window.getSelection && window.getSelection().rangeCount > 0) {
+      window.getSelection().removeAllRanges();
+    }
 
     const deltaX = event.clientX - this.pointerStart.x;
     const deltaY = event.clientY - this.pointerStart.y;
@@ -722,6 +737,9 @@ export class CameraRig {
     if (this.activePointerId !== null && event.pointerId !== this.activePointerId) return;
     this.isDragging = false;
     this.activePointerId = null;
+    try {
+      document.body.classList.remove("navigating-viewport");
+    } catch (_) {}
   }
 
   handleWheel(event) {

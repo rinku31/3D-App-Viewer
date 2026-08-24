@@ -166,6 +166,10 @@ async function importJsonData(rawData, fileName = "scene.json") {
   // 1. Restore Scene Settings
   if (data.scene) {
     Object.assign(state.sceneSettings, data.scene);
+    state.sceneSettings.controls = (data.settings && data.settings.controls) 
+      ? { ...data.settings.controls } 
+      : (data.scene.controls ? { ...data.scene.controls } : { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true });
+
     if (data.scene.environment) {
       Object.assign(state.sceneSettings.environment, data.scene.environment);
       if (data.scene.environment.preset) {
@@ -186,6 +190,8 @@ async function importJsonData(rawData, fileName = "scene.json") {
       setGridVisible(data.scene.helpers.grid !== false);
       setAxesVisible(Boolean(data.scene.helpers.axes));
     }
+  } else if (data.settings?.controls) {
+    state.sceneSettings.controls = { ...data.settings.controls };
   }
 
   // 2. Restore Camera Settings & Default View
@@ -264,10 +270,23 @@ async function importJsonData(rawData, fileName = "scene.json") {
 
   if (Array.isArray(data.hotspots)) {
     data.hotspots.forEach((h) => {
+      const rawList = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
       const hotspot = {
         id: h.id || ("hotspot_" + Math.random().toString(36).slice(2)),
         title: h.title ?? "",
         description: h.description ?? "",
+        listItems: rawList.map((item) => String(item || "")),
+        button: h.button ? {
+          enabled: Boolean(h.button.enabled),
+          text: h.button.text || "Show Article",
+          url: h.button.url || "",
+          jsFunction: h.button.jsFunction || ""
+        } : {
+          enabled: false,
+          text: "Show Article",
+          url: "",
+          jsFunction: ""
+        },
         position: Array.isArray(h.position)
           ? [Number(h.position[0]) || 0, Number(h.position[1]) || 0, Number(h.position[2]) || 0]
           : [0, 0, 0],
@@ -444,12 +463,31 @@ function serializeSceneDocument() {
         pulseAnimation: true,
         theme: "default",
         occlusionTolerance: 0.08
+      },
+      controls: {
+        defaultEnabled: state.sceneSettings?.controls?.defaultEnabled !== false,
+        explodeEnabled: state.sceneSettings?.controls?.explodeEnabled !== false,
+        simulatorEnabled: state.sceneSettings?.controls?.simulatorEnabled !== false,
+        simulatorJsFunction: state.sceneSettings?.controls?.simulatorJsFunction || "onSimulatorToggle",
+        simulatorUrl: state.sceneSettings?.controls?.simulatorUrl || ""
       }
     },
     hotspots: state.hotspots.map((h) => ({
       id: h.id,
       title: h.title,
       description: h.description,
+      listItems: Array.isArray(h.listItems) ? [...h.listItems] : [],
+      button: h.button ? {
+        enabled: Boolean(h.button.enabled),
+        text: h.button.text || "Show Article",
+        url: h.button.url || "",
+        jsFunction: h.button.jsFunction || ""
+      } : {
+        enabled: false,
+        text: "Show Article",
+        url: "",
+        jsFunction: ""
+      },
       position: h.position,
       panelOffset: h.panelOffset,
       ...(h.color ? { color: h.color } : {}),

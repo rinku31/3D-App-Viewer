@@ -31,17 +31,109 @@ export function buildHotspotOverlays() {
     const panel = document.createElement("div");
     panel.className = "panel";
 
+    const children = [];
+
     const titleEl = document.createElement("div");
     titleEl.className = "panel-title";
     titleEl.style.fontWeight = "bold";
     titleEl.style.marginBottom = "6px";
     titleEl.textContent = h.title || "";
+    children.push(titleEl);
 
-    const descEl = document.createElement("div");
-    descEl.className = "panel-desc";
-    descEl.textContent = h.description || "";
+    if (h.description) {
+      const descEl = document.createElement("div");
+      descEl.className = "panel-desc";
+      descEl.textContent = h.description || "";
+      children.push(descEl);
+    }
 
-    panel.replaceChildren(titleEl, descEl);
+    // List items
+    const rawList = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
+    const validItems = rawList.map((item) => String(item || "").trim()).filter(Boolean);
+
+    if (validItems.length > 0) {
+      const ul = document.createElement("ul");
+      ul.className = "panel-list";
+      ul.style.margin = "8px 0 0 0";
+      ul.style.paddingLeft = "18px";
+      ul.style.display = "flex";
+      ul.style.flexDirection = "column";
+      ul.style.gap = "4px";
+
+      validItems.forEach((itemText) => {
+        const li = document.createElement("li");
+        li.className = "panel-list-item";
+        li.style.fontSize = "0.82rem";
+        li.style.lineHeight = "1.4";
+        li.textContent = itemText;
+        ul.appendChild(li);
+      });
+
+      children.push(ul);
+    }
+
+    // Action button
+    if (h.button && h.button.enabled) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "panel-btn";
+      btn.textContent = h.button.text || "Show Article";
+      btn.style.marginTop = "10px";
+      btn.style.display = "inline-flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "center";
+      btn.style.gap = "6px";
+      btn.style.width = "100%";
+      btn.style.padding = "7px 12px";
+      btn.style.fontSize = "0.8rem";
+      btn.style.fontWeight = "600";
+      btn.style.borderRadius = "6px";
+      btn.style.border = "1px solid rgba(255,255,255,0.2)";
+      btn.style.background = "rgba(68, 214, 44, 0.25)";
+      btn.style.color = "#ffffff";
+      btn.style.cursor = "pointer";
+      btn.style.pointerEvents = "auto";
+      btn.style.transition = "all 0.2s ease";
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const url = (h.button?.url || "").trim();
+        const funcName = (h.button?.jsFunction || "").trim();
+
+        if (url) {
+          try {
+            window.open(url, "_blank", "noopener,noreferrer");
+          } catch (_) {}
+        }
+
+        if (funcName) {
+          try {
+            if (window.parent && typeof window.parent[funcName] === "function") {
+              window.parent[funcName](h);
+            } else if (typeof window[funcName] === "function") {
+              window[funcName](h);
+            }
+
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({
+                type: "HOTSPOT_BUTTON_CLICK",
+                functionName: funcName,
+                hotspot: {
+                  id: h.id,
+                  title: h.title,
+                  description: h.description,
+                  position: h.position
+                }
+              }, "*");
+            }
+          } catch (_) {}
+        }
+      });
+
+      children.push(btn);
+    }
+
+    panel.replaceChildren(...children);
 
     // 3. SVG Connector Line
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");

@@ -133,6 +133,11 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
         pulseAnimation: true,
         theme: "default",
         occlusionTolerance: 0.08
+      },
+      controls: {
+        defaultEnabled: true,
+        explodeEnabled: true,
+        simulatorEnabled: true
       }
     },
     hotspots: []
@@ -319,6 +324,11 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
     hotspots: {
       ...base.settings.hotspots,
       ...(raw.settings?.hotspots || {})
+    },
+    controls: {
+      defaultEnabled: raw.settings?.controls?.defaultEnabled !== undefined ? Boolean(raw.settings.controls.defaultEnabled) : true,
+      explodeEnabled: raw.settings?.controls?.explodeEnabled !== undefined ? Boolean(raw.settings.controls.explodeEnabled) : true,
+      simulatorEnabled: raw.settings?.controls?.simulatorEnabled !== undefined ? Boolean(raw.settings.controls.simulatorEnabled) : true
     }
   };
 
@@ -332,12 +342,29 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       const panelX = h.panelOffset ? (Number(h.panelOffset.x) || 0) : 250;
       const panelY = h.panelOffset ? (Number(h.panelOffset.y) || 0) : -120;
 
+      const rawItems = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
+      const listItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
+
+      const button = h.button && typeof h.button === "object" ? {
+        enabled: Boolean(h.button.enabled),
+        text: h.button.text !== undefined ? String(h.button.text) : "Show Article",
+        url: h.button.url !== undefined ? String(h.button.url) : "",
+        jsFunction: h.button.jsFunction !== undefined ? String(h.button.jsFunction) : ""
+      } : {
+        enabled: false,
+        text: "Show Article",
+        url: "",
+        jsFunction: ""
+      };
+
       return {
         id: h.id || `hotspot_${Date.now()}_${idx}`,
         title: h.title !== undefined ? String(h.title) : "",
         description: h.description !== undefined ? String(h.description) : "",
         position: [posX, posY, posZ],
         panelOffset: { x: panelX, y: panelY },
+        listItems,
+        button,
         ...(h.color ? { color: h.color } : {}),
         ...(h.cameraViewpointId ? { cameraViewpointId: h.cameraViewpointId } : {})
       };

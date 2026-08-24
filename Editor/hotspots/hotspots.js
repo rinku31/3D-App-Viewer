@@ -6,93 +6,166 @@ import { updateGizmoAnchorPosition } from "../gizmo/gizmo.js";
 import { projectToScreen, testHotspotOcclusion, calculateConnectorLine } from "../../shared/hotspotMath.js";
 
 function createHotspot(point){
+  const hotspot = {
+    id: "hotspot_" + Date.now(),
+    title: "New Hotspot",
+    description: "Description",
+    listItems: [],
+    button: {
+      enabled: false,
+      text: "Show Article",
+      url: "",
+      jsFunction: ""
+    },
+    position: [
+      point.x,
+      point.y,
+      point.z
+    ],
+    panelOffset: {
+      x: 250,
+      y: -120
+    }
+  };
 
-const hotspot = {
-
-id:
-"hotspot_" + Date.now(),
-
-title:"New Hotspot",
-
-description:"Description",
-
-position:[
-point.x,
-point.y,
-point.z
-],
-
-panelOffset:{
-x:250,
-y:-120
-}
-
-};
-
-state.hotspots.push(hotspot);
-
-buildHotspot(hotspot);
-
-selectHotspot(hotspot);
-
-return hotspot;
-
+  state.hotspots.push(hotspot);
+  buildHotspot(hotspot);
+  selectHotspot(hotspot);
+  return hotspot;
 }
 
 function buildHotspot(h){
+  const dot = document.createElement("div");
+  dot.className = "hotspot";
 
-const dot =
-document.createElement("div");
+  dot.addEventListener("click", (e) => {
+    e.stopPropagation();
+    selectHotspot(h);
+  });
 
-dot.className = "hotspot";
+  state.overlay.appendChild(dot);
+  makeHotspotDraggable(dot, h);
 
-dot.addEventListener(
-"click",
-(e)=>{
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  state.hotspotLines.appendChild(line);
 
-e.stopPropagation();
+  const panel = document.createElement("div");
+  panel.className = "panel";
 
-selectHotspot(h);
+  updatePanelHTML(h, panel);
 
-}
-);
+  state.overlay.appendChild(panel);
+  makePanelDraggable(panel, h);
 
-state.overlay.appendChild(dot);
-
-makeHotspotDraggable(dot,h);
-
-const line = document.createElementNS("http://www.w3.org/2000/svg","line");
-state.hotspotLines.appendChild(line);
-
-const panel =
-document.createElement("div");
-
-panel.className = "panel";
-
-updatePanelHTML(h,panel);
-
-state.overlay.appendChild(panel);
-
-makePanelDraggable(panel,h);
-
-h.dot = dot;
-h.panel = panel;
-h.line = line;
-
+  h.dot = dot;
+  h.panel = panel;
+  h.line = line;
 }
 
-function updatePanelHTML(h,panel){
+function updatePanelHTML(h, panel){
+  const children = [];
 
-const title = document.createElement("div");
-title.style.fontWeight = "bold";
-title.style.marginBottom = "8px";
-title.textContent = h.title;
+  const title = document.createElement("div");
+  title.className = "panel-title";
+  title.style.fontWeight = "bold";
+  title.style.marginBottom = "8px";
+  title.textContent = h.title || "";
+  children.push(title);
 
-const description = document.createElement("div");
-description.textContent = h.description;
+  if (h.description) {
+    const description = document.createElement("div");
+    description.className = "panel-desc";
+    description.textContent = h.description;
+    children.push(description);
+  }
 
-panel.replaceChildren(title, description);
+  // Hotspot List items
+  const rawItems = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
+  const validItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
 
+  if (validItems.length > 0) {
+    const ul = document.createElement("ul");
+    ul.className = "panel-list";
+    ul.style.margin = "8px 0 0 0";
+    ul.style.paddingLeft = "18px";
+    ul.style.display = "flex";
+    ul.style.flexDirection = "column";
+    ul.style.gap = "4px";
+
+    validItems.forEach((itemText) => {
+      const li = document.createElement("li");
+      li.className = "panel-list-item";
+      li.style.fontSize = "0.85rem";
+      li.style.lineHeight = "1.4";
+      li.textContent = itemText;
+      ul.appendChild(li);
+    });
+
+    children.push(ul);
+  }
+
+  // Hotspot Action Button
+  if (h.button && h.button.enabled) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "panel-btn";
+    btn.textContent = h.button.text || "Show Article";
+    btn.style.marginTop = "10px";
+    btn.style.display = "inline-flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.style.gap = "6px";
+    btn.style.width = "100%";
+    btn.style.padding = "7px 12px";
+    btn.style.fontSize = "0.8rem";
+    btn.style.fontWeight = "600";
+    btn.style.borderRadius = "6px";
+    btn.style.border = "1px solid rgba(255,255,255,0.2)";
+    btn.style.background = "rgba(68, 214, 44, 0.25)";
+    btn.style.color = "#ffffff";
+    btn.style.cursor = "pointer";
+    btn.style.pointerEvents = "auto";
+    btn.style.transition = "all 0.2s ease";
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const url = (h.button?.url || "").trim();
+      const funcName = (h.button?.jsFunction || "").trim();
+
+      if (url) {
+        try {
+          window.open(url, "_blank", "noopener,noreferrer");
+        } catch (_) {}
+      }
+
+      if (funcName) {
+        try {
+          if (window.parent && typeof window.parent[funcName] === "function") {
+            window.parent[funcName](h);
+          } else if (typeof window[funcName] === "function") {
+            window[funcName](h);
+          }
+
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: "HOTSPOT_BUTTON_CLICK",
+              functionName: funcName,
+              hotspot: {
+                id: h.id,
+                title: h.title,
+                description: h.description,
+                position: h.position
+              }
+            }, "*");
+          }
+        } catch (_) {}
+      }
+    });
+
+    children.push(btn);
+  }
+
+  panel.replaceChildren(...children);
 }
 
 function makePanelDraggable(panel,hotspot){

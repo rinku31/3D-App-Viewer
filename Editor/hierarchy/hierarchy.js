@@ -61,14 +61,14 @@ function renderHierarchy() {
       });
     }
 
-    // 3. Model Node (Treated as a single fixed immutable object)
+    // 3. Model Node (Selectable in Inspector for rotation & transforms)
     if (state.currentModel) {
       const modelLabel = state.currentModel.name || "GLB Model";
       html += buildTreeItem({
         id: "model_root",
-        label: `${escapeHTML(modelLabel)} <span class="tree-meta">Fixed Object</span>`,
+        label: `${escapeHTML(modelLabel)} <span class="tree-meta">3D Model</span>`,
         icon: "&#128230;",
-        type: "model_fixed",
+        type: "model",
         object: state.currentModel,
         hasChildren: false,
         actions: `
@@ -356,6 +356,9 @@ function handleTreeSelection(type, itemId) {
 
   if (type === "scene") {
     select("scene", state.scene);
+    showSidebarTab("scene");
+  } else if (type === "model") {
+    select("model", state.currentModel);
     showSidebarTab("scene");
   } else if (type === "camera") {
     select("camera", state.camera);

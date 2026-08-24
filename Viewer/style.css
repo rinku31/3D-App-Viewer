@@ -11,7 +11,19 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: #18181c;
   color: #f1f1f3;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
+}
+
+body.navigating-viewport,
+body.navigating-viewport * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  cursor: grabbing !important;
 }
 
 #viewport {
@@ -410,6 +422,94 @@ canvas {
 }
 
 /* ==========================================================================
+   Viewer Middle-Right Quick Action Stack (Explode, Default, Simulator)
+   ========================================================================== */
+
+.viewer-action-stack {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(24, 24, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.viewer-action-stack.viewer-chrome-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(14px);
+}
+
+.hud-action-btn {
+  position: relative;
+  background: rgba(38, 38, 46, 0.85);
+  color: #e4e4e7;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 82px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.hud-action-btn:hover {
+  background: #363644;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateX(-2px);
+}
+
+.hud-action-btn:active {
+  transform: scale(0.96);
+}
+
+.hud-action-btn.active {
+  background: rgba(68, 214, 44, 0.18);
+  color: #44D62C;
+  border-color: rgba(68, 214, 44, 0.6);
+  box-shadow: 0 0 14px rgba(68, 214, 44, 0.3);
+}
+
+.hud-action-btn.btn-pulsed {
+  animation: hudBtnPulse 0.35s ease;
+}
+
+.hud-action-icon {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.hud-action-label {
+  white-space: nowrap;
+}
+
+/* ==========================================================================
    Viewer Bottom-Right Environment Option Selector
    ========================================================================== */
 
@@ -443,6 +543,20 @@ canvas {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.env-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 0 2px;
+}
+
+.hud-bloom-btn.active {
+  background: rgba(68, 214, 44, 0.22);
+  color: #44D62C;
+  border-color: rgba(68, 214, 44, 0.7);
+  box-shadow: 0 0 14px rgba(68, 214, 44, 0.4);
 }
 
 .env-btn {
@@ -603,6 +717,17 @@ canvas {
 }
 
 @media (max-width: 480px) {
+  .viewer-action-stack {
+    right: 10px;
+    padding: 4px;
+    gap: 6px;
+  }
+
+  .hud-action-btn {
+    min-width: auto;
+    padding: 8px 10px;
+  }
+
   .hud-btn-label {
     display: none;
   }

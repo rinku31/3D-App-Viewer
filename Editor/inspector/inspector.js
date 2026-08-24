@@ -78,6 +78,8 @@ function renderInspector() {
 
   if (type === "hotspot") {
     html = buildHotspotInspector(object);
+  } else if (type === "model") {
+    html = buildModelInspector(object);
   } else if (type === "light") {
     html = buildLightInspector(object);
   } else if (type === "lightTarget") {
@@ -183,8 +185,78 @@ function buildTransformSection(title, pos, rot = null, scale = null) {
   `;
 }
 
+function buildModelInspector(model) {
+  const rot = model.rotation;
+  const rotDeg = {
+    x: THREE.MathUtils.radToDeg(rot.x).toFixed(1),
+    y: THREE.MathUtils.radToDeg(rot.y).toFixed(1),
+    z: THREE.MathUtils.radToDeg(rot.z).toFixed(1),
+  };
+  const pos = model.position;
+  const scale = model.scale;
+
+  return `
+    ${buildHeader("MODEL", model.name || "3D Model")}
+
+    <div class="section-group">
+      <div class="section-group-title">Model Rotation (° degrees)</div>
+      
+      <div class="param-row">
+        <label>Rotation Inputs</label>
+        <div class="vector3-inputs">
+          <div class="vec-item"><span class="vec-label x">X</span><input id="prop_model_rot_x" type="number" step="1" value="${rotDeg.x}"></div>
+          <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_model_rot_y" type="number" step="1" value="${rotDeg.y}"></div>
+          <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_model_rot_z" type="number" step="1" value="${rotDeg.z}"></div>
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Rotate X</label><span class="value-badge" id="val_model_rot_x">${rotDeg.x}°</span></div>
+        <input id="prop_model_rot_slider_x" type="range" min="-180" max="180" step="1" value="${Math.round(parseFloat(rotDeg.x))}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Rotate Y</label><span class="value-badge" id="val_model_rot_y">${rotDeg.y}°</span></div>
+        <input id="prop_model_rot_slider_y" type="range" min="-180" max="180" step="1" value="${Math.round(parseFloat(rotDeg.y))}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Rotate Z</label><span class="value-badge" id="val_model_rot_z">${rotDeg.z}°</span></div>
+        <input id="prop_model_rot_slider_z" type="range" min="-180" max="180" step="1" value="${Math.round(parseFloat(rotDeg.z))}">
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button id="btn_reset_model_rot" class="secondary" style="flex:1; font-size:11px; padding:6px 8px;">Reset Rotation</button>
+        <button id="btn_frame_model_inspector" class="secondary" style="flex:1; font-size:11px; padding:6px 8px;">Frame in View</button>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Model Position & Scale</div>
+      <div class="param-row">
+        <label>Position</label>
+        <div class="vector3-inputs">
+          <div class="vec-item"><span class="vec-label x">X</span><input id="prop_pos_x" type="number" step="0.05" value="${pos.x.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_pos_y" type="number" step="0.05" value="${pos.y.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_pos_z" type="number" step="0.05" value="${pos.z.toFixed(2)}"></div>
+        </div>
+      </div>
+      <div class="param-row">
+        <label>Scale</label>
+        <div class="vector3-inputs">
+          <div class="vec-item"><span class="vec-label x">X</span><input id="prop_scale_x" type="number" step="0.05" value="${scale.x.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_scale_y" type="number" step="0.05" value="${scale.y.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_scale_z" type="number" step="0.05" value="${scale.z.toFixed(2)}"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function buildHotspotInspector(hotspot) {
   const pos = new THREE.Vector3(hotspot.position[0], hotspot.position[1], hotspot.position[2]);
+  const listItems = Array.isArray(hotspot.listItems) ? hotspot.listItems : [];
+  const btn = hotspot.button || { enabled: false, text: "Show Article", url: "", jsFunction: "" };
 
   return `
     ${buildHeader("HOTSPOT", hotspot.title || "Hotspot", true)}
@@ -195,6 +267,56 @@ function buildHotspotInspector(hotspot) {
 
       <label>Description</label>
       <textarea id="prop_hotspot_desc" rows="3" placeholder="Description text">${escapeHTML(hotspot.description)}</textarea>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Hotspot List Items</span>
+        <button id="btnAddHotspotListItem" class="secondary" style="font-size:10px; padding:2px 6px;">+ Add Item</button>
+      </div>
+
+      <div id="hotspot_list_items_container" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+        ${listItems.length === 0 ? `
+          <div style="font-size:11px; color:var(--text-dim, #888); font-style:italic; padding:4px 0;">No list items. Click "+ Add Item" to add bullet points below description.</div>
+        ` : listItems.map((item, idx) => `
+          <div class="hotspot-list-item-row" style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:12px; color:var(--accent, #44D62C);">&bull;</span>
+            <input type="text" class="hotspot-list-item-input" data-item-idx="${idx}" value="${escapeHTML(item)}" placeholder="List bullet item..." style="flex:1; font-size:12px; padding:4px 6px;">
+            <button class="delete-btn btn-delete-list-item" data-item-idx="${idx}" title="Remove item" style="padding:2px 6px; font-size:11px;">&#128465;</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Hotspot Action Button</div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_hotspot_btn_enable" type="checkbox" ${btn.enabled ? "checked" : ""}>
+          Enable Button below list items
+        </label>
+      </div>
+
+      <div id="hotspot_btn_options_box" style="${btn.enabled ? '' : 'display:none;'} margin-top:8px;">
+        <div class="param-row">
+          <label>Button Text</label>
+          <input id="prop_hotspot_btn_text" type="text" value="${escapeHTML(btn.text || "Show Article")}" placeholder="Show Article">
+        </div>
+
+        <div class="param-row">
+          <label>Link URL (optional)</label>
+          <input id="prop_hotspot_btn_url" type="url" value="${escapeHTML(btn.url || "")}" placeholder="https://example.com/article">
+        </div>
+
+        <div class="param-row">
+          <label>Parent JS Function Name (optional)</label>
+          <input id="prop_hotspot_btn_fn" type="text" value="${escapeHTML(btn.jsFunction || "")}" placeholder="e.g. onHotspotAction">
+          <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
+            Calls function on parent page outside embed iframe or dispatches message.
+          </div>
+        </div>
+      </div>
     </div>
 
     ${buildTransformSection("World Position", pos)}
@@ -606,6 +728,39 @@ function buildSceneInspector() {
         </label>
       </div>
     </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Viewer &amp; Embed Floating Buttons</div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_btn_explode" type="checkbox" ${sceneSettings.controls?.explodeEnabled !== false ? "checked" : ""}>
+          Enable "Explode" View Button
+        </label>
+      </div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="prop_scene_btn_simulator" type="checkbox" ${sceneSettings.controls?.simulatorEnabled !== false ? "checked" : ""}>
+          Enable "Simulator" Button
+        </label>
+      </div>
+
+      <div id="simulator_btn_options_box" style="${sceneSettings.controls?.simulatorEnabled !== false ? '' : 'display:none;'} margin-top:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--border, #333);">
+        <div class="param-row">
+          <label>Link URL (optional)</label>
+          <input id="prop_sim_btn_url" type="url" value="${escapeHTML(sceneSettings.controls?.simulatorUrl || "")}" placeholder="https://example.com/simulator">
+        </div>
+
+        <div class="param-row">
+          <label>Parent JS Function Name (optional)</label>
+          <input id="prop_sim_btn_fn" type="text" value="${escapeHTML(sceneSettings.controls?.simulatorJsFunction || "onSimulatorToggle")}" placeholder="onSimulatorToggle">
+          <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
+            Calls function on parent page outside embed iframe or dispatches message.
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -684,12 +839,87 @@ function bindInspectorEvents(type, object, target) {
 
   [scaleX, scaleY, scaleZ].forEach((el) => el?.addEventListener("input", onScaleChange));
 
+  // Model-specific rotation & slider controls
+  if (type === "model" && object) {
+    const modelRotX = document.getElementById("prop_model_rot_x");
+    const modelRotY = document.getElementById("prop_model_rot_y");
+    const modelRotZ = document.getElementById("prop_model_rot_z");
+    const sliderX = document.getElementById("prop_model_rot_slider_x");
+    const sliderY = document.getElementById("prop_model_rot_slider_y");
+    const sliderZ = document.getElementById("prop_model_rot_slider_z");
+    const valX = document.getElementById("val_model_rot_x");
+    const valY = document.getElementById("val_model_rot_y");
+    const valZ = document.getElementById("val_model_rot_z");
+
+    const updateModelRotationFromInputs = () => {
+      const degX = parseFloat(modelRotX?.value || 0);
+      const degY = parseFloat(modelRotY?.value || 0);
+      const degZ = parseFloat(modelRotZ?.value || 0);
+      object.rotation.set(
+        THREE.MathUtils.degToRad(degX),
+        THREE.MathUtils.degToRad(degY),
+        THREE.MathUtils.degToRad(degZ)
+      );
+      if (sliderX && parseFloat(sliderX.value) !== Math.round(degX)) sliderX.value = Math.round(degX);
+      if (sliderY && parseFloat(sliderY.value) !== Math.round(degY)) sliderY.value = Math.round(degY);
+      if (sliderZ && parseFloat(sliderZ.value) !== Math.round(degZ)) sliderZ.value = Math.round(degZ);
+      if (valX) valX.textContent = `${degX.toFixed(1)}°`;
+      if (valY) valY.textContent = `${degY.toFixed(1)}°`;
+      if (valZ) valZ.textContent = `${degZ.toFixed(1)}°`;
+    };
+
+    [modelRotX, modelRotY, modelRotZ].forEach((el) => el?.addEventListener("input", updateModelRotationFromInputs));
+
+    const updateModelRotationFromSliders = () => {
+      const degX = parseFloat(sliderX?.value || 0);
+      const degY = parseFloat(sliderY?.value || 0);
+      const degZ = parseFloat(sliderZ?.value || 0);
+      object.rotation.set(
+        THREE.MathUtils.degToRad(degX),
+        THREE.MathUtils.degToRad(degY),
+        THREE.MathUtils.degToRad(degZ)
+      );
+      if (modelRotX && parseFloat(modelRotX.value) !== degX) modelRotX.value = degX.toFixed(1);
+      if (modelRotY && parseFloat(modelRotY.value) !== degY) modelRotY.value = degY.toFixed(1);
+      if (modelRotZ && parseFloat(modelRotZ.value) !== degZ) modelRotZ.value = degZ.toFixed(1);
+      if (valX) valX.textContent = `${degX.toFixed(1)}°`;
+      if (valY) valY.textContent = `${degY.toFixed(1)}°`;
+      if (valZ) valZ.textContent = `${degZ.toFixed(1)}°`;
+    };
+
+    [sliderX, sliderY, sliderZ].forEach((el) => el?.addEventListener("input", updateModelRotationFromSliders));
+
+    document.getElementById("btn_reset_model_rot")?.addEventListener("click", () => {
+      object.rotation.set(0, 0, 0);
+      if (modelRotX) modelRotX.value = "0.0";
+      if (modelRotY) modelRotY.value = "0.0";
+      if (modelRotZ) modelRotZ.value = "0.0";
+      if (sliderX) sliderX.value = "0";
+      if (sliderY) sliderY.value = "0";
+      if (sliderZ) sliderZ.value = "0";
+      if (valX) valX.textContent = "0.0°";
+      if (valY) valY.textContent = "0.0°";
+      if (valZ) valZ.textContent = "0.0°";
+    });
+
+    document.getElementById("btn_frame_model_inspector")?.addEventListener("click", () => {
+      frameModel(object);
+    });
+  }
+
   // Type specific bindings
   if (type === "hotspot") {
     const titleInput = document.getElementById("prop_hotspot_title");
     const descInput = document.getElementById("prop_hotspot_desc");
     const panelX = document.getElementById("prop_panel_x");
     const panelY = document.getElementById("prop_panel_y");
+
+    if (!Array.isArray(object.listItems)) {
+      object.listItems = [];
+    }
+    if (!object.button) {
+      object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+    }
 
     titleInput?.addEventListener("input", (e) => {
       object.title = e.target.value;
@@ -698,6 +928,67 @@ function bindInspectorEvents(type, object, target) {
 
     descInput?.addEventListener("input", (e) => {
       object.description = e.target.value;
+      if (object.panel) updatePanelHTML(object, object.panel);
+    });
+
+    // List items handlers
+    document.getElementById("btnAddHotspotListItem")?.addEventListener("click", () => {
+      if (!Array.isArray(object.listItems)) object.listItems = [];
+      object.listItems.push("");
+      renderInspector();
+      if (object.panel) updatePanelHTML(object, object.panel);
+    });
+
+    document.querySelectorAll(".hotspot-list-item-input").forEach((input) => {
+      input.addEventListener("input", (e) => {
+        const idx = parseInt(e.target.dataset.itemIdx, 10);
+        if (!isNaN(idx) && object.listItems) {
+          object.listItems[idx] = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    document.querySelectorAll(".btn-delete-list-item").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const idx = parseInt(btn.dataset.itemIdx, 10);
+        if (!isNaN(idx) && object.listItems) {
+          object.listItems.splice(idx, 1);
+          renderInspector();
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    // Hotspot button handlers
+    const btnEnable = document.getElementById("prop_hotspot_btn_enable");
+    const btnOptionsBox = document.getElementById("hotspot_btn_options_box");
+    const btnText = document.getElementById("prop_hotspot_btn_text");
+    const btnUrl = document.getElementById("prop_hotspot_btn_url");
+    const btnFn = document.getElementById("prop_hotspot_btn_fn");
+
+    btnEnable?.addEventListener("change", (e) => {
+      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+      object.button.enabled = Boolean(e.target.checked);
+      if (btnOptionsBox) btnOptionsBox.style.display = object.button.enabled ? "" : "none";
+      if (object.panel) updatePanelHTML(object, object.panel);
+    });
+
+    btnText?.addEventListener("input", (e) => {
+      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+      object.button.text = e.target.value || "Show Article";
+      if (object.panel) updatePanelHTML(object, object.panel);
+    });
+
+    btnUrl?.addEventListener("input", (e) => {
+      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+      object.button.url = e.target.value;
+      if (object.panel) updatePanelHTML(object, object.panel);
+    });
+
+    btnFn?.addEventListener("input", (e) => {
+      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+      object.button.jsFunction = e.target.value;
       if (object.panel) updatePanelHTML(object, object.panel);
     });
 
@@ -1172,6 +1463,43 @@ function bindInspectorEvents(type, object, target) {
 
     axes?.addEventListener("change", (e) => {
       setAxesVisible(e.target.checked);
+    });
+
+    // Scene viewer controls checkboxes
+    const btnExplodeCheck = document.getElementById("prop_scene_btn_explode");
+    const btnSimCheck = document.getElementById("prop_scene_btn_simulator");
+    const simBox = document.getElementById("simulator_btn_options_box");
+    const simUrl = document.getElementById("prop_sim_btn_url");
+    const simFn = document.getElementById("prop_sim_btn_fn");
+
+    btnExplodeCheck?.addEventListener("change", (e) => {
+      if (!state.sceneSettings.controls) {
+        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+      }
+      state.sceneSettings.controls.explodeEnabled = Boolean(e.target.checked);
+    });
+
+    btnSimCheck?.addEventListener("change", (e) => {
+      if (!state.sceneSettings.controls) {
+        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+      }
+      const enabled = Boolean(e.target.checked);
+      state.sceneSettings.controls.simulatorEnabled = enabled;
+      if (simBox) simBox.style.display = enabled ? "" : "none";
+    });
+
+    simUrl?.addEventListener("input", (e) => {
+      if (!state.sceneSettings.controls) {
+        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+      }
+      state.sceneSettings.controls.simulatorUrl = e.target.value;
+    });
+
+    simFn?.addEventListener("input", (e) => {
+      if (!state.sceneSettings.controls) {
+        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+      }
+      state.sceneSettings.controls.simulatorJsFunction = e.target.value;
     });
   }
 }
