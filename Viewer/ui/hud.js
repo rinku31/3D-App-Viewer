@@ -163,10 +163,14 @@ function createHUDMarkup() {
   hudContainer.setAttribute("aria-label", "Viewer Controls");
 
   hudContainer.innerHTML = `
-    <!-- 1. Brand / Title Pill -->
-    <div class="hud-item hud-brand" id="hudBrandBadge" title="Current Product">
+    <!-- 1. Brand / Title Pill with Dynamic Long-Name Tooltip -->
+    <div class="hud-item hud-brand" id="hudBrandBadge" tabindex="0" role="status" aria-label="Current Product">
       <span class="hud-brand-dot"></span>
       <span class="hud-brand-text" id="hudSceneTitle">Product Showcase</span>
+      <div class="hud-brand-tooltip" id="hudBrandTooltip" role="tooltip" aria-hidden="true">
+        <span class="hud-brand-tooltip-text" id="hudBrandTooltipText">Product Showcase</span>
+        <span class="hud-brand-tooltip-arrow"></span>
+      </div>
     </div>
 
     <div class="hud-divider"></div>
@@ -294,10 +298,21 @@ function bindHUDActions() {
     document.addEventListener("MSFullscreenChange", onFsChange);
   }
 
+  // Mobile / keyboard tap on brand badge to toggle tooltip if long
+  const brandBadge = document.getElementById("hudBrandBadge");
+  if (brandBadge) {
+    brandBadge.addEventListener("click", (e) => {
+      if (brandBadge.classList.contains("has-long-title")) {
+        brandBadge.classList.toggle("tooltip-active");
+      }
+    });
+  }
+
   // Canvas click to deselect active hotspot panels
   const rendererDom = state.renderer?.domElement;
   if (rendererDom) {
     rendererDom.addEventListener("click", () => {
+      if (brandBadge) brandBadge.classList.remove("tooltip-active");
       if (state.hotspots) {
         state.hotspots.forEach((h) => {
           if (h.active && h.panel) {
@@ -501,15 +516,42 @@ function updateFullscreenUI(isFullscreen) {
 
 /**
  * Sanitizes and updates the product showcase title, removing trailing " Scene",
- * and syncs active environment preset button and bloom button.
+ * syncs active environment preset button, bloom button, and configures long-name tooltips.
  */
 export function updateHudSceneInfo() {
   const titleEl = document.getElementById("hudSceneTitle");
+  const brandBadge = document.getElementById("hudBrandBadge");
+  const tooltip = document.getElementById("hudBrandTooltip");
+  const tooltipText = document.getElementById("hudBrandTooltipText");
+
+  let rawTitle = state.sceneDocument?.metadata?.title || state.currentModel?.name || "Viper V4 Pro";
+  // Remove " Scene" suffix if present
+  const cleanedTitle = String(rawTitle).replace(/\s+Scene$/i, "").trim() || "Product Showcase";
+
   if (titleEl) {
-    let rawTitle = state.sceneDocument?.metadata?.title || state.currentModel?.name || "Viper V4 Pro";
-    // Remove " Scene" suffix if present
-    const cleanedTitle = rawTitle.replace(/\s+Scene$/i, "").trim() || "Product Showcase";
     titleEl.textContent = cleanedTitle;
+  }
+  if (tooltipText) {
+    tooltipText.textContent = cleanedTitle;
+  }
+
+  // Check if product name overflows / is long
+  if (brandBadge && titleEl) {
+    requestAnimationFrame(() => {
+      const isOverflowing = titleEl.scrollWidth > titleEl.clientWidth || cleanedTitle.length >= 14;
+      if (isOverflowing) {
+        brandBadge.classList.add("has-long-title");
+        brandBadge.setAttribute("title", cleanedTitle);
+        brandBadge.setAttribute("aria-label", `Current Product: ${cleanedTitle}`);
+        if (tooltip) tooltip.setAttribute("aria-hidden", "false");
+      } else {
+        brandBadge.classList.remove("has-long-title");
+        brandBadge.classList.remove("tooltip-active");
+        brandBadge.removeAttribute("title");
+        brandBadge.setAttribute("aria-label", `Current Product: ${cleanedTitle}`);
+        if (tooltip) tooltip.setAttribute("aria-hidden", "true");
+      }
+    });
   }
 
   // Sync active environment preset indicator
