@@ -601,13 +601,26 @@ function bindHUDActions() {
 export function updateHudSceneInfo(title) {
   const titleEl = document.getElementById("hudSceneTitle");
   if (titleEl) {
-    const resolved = title
+    let rawTitle = title
       || state.sceneDocument?.metadata?.title
       || state.currentModel?.name
       || "Product Showcase";
+      
+    // Remove " Scene" suffix if present
+    const cleanedTitle = rawTitle.replace(/\s+Scene$/i, "").trim() || "Product Showcase";
 
-    titleEl.textContent = resolved;
-    titleEl.setAttribute("title", resolved);
+    titleEl.textContent = cleanedTitle;
+    titleEl.setAttribute("title", cleanedTitle);
+  }
+
+  // Sync active environment preset indicator
+  const activePreset = state.sceneDocument?.scene?.environment?.preset || state.environmentManager?.getCurrentPreset() || "studio_small_09";
+  updateActiveEnvButton(activePreset);
+
+  // Sync Bloom button active status
+  const bloomBtn = document.getElementById("hudBloomBtn");
+  if (bloomBtn) {
+    bloomBtn.classList.toggle("active", Boolean(state.bloom?.enabled));
   }
 
   // Sync Action Stack (Explode, Default, Simulator) visibility based on controls configuration
@@ -815,6 +828,8 @@ function setupKeyboardShortcuts() {
       resetViewerCamera();
     } else if (e.key === "f" || e.key === "F") {
       toggleFullscreen();
+    } else if (e.key === "b" || e.key === "B") {
+      toggleEmbedBloom();
     }
   });
 }
