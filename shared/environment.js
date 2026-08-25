@@ -4,7 +4,6 @@
 
 import * as THREE from "three";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
-import { disposeTexture } from "./disposal.js";
 
 export const HDR_PRESETS = [
   {
@@ -69,7 +68,7 @@ export function createEnvironmentManager({ scene, renderer }) {
    */
   function preloadPresets() {
     HDR_PRESETS.forEach((preset) => {
-      loadHdrTexture(preset.id).catch((err) => {
+      loadHdrTexture(preset.id).catch(() => {
         // Silently catch preload failures without failing main thread
       });
     });

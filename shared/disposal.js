@@ -5,8 +5,6 @@
  * PMREM textures, and light objects to prevent WebGL GPU memory leaks.
  */
 
-import * as THREE from "three";
-
 /**
  * Recursively disposes all geometry, materials, and textures within a Three.js Object3D hierarchy.
  * @param {THREE.Object3D} object - Root object to dispose

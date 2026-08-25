@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 
-import { clearSelection, setSelection, state, notifySelectionChanged } from "../state/state.js";
+import { clearSelection, state, notifySelectionChanged } from "../state/state.js";
 import { select, deselect } from "../selection/selection.js";
 
-import { applyStudioPreset, STUDIO_LIGHTING_PRESETS } from "../../shared/lights.js";
+import { STUDIO_LIGHTING_PRESETS } from "../../shared/lights.js";
 
 const lightTexture = new THREE.TextureLoader().load(
   "https://threejs.org/examples/textures/sprites/disc.png"
@@ -768,6 +768,15 @@ function bindLightUI() {
   document.getElementById("deleteLightBtn")?.addEventListener("click", () => {
     deleteSelectedLight();
   });
+}
+
+export function setLightVisibility(lightData, visible) {
+  lightData.visible = visible;
+  if (lightData.light) lightData.light.visible = visible;
+  if (lightData.helper) lightData.helper.visible = visible;
+  if (lightData.lightSprite) lightData.lightSprite.visible = visible;
+  if (lightData.targetSprite) lightData.targetSprite.visible = visible;
+  if (lightData.line) lightData.line.visible = visible;
 }
 
 export {

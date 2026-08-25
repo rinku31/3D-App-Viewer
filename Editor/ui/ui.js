@@ -4,6 +4,74 @@ import { resizeRenderer } from "../render/render.js";
 let sidebarToggleBound = false;
 let sidebarTabsBound = false;
 let fileMenuBound = false;
+let resizersBound = false;
+
+function bindResizers() {
+  if (resizersBound) return;
+
+  const horizontalResizer = document.getElementById("sidebarResizer");
+  const verticalResizer = document.getElementById("sceneTabResizer");
+  const sidebar = document.getElementById("sidebar");
+  const hierarchyWindow = document.getElementById("hierarchyWindow");
+
+  if (horizontalResizer && sidebar) {
+    let isResizing = false;
+    horizontalResizer.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      horizontalResizer.classList.add("dragging");
+      document.body.classList.add("navigating-viewport"); // Prevent selection
+    });
+    
+    window.addEventListener("mousemove", (e) => {
+      if (!isResizing) return;
+      // Sidebar is on the right, so width is window.innerWidth - e.clientX
+      const newWidth = Math.max(280, Math.min(800, window.innerWidth - e.clientX));
+      sidebar.style.flex = `0 0 ${newWidth}px`;
+      sidebar.style.width = `${newWidth}px`;
+      resizeRenderer();
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isResizing) {
+        isResizing = false;
+        horizontalResizer.classList.remove("dragging");
+        document.body.classList.remove("navigating-viewport");
+        resizeRenderer();
+      }
+    });
+  }
+
+  if (verticalResizer && hierarchyWindow) {
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    verticalResizer.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = hierarchyWindow.offsetHeight;
+      verticalResizer.classList.add("dragging");
+      document.body.classList.add("navigating-viewport");
+    });
+    
+    window.addEventListener("mousemove", (e) => {
+      if (!isResizing) return;
+      const dy = e.clientY - startY;
+      const newHeight = Math.max(100, startHeight + dy);
+      hierarchyWindow.style.flex = `0 0 ${newHeight}px`;
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isResizing) {
+        isResizing = false;
+        verticalResizer.classList.remove("dragging");
+        document.body.classList.remove("navigating-viewport");
+      }
+    });
+  }
+
+  resizersBound = true;
+}
 
 function showSidebarTab(tabName){
   // If tabName is "properties", it now maps to "scene"
@@ -88,6 +156,8 @@ function bindUI(){
     }
     fileMenuBound = true;
   }
+  
+  bindResizers();
 }
 
 export {

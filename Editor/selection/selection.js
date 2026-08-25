@@ -1,5 +1,4 @@
-import * as THREE from "three";
-import { state, setSelection, clearSelection, notifySelectionChanged } from "../state/state.js";
+import { state, setSelection, clearSelection } from "../state/state.js";
 
 /**
  * Universal selection controller for all scene entities:

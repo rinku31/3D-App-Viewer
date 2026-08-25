@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { state } from "../state/state.js";
 import { select, isSelected } from "../selection/selection.js";
 import { removeHotspot } from "../hotspots/hotspots.js";
-import { deleteSelectedLight } from "../lights/lights.js";
+import { deleteSelectedLight, setLightVisibility } from "../lights/lights.js";
 import { frameModel } from "../render/render.js";
 import { showSidebarTab } from "../ui/ui.js";
 
@@ -136,6 +136,12 @@ function renderHierarchy() {
             expanded: isExpanded,
             categoryKey: `light_${l.id}`,
             actions: `
+              <button class="tree-action-btn lock ${l.locked ? 'locked' : ''}" data-action="toggle-lock" data-id="${l.id}" data-type="light" title="Toggle Selectability">
+                ${l.locked ? '&#128274;' : '&#128275;'}
+              </button>
+              <button class="tree-action-btn visibility ${l.visible !== false ? '' : 'hidden-obj'}" data-action="toggle-visibility" data-id="${l.id}" data-type="light" title="Toggle Visibility">
+                ${l.visible !== false ? '&#128065;' : '&#128584;'}
+              </button>
               <button class="tree-action-btn delete" data-action="delete-light" data-id="${l.id}" title="Delete Light">&#128465;</button>
             `
           });
@@ -186,6 +192,12 @@ function renderHierarchy() {
             object: h,
             hasChildren: false,
             actions: `
+              <button class="tree-action-btn lock ${h.locked ? 'locked' : ''}" data-action="toggle-lock" data-id="${h.id}" data-type="hotspot" title="Toggle Selectability">
+                ${h.locked ? '&#128274;' : '&#128275;'}
+              </button>
+              <button class="tree-action-btn visibility ${h.visible !== false ? '' : 'hidden-obj'}" data-action="toggle-visibility" data-id="${h.id}" data-type="hotspot" title="Toggle Visibility">
+                ${h.visible !== false ? '&#128065;' : '&#128584;'}
+              </button>
               <button class="tree-action-btn" data-action="focus-hotspot" data-id="${h.id}" title="Focus Camera">&#128269;</button>
               <button class="tree-action-btn delete" data-action="delete-hotspot" data-id="${h.id}" title="Delete Hotspot">&#128465;</button>
             `
@@ -242,11 +254,7 @@ function buildModelChildren(node, depth = 0) {
       hasChildren: hasChildren,
       expanded: isExpanded,
       categoryKey: nodeKey,
-      actions: `
-        <button class="tree-action-btn visibility ${child.visible ? '' : 'hidden-obj'}" data-action="toggle-visibility" data-mesh-id="${child.id}" title="Toggle Visibility">
-          ${child.visible ? '&#128065;' : '&#128584;'}
-        </button>
-      `
+      actions: ``
     });
 
     if (hasChildren && isExpanded) {
@@ -333,6 +341,45 @@ function bindHierarchyEvents() {
       } else if (action === "delete-light") {
         deleteSelectedLight();
         renderHierarchy();
+      } else if (action === "toggle-visibility") {
+        const id = btn.dataset.id;
+        const type = btn.dataset.type;
+        if (type === "hotspot") {
+          const hotspot = state.hotspots?.find((h) => h.id === id);
+          if (hotspot) {
+            hotspot.visible = (hotspot.visible === false) ? true : false;
+            // Hotspot visibility update is handled cleanly by updateHotspots loop on next frame based on h.visible, 
+            // but we can manually force dot/panel hide here if desired.
+            if (!hotspot.visible) {
+               if (hotspot.dot) hotspot.dot.style.display = "none";
+               if (hotspot.panel) hotspot.panel.style.display = "none";
+               if (hotspot.line) hotspot.line.style.display = "none";
+            }
+            renderHierarchy();
+          }
+        } else if (type === "light") {
+          const lightData = state.lights?.find((l) => l.id === id);
+          if (lightData) {
+            setLightVisibility(lightData, lightData.visible === false ? true : false);
+            renderHierarchy();
+          }
+        }
+      } else if (action === "toggle-lock") {
+        const id = btn.dataset.id;
+        const type = btn.dataset.type;
+        if (type === "hotspot") {
+          const hotspot = state.hotspots?.find((h) => h.id === id);
+          if (hotspot) {
+            hotspot.locked = !hotspot.locked;
+            renderHierarchy();
+          }
+        } else if (type === "light") {
+          const lightData = state.lights?.find((l) => l.id === id);
+          if (lightData) {
+            lightData.locked = !lightData.locked;
+            renderHierarchy();
+          }
+        }
       } else if (action === "focus-hotspot") {
         const id = btn.dataset.id;
         const hotspot = state.hotspots?.find((h) => h.id === id);

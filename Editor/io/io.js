@@ -8,7 +8,8 @@ import {
   createAreaLight,
   createDirectionalLight,
   createPointLight,
-  createSpotLight
+  createSpotLight,
+  setLightVisibility
 } from "../lights/lights.js";
 import {
   applyBackgroundSettings,
@@ -288,6 +289,14 @@ async function importJsonData(rawData, fileName = "scene.json") {
       } else {
         createDirectionalLight({ ...l, select: false });
       }
+      
+      const newLight = state.lights[state.lights.length - 1];
+      if (newLight) {
+        newLight.locked = Boolean(l.locked);
+        if (l.visible !== undefined) {
+          setLightVisibility(newLight, Boolean(l.visible !== false));
+        }
+      }
     });
 
     if (state.lights.length > 0) {
@@ -310,6 +319,8 @@ async function importJsonData(rawData, fileName = "scene.json") {
         id: h.id || ("hotspot_" + Math.random().toString(36).slice(2)),
         title: h.title ?? "",
         description: h.description ?? "",
+        visible: Boolean(h.visible !== false),
+        locked: Boolean(h.locked),
         listItems: rawList.map((item) => String(item || "")),
         button: h.button ? {
           enabled: Boolean(h.button.enabled),
@@ -473,6 +484,8 @@ function serializeSceneDocument() {
         color: l.color || "#ffffff",
         intensity: typeof l.intensity === "number" ? l.intensity : (type === "area" ? 15.0 : 2.0),
         castShadow: Boolean(l.castShadow),
+        visible: Boolean(l.visible !== false),
+        locked: Boolean(l.locked),
       };
       if (l.light?.position) {
         entry.position = [l.light.position.x, l.light.position.y, l.light.position.z];
@@ -527,6 +540,8 @@ function serializeSceneDocument() {
       id: h.id,
       title: h.title,
       description: h.description,
+      visible: Boolean(h.visible !== false),
+      locked: Boolean(h.locked),
       listItems: Array.isArray(h.listItems) ? [...h.listItems] : [],
       button: h.button ? {
         enabled: Boolean(h.button.enabled),
@@ -848,5 +863,6 @@ export {
   exportJson,
   importJson,
   importJsonData,
-  importModel
+  importModel,
+  serializeSceneDocument
 };

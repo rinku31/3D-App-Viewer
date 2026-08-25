@@ -26,10 +26,10 @@ export function sanitizeAssetUrl(url) {
       return parsed.href;
     }
     return encodeURI(decodeURI(trimmed));
-  } catch (_) {
+  } catch {
     try {
       return encodeURI(decodeURI(trimmed));
-    } catch (_) {
+    } catch {
       return encodeURI(trimmed);
     }
   }

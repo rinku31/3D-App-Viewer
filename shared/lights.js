@@ -11,7 +11,7 @@ try {
   if (typeof window !== "undefined") {
     RectAreaLightUniformsLib.init();
   }
-} catch (err) {
+} catch {
   // Ignore if already initialized
 }
 
@@ -291,6 +291,9 @@ export function createLightFromData(lightData) {
   }
 
   light.name = lightData.name || `${rawType} light`;
+  if (lightData.visible !== undefined) {
+    light.visible = Boolean(lightData.visible !== false);
+  }
   light.userData = { id: lightData.id, schemaData: lightData };
 
   return light;

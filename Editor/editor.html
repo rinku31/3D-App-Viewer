@@ -152,6 +152,8 @@
 </div>
 </div>
 
+<div id="sidebarResizer" class="resizer-horizontal"></div>
+
 <div id="sidebar">
 
 <div class="sidebar-tabs">
@@ -190,7 +192,7 @@ class="sidebar-tab-panel active scene-split-panel"
 >
 
   <!-- Upper Window: Scene Hierarchy -->
-  <div class="panel-window hierarchy-window">
+  <div id="hierarchyWindow" class="panel-window hierarchy-window">
     <div class="panel-window-header">
       <div class="panel-header-left">
         <span class="panel-window-icon">&#128450;</span>
@@ -208,8 +210,10 @@ class="sidebar-tab-panel active scene-split-panel"
     </div>
   </div>
 
+  <div id="sceneTabResizer" class="resizer-vertical"></div>
+
   <!-- Lower Window: Inspector / Properties -->
-  <div class="panel-window inspector-window">
+  <div id="inspectorWindow" class="panel-window inspector-window">
     <div class="panel-window-header">
       <div class="panel-header-left">
         <span class="panel-window-icon">&#9881;</span>

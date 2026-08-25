@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { state, notifySelectionChanged } from "../state/state.js";
 import { updateLights } from "../lights/lights.js";
+import { pushHistoryState } from "../state/history.js";
 
 let transformControls = null;
 let gizmoAnchor = null;
@@ -34,6 +35,9 @@ function initializeGizmo() {
     isTransforming = Boolean(event.value);
     if (state.controls) {
       state.controls.enabled = !isTransforming;
+    }
+    if (!isTransforming) {
+      pushHistoryState(); // Push state when gizmo drag completes
     }
   });
 

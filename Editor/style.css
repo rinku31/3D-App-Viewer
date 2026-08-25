@@ -346,6 +346,35 @@ canvas {
   margin: 0 2px;
 }
 
+.resizer-horizontal {
+  flex: 0 0 4px;
+  width: 4px;
+  background: transparent;
+  cursor: ew-resize;
+  z-index: 5000;
+  transition: background 0.15s ease;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+.resizer-horizontal:hover, .resizer-horizontal.dragging {
+  background: rgba(68, 214, 44, 0.4);
+}
+
+.resizer-vertical {
+  flex: 0 0 4px;
+  height: 4px;
+  background: transparent;
+  cursor: ns-resize;
+  z-index: 5000;
+  transition: background 0.15s ease;
+  margin: 3px 0;
+}
+
+.resizer-vertical:hover, .resizer-vertical.dragging {
+  background: rgba(68, 214, 44, 0.4);
+}
+
 /* Sidebar & Tabs */
 #sidebar {
   position: relative;
@@ -426,7 +455,7 @@ canvas {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  gap: 10px;
+  gap: 0px;
   overflow: hidden;
 }
 
@@ -483,7 +512,7 @@ canvas {
 .hierarchy-window {
   flex: 0 0 220px;
   min-height: 150px;
-  max-height: 38vh;
+  /* max-height removed to allow full flex resizing */
 }
 
 .hierarchy-window .hierarchy-search-bar {

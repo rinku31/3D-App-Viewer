@@ -40,6 +40,7 @@ function buildHotspot(h){
 
   dot.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (h.locked) return;
     selectHotspot(h);
   });
 
@@ -296,6 +297,8 @@ dot.addEventListener(
 "mousedown",
 (e)=>{
 
+if (hotspot.locked) return;
+
 if(state.selected !== hotspot)
 return;
 
@@ -328,6 +331,13 @@ function updateHotspots(){
 
   state.hotspots.forEach((h)=>{
     if (!h.position || !h.dot || !h.panel) return;
+
+    if (h.visible === false) {
+      h.dot.style.display = "none";
+      h.panel.style.display = "none";
+      if(h.line) h.line.style.display = "none";
+      return;
+    }
 
     // 1. Occlusion & camera plane test
     const isVisible = testHotspotOcclusion(

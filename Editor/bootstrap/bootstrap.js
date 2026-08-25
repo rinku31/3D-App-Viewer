@@ -18,6 +18,7 @@ import {
 } from "../lights/lights.js";
 import { bindIO } from "../io/io.js";
 import { bindUI, showSidebarTab } from "../ui/ui.js";
+import { initHistory, pushHistoryState, undo, redo } from "../state/history.js";
 import {
   applyBackgroundSettings,
   applyBloomSettings,
@@ -143,6 +144,7 @@ function bindEnvironmentTab() {
       if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
       state.sceneSettings.environment.preset = e.target.value;
       loadEnvironment(e.target.value);
+      pushHistoryState();
     });
   }
 
@@ -157,6 +159,7 @@ function bindEnvironmentTab() {
       if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
       state.sceneSettings.environment.intensity = val;
       applyEnvironmentParams();
+      pushHistoryState();
     });
   }
 
@@ -171,6 +174,7 @@ function bindEnvironmentTab() {
       if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
       state.sceneSettings.environment.rotation = val;
       applyEnvironmentParams();
+      pushHistoryState();
     });
   }
 
@@ -185,6 +189,7 @@ function bindEnvironmentTab() {
       if (bgColorRow) bgColorRow.style.display = e.target.value === "transparent" ? "none" : "flex";
       if (bgBlurRow) bgBlurRow.style.display = e.target.value === "environment" ? "block" : "none";
       applyBackgroundSettings();
+      pushHistoryState();
     });
   }
 
@@ -195,6 +200,7 @@ function bindEnvironmentTab() {
     bgColorInput.addEventListener("input", (e) => {
       state.sceneSettings.background = e.target.value;
       applyBackgroundSettings();
+      pushHistoryState();
     });
   }
 
@@ -208,6 +214,7 @@ function bindEnvironmentTab() {
       if (bgBlurVal) bgBlurVal.textContent = val.toFixed(2);
       state.sceneSettings.backgroundBlur = val;
       applyBackgroundSettings();
+      pushHistoryState();
     });
   }
 
@@ -226,6 +233,7 @@ function bindEnvironmentTab() {
         else if (val === "AgX") renderer.toneMapping = THREE.AgXToneMapping;
         else renderer.toneMapping = THREE.ACESFilmicToneMapping;
       }
+      pushHistoryState();
     });
   }
 
@@ -240,6 +248,7 @@ function bindEnvironmentTab() {
       if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
       state.sceneSettings.environment.exposure = val;
       if (renderer) renderer.toneMappingExposure = val;
+      pushHistoryState();
     });
   }
 
@@ -290,6 +299,7 @@ function bindEnvironmentTab() {
       if (inspectorBloomCheck) inspectorBloomCheck.checked = enabled;
       const inspectorBloomControls = document.getElementById("inspector_bloom_controls");
       if (inspectorBloomControls) inspectorBloomControls.style.display = enabled ? "" : "none";
+      pushHistoryState();
     });
   }
 
@@ -302,6 +312,7 @@ function bindEnvironmentTab() {
       if (insp) insp.value = val;
       const inspVal = document.getElementById("val_bloom_strength");
       if (inspVal) inspVal.textContent = val.toFixed(2);
+      pushHistoryState();
     });
   }
 
@@ -314,6 +325,7 @@ function bindEnvironmentTab() {
       if (insp) insp.value = val;
       const inspVal = document.getElementById("val_bloom_radius");
       if (inspVal) inspVal.textContent = val.toFixed(2);
+      pushHistoryState();
     });
   }
 
@@ -326,6 +338,7 @@ function bindEnvironmentTab() {
       if (insp) insp.value = val;
       const inspVal = document.getElementById("val_bloom_threshold");
       if (inspVal) inspVal.textContent = val.toFixed(2);
+      pushHistoryState();
     });
   }
 }
@@ -370,6 +383,7 @@ function initializeEditor(loader) {
     bgColorInput.addEventListener("input", (e) => {
       state.sceneSettings.background = e.target.value;
       if (scene) scene.background = new THREE.Color(state.sceneSettings.background);
+      pushHistoryState();
     });
   }
 
@@ -389,6 +403,7 @@ function initializeEditor(loader) {
   initializeGizmo();
   initializeHierarchy();
   initializeInspector();
+  initHistory();
 
   // Camera Axis Snapping UI Listeners
   document.querySelectorAll(".camera-axis-btn").forEach((btn) => {
@@ -490,7 +505,7 @@ function initializeEditor(loader) {
     raycaster.setFromCamera(mouse, camera);
 
     // 1. Check Light Sprites
-    const lightSprites = state.lights.map((l) => l.lightSprite).filter(Boolean);
+    const lightSprites = state.lights.filter(l => !l.locked).map((l) => l.lightSprite).filter(Boolean);
     const lightHits = raycaster.intersectObjects(lightSprites);
 
     if (lightHits.length) {
@@ -503,7 +518,7 @@ function initializeEditor(loader) {
     }
 
     // 2. Check Light Target Sprites
-    const targetSprites = state.lights.map((l) => l.targetSprite).filter(Boolean);
+    const targetSprites = state.lights.filter(l => !l.locked).map((l) => l.targetSprite).filter(Boolean);
     const targetHits = raycaster.intersectObjects(targetSprites);
 
     if (targetHits.length) {
@@ -517,7 +532,7 @@ function initializeEditor(loader) {
 
     // 3. Check Current Model
     const intersects = state.currentModel
-      ? raycaster.intersectObject(state.currentModel, true)
+      ? raycaster.intersectObject(state.currentModel, true).filter(hit => !hit.object.userData?.locked)
       : [];
 
     if (state.addMode) {
@@ -526,6 +541,7 @@ function initializeEditor(loader) {
         createHotspot(point);
         setAddMode(false);
         renderHierarchy();
+        pushHistoryState();
         return;
       }
 
@@ -556,11 +572,25 @@ function initializeEditor(loader) {
         removeHotspot(state.selection.object);
         deselect("hotspot");
         renderHierarchy();
+        pushHistoryState();
       } else if (state.selection?.type === "light" && state.selection.object) {
         deleteSelectedLight();
         deselect("light");
         renderHierarchy();
+        pushHistoryState();
       }
+    }
+
+    // Undo / Redo shortcuts
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
+      e.preventDefault();
+      redo();
+      return;
     }
 
     // Camera view shortcuts
