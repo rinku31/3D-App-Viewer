@@ -342,6 +342,42 @@ function buildHotspotInspector(hotspot) {
         </div>
       </div>
 
+      <div class="param-row-flex">
+        <label>Title Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_title_font_color" type="color" value="${(state.sceneSettings?.hotspots?.titleFontColor || '#ffffff').startsWith('#') ? (state.sceneSettings?.hotspots?.titleFontColor || '#ffffff') : '#ffffff'}">
+          <input id="prop_hotspot_title_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.titleFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_hotspot_title_font_size">${state.sceneSettings?.hotspots?.titleFontSize || 14}</span></div>
+        <input id="prop_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="${state.sceneSettings?.hotspots?.titleFontSize || 14}">
+      </div>
+
+      <div class="param-row-flex">
+        <label>Description Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_desc_font_color" type="color" value="${(state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0').startsWith('#') ? (state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0') : '#e0e0e0'}">
+          <input id="prop_hotspot_desc_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_hotspot_desc_font_size">${state.sceneSettings?.hotspots?.descFontSize || 12.5}</span></div>
+        <input id="prop_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="${state.sceneSettings?.hotspots?.descFontSize || 12.5}">
+      </div>
+
+      <div class="param-row-flex">
+        <label>List Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_list_font_color" type="color" value="${(state.sceneSettings?.hotspots?.listFontColor || '#cccccc').startsWith('#') ? (state.sceneSettings?.hotspots?.listFontColor || '#cccccc') : '#cccccc'}">
+          <input id="prop_hotspot_list_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.listFontColor || '#cccccc'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_hotspot_list_font_size">${state.sceneSettings?.hotspots?.listFontSize || 11}</span></div>
+        <input id="prop_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="${state.sceneSettings?.hotspots?.listFontSize || 11}">
+      </div>
+
       <div class="param-row">
         <label>Connector Line Style</label>
         <select id="prop_line_style" class="inspector-select">
@@ -833,6 +869,42 @@ function buildSceneInspector() {
           <input id="prop_hotspot_panel_color" type="color" value="${(sceneSettings.hotspots?.panelColor || '#1e1e24').startsWith('#') ? (sceneSettings.hotspots?.panelColor || '#1e1e24') : '#1e1e24'}">
           <input id="prop_hotspot_panel_color_text" type="text" value="${sceneSettings.hotspots?.panelColor || 'rgba(30, 30, 35, 0.92)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
         </div>
+      </div>
+
+      <div class="param-row-flex">
+        <label>Title Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_title_font_color" type="color" value="${(sceneSettings.hotspots?.titleFontColor || '#ffffff').startsWith('#') ? (sceneSettings.hotspots?.titleFontColor || '#ffffff') : '#ffffff'}">
+          <input id="prop_hotspot_title_font_color_text" type="text" value="${sceneSettings.hotspots?.titleFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_hotspot_title_font_size">${sceneSettings.hotspots?.titleFontSize || 14}</span></div>
+        <input id="prop_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="${sceneSettings.hotspots?.titleFontSize || 14}">
+      </div>
+
+      <div class="param-row-flex">
+        <label>Description Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_desc_font_color" type="color" value="${(sceneSettings.hotspots?.descFontColor || '#e0e0e0').startsWith('#') ? (sceneSettings.hotspots?.descFontColor || '#e0e0e0') : '#e0e0e0'}">
+          <input id="prop_hotspot_desc_font_color_text" type="text" value="${sceneSettings.hotspots?.descFontColor || '#e0e0e0'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_hotspot_desc_font_size">${sceneSettings.hotspots?.descFontSize || 12.5}</span></div>
+        <input id="prop_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="${sceneSettings.hotspots?.descFontSize || 12.5}">
+      </div>
+
+      <div class="param-row-flex">
+        <label>List Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_list_font_color" type="color" value="${(sceneSettings.hotspots?.listFontColor || '#cccccc').startsWith('#') ? (sceneSettings.hotspots?.listFontColor || '#cccccc') : '#cccccc'}">
+          <input id="prop_hotspot_list_font_color_text" type="text" value="${sceneSettings.hotspots?.listFontColor || '#cccccc'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_hotspot_list_font_size">${sceneSettings.hotspots?.listFontSize || 11}</span></div>
+        <input id="prop_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="${sceneSettings.hotspots?.listFontSize || 11}">
       </div>
 
       <div class="param-row">
@@ -1670,6 +1742,20 @@ function bindInspectorEvents(type, object, target) {
   // Global Hotspot & Line controls (available when inspecting a hotspot or the scene)
   const panelColorPicker = document.getElementById("prop_hotspot_panel_color");
   const panelColorText = document.getElementById("prop_hotspot_panel_color_text");
+  const titleFontColorPicker = document.getElementById("prop_hotspot_title_font_color");
+  const titleFontColorText = document.getElementById("prop_hotspot_title_font_color_text");
+  const titleFontSizeSlider = document.getElementById("prop_hotspot_title_font_size");
+  const valTitleFontSize = document.getElementById("val_hotspot_title_font_size");
+  
+  const descFontColorPicker = document.getElementById("prop_hotspot_desc_font_color");
+  const descFontColorText = document.getElementById("prop_hotspot_desc_font_color_text");
+  const descFontSizeSlider = document.getElementById("prop_hotspot_desc_font_size");
+  const valDescFontSize = document.getElementById("val_hotspot_desc_font_size");
+  
+  const listFontColorPicker = document.getElementById("prop_hotspot_list_font_color");
+  const listFontColorText = document.getElementById("prop_hotspot_list_font_color_text");
+  const listFontSizeSlider = document.getElementById("prop_hotspot_list_font_size");
+  const valListFontSize = document.getElementById("val_hotspot_list_font_size");
   const lineStyleSelect = document.getElementById("prop_line_style");
   const lineColorPicker = document.getElementById("prop_line_color");
   const lineColorText = document.getElementById("prop_line_color_text");
@@ -1686,6 +1772,13 @@ function bindInspectorEvents(type, object, target) {
     state.sceneDocument.settings.line = state.sceneSettings.line;
 
     const panelBg = state.sceneSettings.hotspots.panelColor;
+    const titleFontColor = state.sceneSettings.hotspots.titleFontColor || "#ffffff";
+    const titleFontSize = Number(state.sceneSettings.hotspots.titleFontSize || 14);
+    const descFontColor = state.sceneSettings.hotspots.descFontColor || "#e0e0e0";
+    const descFontSize = Number(state.sceneSettings.hotspots.descFontSize || 12.5);
+    const listFontColor = state.sceneSettings.hotspots.listFontColor || "#cccccc";
+    const listFontSize = Number(state.sceneSettings.hotspots.listFontSize || 11);
+
     const lStyle = state.sceneSettings.line.style || "dashed";
     const lColor = state.sceneSettings.line.color || "#44D62C";
     const lWidth = Number(state.sceneSettings.line.width || 1.5);
@@ -1693,6 +1786,23 @@ function bindInspectorEvents(type, object, target) {
     // Update all hotspot panels in editor
     document.querySelectorAll(".panel").forEach((p) => {
       if (panelBg) p.style.backgroundColor = panelBg;
+      
+      const titleEl = p.querySelector(".panel-title");
+      if (titleEl) {
+        titleEl.style.color = titleFontColor;
+        titleEl.style.fontSize = `${titleFontSize}px`;
+      }
+      
+      const descEl = p.querySelector(".panel-desc");
+      if (descEl) {
+        descEl.style.color = descFontColor;
+        descEl.style.fontSize = `${descFontSize}px`;
+      }
+
+      p.querySelectorAll(".panel-list-item").forEach((li) => {
+        li.style.color = listFontColor;
+        li.style.fontSize = `${listFontSize}px`;
+      });
     });
 
     // Update all SVG connector lines in editor
@@ -1728,6 +1838,78 @@ function bindInspectorEvents(type, object, target) {
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
     state.sceneSettings.hotspots.panelColor = e.target.value;
     if (panelColorPicker && e.target.value.startsWith("#")) panelColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  titleFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontColor = e.target.value;
+    if (titleFontColorText) titleFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  titleFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontColor = e.target.value;
+    if (titleFontColorPicker && e.target.value.startsWith("#")) titleFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  titleFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontSize = Number(e.target.value);
+    if (valTitleFontSize) valTitleFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  descFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontColor = e.target.value;
+    if (descFontColorText) descFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  descFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontColor = e.target.value;
+    if (descFontColorPicker && e.target.value.startsWith("#")) descFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  descFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontSize = Number(e.target.value);
+    if (valDescFontSize) valDescFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  listFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontColor = e.target.value;
+    if (listFontColorText) listFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  listFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontColor = e.target.value;
+    if (listFontColorPicker && e.target.value.startsWith("#")) listFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  listFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontSize = Number(e.target.value);
+    if (valListFontSize) valListFontSize.textContent = e.target.value;
     applyGlobalHotspotSettings();
   });
 

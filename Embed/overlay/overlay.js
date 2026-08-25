@@ -50,6 +50,12 @@ export function buildHotspotOverlays() {
   if (!state.sceneDocument?.hotspots) return;
 
   const globalPanelBg = state.sceneDocument?.settings?.hotspots?.panelColor;
+  const globalTitleFontColor = state.sceneDocument?.settings?.hotspots?.titleFontColor || "#ffffff";
+  const globalTitleFontSize = Number(state.sceneDocument?.settings?.hotspots?.titleFontSize || 14);
+  const globalDescFontColor = state.sceneDocument?.settings?.hotspots?.descFontColor || "#e0e0e0";
+  const globalDescFontSize = Number(state.sceneDocument?.settings?.hotspots?.descFontSize || 12.5);
+  const globalListFontColor = state.sceneDocument?.settings?.hotspots?.listFontColor || "#cccccc";
+  const globalListFontSize = Number(state.sceneDocument?.settings?.hotspots?.listFontSize || 11);
 
   state.hotspots = state.sceneDocument.hotspots.map((hData) => {
     const h = { ...hData, visible: true, active: false, pinned: false };
@@ -67,13 +73,13 @@ export function buildHotspotOverlays() {
     if (globalPanelBg) {
       panel.style.backgroundColor = globalPanelBg;
     }
-
     const children = [];
 
     const titleEl = document.createElement("div");
     titleEl.className = "panel-title";
     titleEl.style.fontWeight = "bold";
-    titleEl.style.fontSize = "14px";
+    titleEl.style.fontSize = `${globalTitleFontSize}px`;
+    titleEl.style.color = globalTitleFontColor;
     titleEl.style.marginBottom = "5px";
     titleEl.textContent = h.title || "";
     children.push(titleEl);
@@ -81,7 +87,8 @@ export function buildHotspotOverlays() {
     if (h.description) {
       const descEl = document.createElement("div");
       descEl.className = "panel-desc";
-      descEl.style.fontSize = "12.5px";
+      descEl.style.fontSize = `${globalDescFontSize}px`;
+      descEl.style.color = globalDescFontColor;
       descEl.style.marginBottom = "4px";
       descEl.textContent = h.description || "";
       children.push(descEl);
@@ -109,7 +116,8 @@ export function buildHotspotOverlays() {
         li.style.listStyleType = "none";
         li.style.padding = "0";
         li.style.margin = "0";
-        li.style.fontSize = "11px";
+        li.style.fontSize = `${globalListFontSize}px`;
+        li.style.color = globalListFontColor;
         li.style.lineHeight = "1.4";
         li.textContent = itemText;
         ul.appendChild(li);

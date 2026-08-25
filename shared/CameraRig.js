@@ -332,9 +332,10 @@ export class CameraRig {
       this.targetDistance = THREE.MathUtils.clamp(distance, minAllowed, this.maxDistance);
     }
 
-    // Set as new default reference
-    this.initialState.target.copy(center);
-    if (distance !== null) this.initialState.distance = this.targetDistance;
+    // Do not set as new default reference here.
+    // The only time we save default view is when we explicitly click "Set Current as Default View".
+    // this.initialState.target.copy(center);
+    // if (distance !== null) this.initialState.distance = this.targetDistance;
 
     if (typeof this.onChange === "function") this.onChange();
   }
@@ -893,7 +894,8 @@ export class CameraRig {
   handleWheel(event) {
     if (!this.enabled) return;
     event.preventDefault();
-    this.zoom(event.deltaY * this.zoomSpeed);
+    const precisionMultiplier = event.shiftKey ? 0.2 : 1.0;
+    this.zoom(event.deltaY * this.zoomSpeed * precisionMultiplier);
   }
 
   handleTouchStart(event) {

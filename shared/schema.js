@@ -134,6 +134,12 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       },
       hotspots: {
         panelColor: "rgba(30, 30, 36, 0.95)",
+        titleFontColor: "#ffffff",
+        titleFontSize: 14,
+        descFontColor: "#e0e0e0",
+        descFontSize: 12.5,
+        listFontColor: "#cccccc",
+        listFontSize: 11,
         pulseAnimation: true,
         theme: "default",
         occlusionTolerance: 0.08
@@ -335,6 +341,12 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
     hotspots: {
       ...base.settings.hotspots,
       panelColor: raw.settings?.hotspots?.panelColor || base.settings.hotspots?.panelColor || "rgba(30, 30, 36, 0.95)",
+      titleFontColor: raw.settings?.hotspots?.titleFontColor || raw.settings?.hotspots?.fontColor || base.settings.hotspots?.titleFontColor || "#ffffff",
+      titleFontSize: typeof raw.settings?.hotspots?.titleFontSize === "number" ? raw.settings.hotspots.titleFontSize : (typeof raw.settings?.hotspots?.fontSize === "number" ? raw.settings.hotspots.fontSize : (base.settings.hotspots?.titleFontSize || 14)),
+      descFontColor: raw.settings?.hotspots?.descFontColor || raw.settings?.hotspots?.fontColor || base.settings.hotspots?.descFontColor || "#e0e0e0",
+      descFontSize: typeof raw.settings?.hotspots?.descFontSize === "number" ? raw.settings.hotspots.descFontSize : (typeof raw.settings?.hotspots?.fontSize === "number" ? raw.settings.hotspots.fontSize - 1.5 : (base.settings.hotspots?.descFontSize || 12.5)),
+      listFontColor: raw.settings?.hotspots?.listFontColor || raw.settings?.hotspots?.fontColor || base.settings.hotspots?.listFontColor || "#cccccc",
+      listFontSize: typeof raw.settings?.hotspots?.listFontSize === "number" ? raw.settings.hotspots.listFontSize : (typeof raw.settings?.hotspots?.fontSize === "number" ? raw.settings.hotspots.fontSize - 3 : (base.settings.hotspots?.listFontSize || 11)),
       ...(raw.settings?.hotspots || {})
     },
     controls: {

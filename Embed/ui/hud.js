@@ -291,7 +291,7 @@ export function updateActiveEnvButton(activePreset) {
     : activePreset === "industrial" ? "aircraft_workshop"
     : activePreset;
 
-  container.querySelectorAll(".env-btn").forEach((btn) => {
+  container.querySelectorAll(".env-btn[data-preset]").forEach((btn) => {
     const isTarget = btn.getAttribute("data-preset") === normalized;
     btn.classList.toggle("active", isTarget);
   });

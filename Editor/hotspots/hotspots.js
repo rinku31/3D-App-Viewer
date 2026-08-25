@@ -77,10 +77,18 @@ function buildHotspot(h){
 function updatePanelHTML(h, panel){
   const children = [];
 
+  const titleFontColor = state.sceneSettings?.hotspots?.titleFontColor || "#ffffff";
+  const titleFontSize = Number(state.sceneSettings?.hotspots?.titleFontSize || 14);
+  const descFontColor = state.sceneSettings?.hotspots?.descFontColor || "#e0e0e0";
+  const descFontSize = Number(state.sceneSettings?.hotspots?.descFontSize || 12.5);
+  const listFontColor = state.sceneSettings?.hotspots?.listFontColor || "#cccccc";
+  const listFontSize = Number(state.sceneSettings?.hotspots?.listFontSize || 11);
+
   const title = document.createElement("div");
   title.className = "panel-title";
   title.style.fontWeight = "bold";
-  title.style.fontSize = "14px";
+  title.style.fontSize = `${titleFontSize}px`;
+  title.style.color = titleFontColor;
   title.style.marginBottom = "5px";
   title.textContent = h.title || "";
   children.push(title);
@@ -88,7 +96,8 @@ function updatePanelHTML(h, panel){
   if (h.description) {
     const description = document.createElement("div");
     description.className = "panel-desc";
-    description.style.fontSize = "12.5px";
+    description.style.fontSize = `${descFontSize}px`;
+    description.style.color = descFontColor;
     description.style.marginBottom = "4px";
     description.textContent = h.description;
     children.push(description);
@@ -116,7 +125,8 @@ function updatePanelHTML(h, panel){
       li.style.listStyleType = "none";
       li.style.padding = "0";
       li.style.margin = "0";
-      li.style.fontSize = "11px";
+      li.style.fontSize = `${listFontSize}px`;
+      li.style.color = listFontColor;
       li.style.lineHeight = "1.4";
       li.textContent = itemText;
       ul.appendChild(li);
