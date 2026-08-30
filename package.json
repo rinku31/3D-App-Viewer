@@ -1,6 +1,8 @@
 {
   "name": "3d-app-viewer",
   "version": "1.0.0",
+  "description": "3D App Viewer and Editor",
+  "author": "Rhymno Orioque",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
