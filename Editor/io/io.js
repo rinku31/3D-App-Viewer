@@ -22,6 +22,7 @@ import {
   setShadowsEnabled
 } from "../render/render.js";
 import { select } from "../selection/selection.js";
+import { showLoading, hideLoading } from "../ui/ui.js";
 import { disposeHierarchy } from "../../shared/disposal.js";
 import {
   CURRENT_SCHEMA_VERSION,
@@ -77,10 +78,13 @@ async function tryAutoLoadEditorSceneJson(modelName) {
 
 async function importModel(loader, file, companionJson = null, allFiles = []) {
   if (!file) return null;
+  
+  showLoading("Loading 3D Model...");
 
   // If a JSON document was mistakenly passed to importModel, redirect gracefully
   if (file.name.toLowerCase().endsWith(".json")) {
     console.info(`[Editor] Routing JSON file "${file.name}" to importJson.`);
+    hideLoading();
     return importJson(file);
   }
 
@@ -163,6 +167,7 @@ async function importModel(loader, file, companionJson = null, allFiles = []) {
     console.error("Unable to import 3D model:", error);
     throw error;
   } finally {
+    hideLoading();
     if (gltfUrl) {
       URL.revokeObjectURL(gltfUrl);
     }
@@ -190,18 +195,7 @@ async function importJsonData(rawData, fileName = "scene.json") {
 
   // 1. Restore Scene Settings
   if (data.scene) {
-    // Preserve local editor workspace backdrop, restore exported viewer presentation background
-    const importedViewerBg = {
-      color: data.scene.background || "#ffffff",
-      type: data.scene.backgroundType || "color",
-      blur: Number(data.scene.backgroundBlur || 0)
-    };
     if (!state.sceneSettings) state.sceneSettings = {};
-    if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
-    Object.assign(state.sceneSettings.viewerBackground, importedViewerBg);
-    state.sceneSettings.background = importedViewerBg.color;
-    state.sceneSettings.backgroundType = importedViewerBg.type;
-    state.sceneSettings.backgroundBlur = importedViewerBg.blur;
 
     if (data.scene.environment) {
       if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
@@ -211,8 +205,6 @@ async function importJsonData(rawData, fileName = "scene.json") {
       }
       applyEnvironmentParams();
     }
-    // Re-apply author's active editor backdrop to the viewport
-    applyBackgroundSettings();
 
     if (data.scene.rendering) {
       setShadowsEnabled(data.scene.rendering.shadows !== false);
@@ -491,9 +483,6 @@ function serializeSceneDocument() {
       tags: ["3d", "product-viewer", "interactive"]
     },
     scene: {
-      background: state.sceneSettings.viewerBackground?.color || state.sceneSettings.background || "#ffffff",
-      backgroundType: state.sceneSettings.viewerBackground?.type || state.sceneSettings.backgroundType || "color",
-      backgroundBlur: Number(state.sceneSettings.viewerBackground?.blur ?? (state.sceneSettings.backgroundBlur || 0)),
       environment: {
         preset: state.sceneSettings.environment?.preset || "studio_small_09",
         customHdrUrl: null,

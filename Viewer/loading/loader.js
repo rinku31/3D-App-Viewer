@@ -13,7 +13,7 @@ import { createDefaultSceneDocument, migrateSceneDocument, validateSceneDocument
 import { applyViewerSceneSettings } from "../render/render.js";
 import { syncViewerLights } from "../lights/lights.js";
 import { buildHotspotOverlays, clearHotspotOverlays } from "../overlay/overlay.js";
-import { refreshTourSteps } from "../ui/hud.js";
+import { refreshTourSteps, showLoading, hideLoading } from "../ui/hud.js";
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
@@ -31,6 +31,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
  * @param {File[]} [allFiles] - Optional companion files (textures, bin)
  */
 export async function loadViewerModel(source, modelName = "Product", companionJson = null, allFiles = []) {
+  showLoading("Loading 3D Model...");
   let url = source;
   let isBlob = false;
   const fileUrlMap = new Map();
@@ -129,6 +130,7 @@ export async function loadViewerModel(source, modelName = "Product", companionJs
 
     return model;
   } finally {
+    hideLoading();
     if (isBlob && url) {
       URL.revokeObjectURL(url);
     }

@@ -82,39 +82,6 @@ function syncEnvironmentTabUI() {
     if (editorBgBlurVal) editorBgBlurVal.textContent = Number(val).toFixed(2);
   }
 
-  // 2. Exported Viewer Background
-  const viewerBg = state.sceneSettings?.viewerBackground || {
-    type: state.sceneSettings?.backgroundType || "color",
-    color: state.sceneSettings?.background || "#ffffff",
-    blur: state.sceneSettings?.backgroundBlur || 0
-  };
-  const viewerBgTypeSelect = document.getElementById("envTabViewerBgType");
-  const viewerBgColorRow = document.getElementById("envTabViewerBgColorRow");
-  const viewerBgBlurRow = document.getElementById("envTabViewerBgBlurRow");
-  if (viewerBgTypeSelect) {
-    const bgType = viewerBg.type || "color";
-    viewerBgTypeSelect.value = bgType;
-    if (viewerBgColorRow) viewerBgColorRow.style.display = bgType === "transparent" ? "none" : "flex";
-    if (viewerBgBlurRow) viewerBgBlurRow.style.display = bgType === "environment" ? "block" : "none";
-  }
-
-  const viewerBgColorInput = document.getElementById("envTabViewerBgColor");
-  const viewerBgColorText = document.getElementById("envTabViewerBgColorText");
-  if (viewerBgColorInput && viewerBg.color) {
-    if (viewerBg.color.startsWith("#")) viewerBgColorInput.value = viewerBg.color;
-  }
-  if (viewerBgColorText && viewerBg.color) {
-    viewerBgColorText.value = viewerBg.color;
-  }
-
-  const viewerBgBlurInput = document.getElementById("envTabViewerBgBlur");
-  const viewerBgBlurVal = document.getElementById("envTabViewerBgBlurVal");
-  if (viewerBgBlurInput) {
-    const val = viewerBg.blur || 0;
-    viewerBgBlurInput.value = val;
-    if (viewerBgBlurVal) viewerBgBlurVal.textContent = Number(val).toFixed(2);
-  }
-
   const toneSelect = document.getElementById("envTabToneMapping");
   if (toneSelect && env.toneMapping) {
     toneSelect.value = env.toneMapping;
@@ -266,59 +233,6 @@ function bindEnvironmentTab() {
       if (!state.editorBackground) state.editorBackground = {};
       state.editorBackground.blur = val;
       applyBackgroundSettings();
-      pushHistoryState();
-    });
-  }
-
-  // 2. Exported Viewer Background Listeners
-  const viewerBgTypeSelect = document.getElementById("envTabViewerBgType");
-  const viewerBgColorRow = document.getElementById("envTabViewerBgColorRow");
-  const viewerBgBlurRow = document.getElementById("envTabViewerBgBlurRow");
-  if (viewerBgTypeSelect) {
-    viewerBgTypeSelect.value = state.sceneSettings?.viewerBackground?.type || state.sceneSettings?.backgroundType || "color";
-    viewerBgTypeSelect.addEventListener("change", (e) => {
-      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
-      state.sceneSettings.viewerBackground.type = e.target.value;
-      state.sceneSettings.backgroundType = e.target.value;
-      if (viewerBgColorRow) viewerBgColorRow.style.display = e.target.value === "transparent" ? "none" : "flex";
-      if (viewerBgBlurRow) viewerBgBlurRow.style.display = e.target.value === "environment" ? "block" : "none";
-      pushHistoryState();
-    });
-  }
-
-  const viewerBgColorInput = document.getElementById("envTabViewerBgColor");
-  const viewerBgColorText = document.getElementById("envTabViewerBgColorText");
-  if (viewerBgColorInput) {
-    viewerBgColorInput.value = state.sceneSettings?.viewerBackground?.color || state.sceneSettings?.background || "#ffffff";
-    viewerBgColorInput.addEventListener("input", (e) => {
-      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
-      state.sceneSettings.viewerBackground.color = e.target.value;
-      state.sceneSettings.background = e.target.value;
-      if (viewerBgColorText) viewerBgColorText.value = e.target.value;
-      pushHistoryState();
-    });
-  }
-  if (viewerBgColorText) {
-    viewerBgColorText.value = state.sceneSettings?.viewerBackground?.color || state.sceneSettings?.background || "#ffffff";
-    viewerBgColorText.addEventListener("input", (e) => {
-      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
-      state.sceneSettings.viewerBackground.color = e.target.value;
-      state.sceneSettings.background = e.target.value;
-      if (viewerBgColorInput && e.target.value.startsWith("#")) viewerBgColorInput.value = e.target.value;
-      pushHistoryState();
-    });
-  }
-
-  const viewerBgBlurInput = document.getElementById("envTabViewerBgBlur");
-  const viewerBgBlurVal = document.getElementById("envTabViewerBgBlurVal");
-  if (viewerBgBlurInput) {
-    viewerBgBlurInput.value = state.sceneSettings?.viewerBackground?.blur ?? (state.sceneSettings?.backgroundBlur || 0);
-    viewerBgBlurInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (viewerBgBlurVal) viewerBgBlurVal.textContent = val.toFixed(2);
-      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
-      state.sceneSettings.viewerBackground.blur = val;
-      state.sceneSettings.backgroundBlur = val;
       pushHistoryState();
     });
   }

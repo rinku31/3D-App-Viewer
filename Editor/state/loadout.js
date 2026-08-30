@@ -367,6 +367,26 @@ export function applyLoadout(loadout, syncOptions = {}) {
     state.editorBackground.color = editorBgLoadout.color || "#222228";
     state.editorBackground.blur = editorBgLoadout.blur ?? 0.0;
     applyBackgroundSettings();
+    
+    if (syncUI) {
+      const typeSelect = document.getElementById("envTabEditorBgType");
+      if (typeSelect) {
+        typeSelect.value = state.editorBackground.type;
+        const colorRow = document.getElementById("envTabEditorBgColorRow");
+        const blurRow = document.getElementById("envTabEditorBgBlurRow");
+        if (colorRow) colorRow.style.display = state.editorBackground.type === "transparent" ? "none" : "flex";
+        if (blurRow) blurRow.style.display = state.editorBackground.type === "environment" ? "block" : "none";
+      }
+      const colorInput = document.getElementById("envTabEditorBgColor");
+      const colorText = document.getElementById("envTabEditorBgColorText");
+      if (colorInput) colorInput.value = state.editorBackground.color;
+      if (colorText) colorText.value = state.editorBackground.color;
+      
+      const blurInput = document.getElementById("envTabEditorBgBlur");
+      const blurVal = document.getElementById("envTabEditorBgBlurVal");
+      if (blurInput) blurInput.value = state.editorBackground.blur;
+      if (blurVal) blurVal.textContent = state.editorBackground.blur.toFixed(2);
+    }
   }
 
   // 2. Rendering & Post-Processing

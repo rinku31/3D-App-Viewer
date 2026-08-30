@@ -25,6 +25,11 @@
 
 <body>
 
+<div id="embedLoadingOverlay" class="hidden">
+  <div class="embed-spinner"></div>
+  <div class="embed-loading-text">Loading 3D Model...</div>
+</div>
+
 <div id="app">
 
 <div id="editorLayout">
@@ -471,39 +476,7 @@ class="sidebar-tab-panel scrollable-tab-panel"
       <input id="envTabEditorBgBlur" type="range" min="0" max="1" step="0.05" value="0">
     </div>
   </div>
-
-  <div class="section">
-    <div class="section-header">
-      <h3>Exported Viewer Background</h3>
-      <span class="hierarchy-badge">Scene JSON</span>
-    </div>
-    <div style="font-size:11px; color:var(--text-dim, #888); margin-bottom:8px; line-height:1.4;">
-      Presentation backdrop rendered in the standalone Viewer and Embed. Saved in scene JSON.
-    </div>
-
-    <div class="param-row">
-      <label>Viewer Background Mode</label>
-      <select id="envTabViewerBgType" class="inspector-select">
-        <option value="color">Solid Color</option>
-        <option value="environment">HDR Skybox</option>
-        <option value="transparent">Transparent</option>
-      </select>
-    </div>
-
-    <div class="param-row-flex" id="envTabViewerBgColorRow">
-      <label>Solid Viewer Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="envTabViewerBgColor" type="color" value="#ffffff">
-        <input id="envTabViewerBgColorText" type="text" value="#ffffff" style="width:75px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-
-    <div class="param-row" id="envTabViewerBgBlurRow" style="display:none;">
-      <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="envTabViewerBgBlurVal">0.00</span></div>
-      <input id="envTabViewerBgBlur" type="range" min="0" max="1" step="0.05" value="0">
-    </div>
-  </div>
-
+  
   <div class="section">
     <div class="section-header">
       <h3>Color &amp; Tone Mapping</h3>

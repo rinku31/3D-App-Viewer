@@ -18,9 +18,6 @@ The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. I
     "tags": ["product", "interactive"]
   },
   "scene": {
-    "background": "#222228",
-    "backgroundType": "color",
-    "backgroundBlur": 0.0,
     "environment": {
       "preset": "studio_small_09",
       "customHdrUrl": null,
@@ -128,9 +125,6 @@ The 3D App Viewer & Editor interchange format utilizes **JSON Schema v2.0.0**. I
 - `tags` (`string[]`): Search and taxonomy tags.
 
 ### 3.2 Scene & Environment
-- `background` (`string`): Hex/CSS color value (`#222228`).
-- `backgroundType` (`"color" | "environment" | "transparent"`): Viewport clear strategy.
-- `backgroundBlur` (`number [0.0 - 1.0]`): Skybox background blur level.
 - `environment.preset` (`string`): Preset ID (`studio_small_09`, `sunset_fairway`, `puresky`, `workshop`, `city_night`).
 - `environment.intensity` (`number >= 0`): HDR irradiance and reflection strength.
 - `environment.exposure` (`number > 0`): Renderer tone mapping exposure multiplier.

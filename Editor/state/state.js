@@ -54,14 +54,6 @@ const state = {
   },
 
   sceneSettings: {
-    viewerBackground: {
-      color: "#ffffff",
-      type: "color", // "color" | "environment" | "transparent"
-      blur: 0.0,
-    },
-    background: "#ffffff",
-    backgroundType: "color", // "color" | "environment" | "transparent"
-    backgroundBlur: 0.0,
     environment: {
       preset: "studio_small_09",
       customHdrUrl: null,

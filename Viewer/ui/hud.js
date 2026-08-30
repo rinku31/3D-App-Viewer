@@ -951,3 +951,19 @@ function setupKeyboardShortcuts() {
     }
   });
 }
+
+export function showLoading(text = "Loading 3D Model...") {
+  const overlay = document.getElementById("embedLoadingOverlay");
+  const textElem = overlay?.querySelector(".embed-loading-text");
+  if (textElem) textElem.textContent = text;
+  if (overlay) {
+    overlay.classList.remove("hidden");
+  }
+}
+
+export function hideLoading() {
+  const overlay = document.getElementById("embedLoadingOverlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+  }
+}
