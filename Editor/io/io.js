@@ -785,20 +785,11 @@ async function exportWithSaveFilePicker(filename, jsonContent) {
 
 // "Save" button triggers this:
 async function handleSaveAction() {
-  const exportData = serializeSceneDocument();
-  const jsonContent = JSON.stringify(exportData, null, 2);
-
   if (window.electronAPI && state.currentFilePath) {
-    // Electron native overwrite without prompts
-    const success = await window.electronAPI.saveFile(state.currentFilePath, jsonContent);
-    if (success) {
-      showToast(`Saved to ${state.currentFilePath}`);
-    } else {
-      console.error("Native save failed, falling back to Save As.");
-      handleSaveAsAction();
-    }
+    // Show overwrite confirmation for Electron
+    showSaveConfirmDialog();
   } else if (state.currentFileHandle) {
-    // Web File System API overwrite confirmation
+    // Show overwrite confirmation for Web
     showSaveConfirmDialog();
   } else {
     // No handle or path, so act like Save As
@@ -810,7 +801,13 @@ function showSaveConfirmDialog() {
   const modal = document.getElementById("saveConfirmModal");
   const filenameElem = document.getElementById("saveConfirmFilename");
   if (modal) {
-    if (filenameElem) filenameElem.textContent = state.currentFileHandle ? state.currentFileHandle.name : "scene.json";
+    let name = "scene.json";
+    if (window.electronAPI && state.currentFilePath) {
+      name = state.currentFilePath.split(/[/\\]/).pop();
+    } else if (state.currentFileHandle) {
+      name = state.currentFileHandle.name;
+    }
+    if (filenameElem) filenameElem.textContent = name;
     modal.style.display = "flex";
   }
 }
@@ -821,23 +818,33 @@ function hideSaveConfirmDialog() {
 }
 
 async function performOverwriteSave() {
-  if (!state.currentFileHandle) return;
-  try {
-    const exportData = serializeSceneDocument();
-    const jsonContent = JSON.stringify(exportData, null, 2);
-    
-    // Write directly to handle without prompting
-    const writableStream = await state.currentFileHandle.createWritable();
-    await writableStream.write(jsonContent);
-    await writableStream.close();
-    
-    hideSaveConfirmDialog();
-    showToast(`Saved to ${state.currentFileHandle.name}`);
-  } catch (err) {
-    console.error("Failed to overwrite save:", err);
-    // Might have lost permission, fallback to Save As
-    handleSaveAsAction();
-    hideSaveConfirmDialog();
+  const exportData = serializeSceneDocument();
+  const jsonContent = JSON.stringify(exportData, null, 2);
+  
+  if (window.electronAPI && state.currentFilePath) {
+    const success = await window.electronAPI.saveFile(state.currentFilePath, jsonContent);
+    if (success) {
+      hideSaveConfirmDialog();
+      showToast(`Saved to ${state.currentFilePath}`);
+    } else {
+      console.error("Native save failed, falling back to Save As.");
+      hideSaveConfirmDialog();
+      handleSaveAsAction();
+    }
+  } else if (state.currentFileHandle) {
+    try {
+      const writableStream = await state.currentFileHandle.createWritable();
+      await writableStream.write(jsonContent);
+      await writableStream.close();
+      
+      hideSaveConfirmDialog();
+      showToast(`Saved to ${state.currentFileHandle.name}`);
+    } catch (err) {
+      console.error("Failed to overwrite save:", err);
+      // Might have lost permission, fallback to Save As
+      hideSaveConfirmDialog();
+      handleSaveAsAction();
+    }
   }
 }
 
@@ -1189,7 +1196,66 @@ function bindIO(loader) {
   });
 
   // Wire single unified import trigger
-  const triggerImportFile = () => {
+  const triggerImportFile = async () => {
+    // Try File System Access API for Chromium/desktop browsers (unless inside Electron which might have its own flow later)
+    if (typeof window.showOpenFilePicker === "function" && !window.electronAPI) {
+      try {
+        const fileHandles = await window.showOpenFilePicker({
+          multiple: true,
+          types: [
+            {
+              description: "3D Models and Scenes",
+              accept: {
+                "model/gltf-binary": [".glb"],
+                "model/gltf+json": [".gltf"],
+                "application/json": [".json"],
+              },
+            },
+          ],
+        });
+
+        if (!fileHandles || !fileHandles.length) return;
+
+        // Clear existing file handles since we're loading a new file
+        state.currentFileHandle = null;
+        state.currentFilePath = null;
+
+        const files = [];
+        let mainJsonHandle = null;
+
+        for (const handle of fileHandles) {
+          const file = await handle.getFile();
+          files.push(file);
+          if (file.name.toLowerCase().endsWith(".json")) {
+            mainJsonHandle = handle;
+          }
+        }
+
+        const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
+        const jsonFile = files.find((f) => /\.json$/i.test(f.name));
+
+        if (glbFile) {
+          await importModel(loader, glbFile, jsonFile, files);
+          if (mainJsonHandle) {
+            state.currentFileHandle = mainJsonHandle;
+          }
+        } else if (jsonFile) {
+          await importJson(jsonFile);
+          if (mainJsonHandle) {
+            state.currentFileHandle = mainJsonHandle;
+          }
+        } else {
+          alert("Please select a 3D model (.glb or .gltf) or a scene JSON file.");
+        }
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") {
+          return; // User cancelled
+        }
+        console.warn("showOpenFilePicker failed, falling back to traditional input:", err);
+      }
+    }
+
     if (modelInput) modelInput.click();
   };
   document.getElementById("menuImportModelBtn")?.addEventListener("click", triggerImportFile);
@@ -1199,8 +1265,17 @@ function bindIO(loader) {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
 
+      // Clear existing handles on new load via file input
+      state.currentFileHandle = null;
+      state.currentFilePath = null;
+
       const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
       const jsonFile = files.find((f) => /\.json$/i.test(f.name));
+
+      // If in Electron, files will have a .path property
+      if (jsonFile && jsonFile.path) {
+        state.currentFilePath = jsonFile.path;
+      }
 
       try {
         if (glbFile) {
@@ -1231,8 +1306,16 @@ function bindIO(loader) {
       const files = Array.from(e.dataTransfer.files || []);
       if (!files.length) return;
 
+      // Clear existing handles on new load via drag-and-drop
+      state.currentFileHandle = null;
+      state.currentFilePath = null;
+
       const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
       const jsonFile = files.find((f) => /\.json$/i.test(f.name));
+
+      if (jsonFile && jsonFile.path) {
+        state.currentFilePath = jsonFile.path;
+      }
 
       if (glbFile) {
         try {
