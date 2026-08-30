@@ -13,6 +13,7 @@ const state = {
   raycaster: null,
   mouse: null,
   currentFileHandle: null,
+  currentFilePath: null,
 
   currentModel: null,
   hotspots: [],

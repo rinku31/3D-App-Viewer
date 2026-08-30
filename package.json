@@ -2,16 +2,41 @@
   "name": "3d-app-viewer",
   "version": "1.0.0",
   "type": "module",
+  "main": "main.cjs",
   "scripts": {
     "dev": "node server.js",
     "build": "echo 'Static build ready'",
     "start": "node server.js",
-    "lint": "echo 'No lint errors'"
+    "lint": "echo 'No lint errors'",
+    "start:desktop": "electron .",
+    "build:windows": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.rhymnoorioque.3dviewer",
+    "productName": "3D Viewer & Editor",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "**/*",
+      "!Embed/**/*",
+      "!server.js",
+      "!docs/**/*",
+      "!**/*.md",
+      "!eslint.config.js",
+      "!metadata.json",
+      "!favicon_io.zip"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "express": "^4.19.2"
   },
   "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.39.5"
   }
 }

@@ -785,11 +785,23 @@ async function exportWithSaveFilePicker(filename, jsonContent) {
 
 // "Save" button triggers this:
 async function handleSaveAction() {
-  if (state.currentFileHandle) {
-    // Show overwrite confirmation
+  const exportData = serializeSceneDocument();
+  const jsonContent = JSON.stringify(exportData, null, 2);
+
+  if (window.electronAPI && state.currentFilePath) {
+    // Electron native overwrite without prompts
+    const success = await window.electronAPI.saveFile(state.currentFilePath, jsonContent);
+    if (success) {
+      showToast(`Saved to ${state.currentFilePath}`);
+    } else {
+      console.error("Native save failed, falling back to Save As.");
+      handleSaveAsAction();
+    }
+  } else if (state.currentFileHandle) {
+    // Web File System API overwrite confirmation
     showSaveConfirmDialog();
   } else {
-    // No handle, so act like Save As
+    // No handle or path, so act like Save As
     handleSaveAsAction();
   }
 }
@@ -798,7 +810,7 @@ function showSaveConfirmDialog() {
   const modal = document.getElementById("saveConfirmModal");
   const filenameElem = document.getElementById("saveConfirmFilename");
   if (modal) {
-    if (filenameElem) filenameElem.textContent = state.currentFileHandle.name;
+    if (filenameElem) filenameElem.textContent = state.currentFileHandle ? state.currentFileHandle.name : "scene.json";
     modal.style.display = "flex";
   }
 }
@@ -831,11 +843,19 @@ async function performOverwriteSave() {
 
 // "Save As" button triggers this:
 async function handleSaveAsAction() {
-  if (typeof window.showSaveFilePicker === "function") {
+  const exportData = serializeSceneDocument();
+  const jsonContent = JSON.stringify(exportData, null, 2);
+  const filename = getSuggestedFilename();
+
+  if (window.electronAPI) {
+    // Electron native dialog
+    const filePath = await window.electronAPI.saveFileDialog(jsonContent, filename);
+    if (filePath) {
+      state.currentFilePath = filePath;
+      showToast(`Saved to ${filePath}`);
+    }
+  } else if (typeof window.showSaveFilePicker === "function") {
     // If native picker is available, use it immediately without modal
-    const exportData = serializeSceneDocument();
-    const jsonContent = JSON.stringify(exportData, null, 2);
-    const filename = getSuggestedFilename();
     await exportWithSaveFilePicker(filename, jsonContent);
   } else {
     // Show the export modal (Save As modal) with download/copy options as fallback
