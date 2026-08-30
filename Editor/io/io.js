@@ -29,6 +29,15 @@ import {
   migrateSceneDocument,
   validateSceneDocument
 } from "./schema.js";
+import {
+  saveCurrentAsDefaultLoadout,
+  resetDefaultLoadout,
+  hasCustomLoadout,
+  captureCurrentLoadout,
+  applyLoadout,
+  FACTORY_DEFAULT_LOADOUT,
+  getStoredLoadout
+} from "../state/loadout.js";
 
 async function tryAutoLoadEditorSceneJson(modelName) {
   if (!modelName || modelName === "Product Model") return false;
@@ -817,11 +826,123 @@ async function copyExportJsonToClipboard() {
   }
 }
 
+let toastTimer = null;
+export function showToast(message, isError = false) {
+  const toastContainer = document.getElementById("editorToast");
+  const toastMsg = document.getElementById("editorToastMsg");
+  const toastIcon = document.getElementById("editorToastIcon");
+  const toastCard = toastContainer?.querySelector(".editor-toast-card");
+
+  if (!toastContainer || !toastMsg) return;
+
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+
+  toastMsg.textContent = message;
+  if (toastIcon) toastIcon.textContent = isError ? "⚠" : "✓";
+  if (toastCard) toastCard.classList.toggle("error", Boolean(isError));
+
+  toastContainer.style.display = "block";
+  toastTimer = setTimeout(() => {
+    toastContainer.style.display = "none";
+  }, 2800);
+}
+
+function renderSaveLoadoutSummary(loadout) {
+  const listEl = document.getElementById("saveLoadoutSummaryList");
+  if (!listEl) return;
+
+  const env = loadout.environment || {};
+  const bg = loadout.background || {};
+  const render = loadout.rendering || {};
+  const bloom = loadout.bloom || {};
+  const helpers = loadout.helpers || {};
+  const hotspots = loadout.hotspots || {};
+  const line = loadout.line || {};
+  const cam = loadout.camera || {};
+  const lights = loadout.lights || [];
+
+  const lightsSummary = lights.length > 0 
+    ? lights.map(l => `${l.name} (${l.type})`).join(", ") 
+    : "Default Studio Sun";
+
+  const safeStr = (v) => String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  listEl.innerHTML = `
+    <div class="loadout-summary-section">
+      <div class="summary-sec-title">Environment & Render</div>
+      <div class="summary-item-row"><span class="summary-item-label">Preset:</span><span class="summary-item-val code">${safeStr(env.preset || "studio_small_09")}</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Intensity / EV:</span><span class="summary-item-val">${Number(env.intensity ?? 1.0).toFixed(1)} / ${Number(env.exposure ?? 1.0).toFixed(1)} EV</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Tone Mapping:</span><span class="summary-item-val">${safeStr(env.toneMapping || "AgX")}</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Background:</span><span class="summary-item-val">${safeStr(bg.type || "color")} (${safeStr(bg.color || "#222228")})</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Shadows / Bloom:</span><span class="summary-item-val">${render.shadows !== false ? "Enabled" : "Off"} / ${bloom.enabled ? "Enabled" : "Off"}</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Grid / Axes:</span><span class="summary-item-val">${helpers.grid !== false ? "Visible" : "Hidden"} / ${helpers.axes ? "Visible" : "Hidden"}</span></div>
+    </div>
+    
+    <div class="loadout-summary-section">
+      <div class="summary-sec-title">Studio Lights (${lights.length})</div>
+      <div class="summary-item-row"><span class="summary-item-label">Active Lights:</span><span class="summary-item-val" style="max-width: 260px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeStr(lightsSummary)}</span></div>
+    </div>
+
+    <div class="loadout-summary-section">
+      <div class="summary-sec-title">Hotspots & Line Styling</div>
+      <div class="summary-item-row"><span class="summary-item-label">Card Background:</span><span class="summary-item-val code">${safeStr(hotspots.panelColor || "rgba(30, 30, 36, 0.95)")}</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Title / Desc Font:</span><span class="summary-item-val">${hotspots.titleFontSize || 14}px (${safeStr(hotspots.titleFontColor || "#ffffff")}) / ${hotspots.descFontSize || 12.5}px</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Button Style:</span><span class="summary-item-val">${hotspots.btnFontSize || 11}px (${safeStr(hotspots.btnBgColor || "accent")})</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Connector Line:</span><span class="summary-item-val">${safeStr(line.style || "dashed")}, ${line.width || 1.5}px (${safeStr(line.color || "#44D62C")})</span></div>
+    </div>
+
+    <div class="loadout-summary-section">
+      <div class="summary-sec-title">Camera & Navigation</div>
+      <div class="summary-item-row"><span class="summary-item-label">Pitch Limits:</span><span class="summary-item-val">${cam.minPitch ?? -82}° to +${cam.maxPitch ?? 82}°</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Distance Limits:</span><span class="summary-item-val">${Number(cam.minDistance ?? 1.35).toFixed(2)}m to ${Number(cam.maxDistance ?? 16).toFixed(1)}m</span></div>
+      <div class="summary-item-row"><span class="summary-item-label">Field of View (FOV):</span><span class="summary-item-val">${cam.fov || 45}°</span></div>
+    </div>
+  `;
+}
+
+function showSaveLoadoutConfirmationDialog() {
+  const modal = document.getElementById("saveLoadoutModal");
+  if (!modal) return;
+
+  const currentLoadout = captureCurrentLoadout();
+  renderSaveLoadoutSummary(currentLoadout);
+
+  modal.style.display = "flex";
+}
+
+function hideSaveLoadoutConfirmationDialog() {
+  const modal = document.getElementById("saveLoadoutModal");
+  if (modal) modal.style.display = "none";
+}
+
+function showResetLoadoutConfirmationDialog() {
+  const modal = document.getElementById("resetLoadoutModal");
+  const statusEl = document.getElementById("resetLoadoutStatus");
+  if (!modal) return;
+
+  const customExists = hasCustomLoadout();
+  if (statusEl) {
+    statusEl.textContent = customExists ? "Custom Loadout Saved (localStorage)" : "Default Factory Settings Active";
+    statusEl.style.color = customExists ? "#44D62C" : "#a1a1aa";
+  }
+
+  modal.style.display = "flex";
+}
+
+function hideResetLoadoutConfirmationDialog() {
+  const modal = document.getElementById("resetLoadoutModal");
+  if (modal) modal.style.display = "none";
+}
+
 function bindIO(loader) {
   const modelInput = document.getElementById("modelInput");
   const viewport = document.getElementById("viewport");
   const exportModal = document.getElementById("exportModal");
   const filenameInput = document.getElementById("exportModalFilenameInput");
+  const saveLoadoutModal = document.getElementById("saveLoadoutModal");
+  const resetLoadoutModal = document.getElementById("resetLoadoutModal");
 
   // Wire export JSON triggers to confirmation dialog
   const triggerExportDialog = (e) => {
@@ -832,7 +953,7 @@ function bindIO(loader) {
   document.getElementById("exportBtn")?.addEventListener("click", triggerExportDialog);
   document.getElementById("menuExportJsonBtn")?.addEventListener("click", triggerExportDialog);
 
-  // Modal actions
+  // Modal actions for Export
   document.getElementById("confirmExportModalBtn")?.addEventListener("click", () => {
     exportJson();
   });
@@ -851,11 +972,68 @@ function bindIO(loader) {
   document.getElementById("cancelExportModalBtn")?.addEventListener("click", hideExportConfirmationDialog);
   document.getElementById("closeExportModalBtn")?.addEventListener("click", hideExportConfirmationDialog);
 
-  // Close modal on backdrop click
+  // Wire Save Default Loadout triggers
+  document.getElementById("menuSaveLoadoutBtn")?.addEventListener("click", (e) => {
+    if (e) e.preventDefault();
+    showSaveLoadoutConfirmationDialog();
+  });
+
+  document.getElementById("confirmSaveLoadoutModalBtn")?.addEventListener("click", () => {
+    try {
+      saveCurrentAsDefaultLoadout();
+      hideSaveLoadoutConfirmationDialog();
+      showToast("Default startup loadout saved locally!");
+    } catch (err) {
+      console.error("Failed to save loadout:", err);
+      showToast("Failed to save default loadout", true);
+    }
+  });
+
+  document.getElementById("cancelSaveLoadoutModalBtn")?.addEventListener("click", hideSaveLoadoutConfirmationDialog);
+  document.getElementById("closeSaveLoadoutModalBtn")?.addEventListener("click", hideSaveLoadoutConfirmationDialog);
+
+  // Wire Reset Default Loadout triggers
+  document.getElementById("menuResetLoadoutBtn")?.addEventListener("click", (e) => {
+    if (e) e.preventDefault();
+    showResetLoadoutConfirmationDialog();
+  });
+
+  document.getElementById("confirmResetLoadoutModalBtn")?.addEventListener("click", () => {
+    try {
+      resetDefaultLoadout();
+      applyLoadout(FACTORY_DEFAULT_LOADOUT, { syncUI: true, notify: true });
+      hideResetLoadoutConfirmationDialog();
+      showToast("Startup loadout reset to factory defaults.");
+    } catch (err) {
+      console.error("Failed to reset loadout:", err);
+      showToast("Failed to reset default loadout", true);
+    }
+  });
+
+  document.getElementById("cancelResetLoadoutModalBtn")?.addEventListener("click", hideResetLoadoutConfirmationDialog);
+  document.getElementById("closeResetLoadoutModalBtn")?.addEventListener("click", hideResetLoadoutConfirmationDialog);
+
+  // Close modals on backdrop click
   if (exportModal) {
     exportModal.addEventListener("click", (e) => {
       if (e.target === exportModal) {
         hideExportConfirmationDialog();
+      }
+    });
+  }
+
+  if (saveLoadoutModal) {
+    saveLoadoutModal.addEventListener("click", (e) => {
+      if (e.target === saveLoadoutModal) {
+        hideSaveLoadoutConfirmationDialog();
+      }
+    });
+  }
+
+  if (resetLoadoutModal) {
+    resetLoadoutModal.addEventListener("click", (e) => {
+      if (e.target === resetLoadoutModal) {
+        hideResetLoadoutConfirmationDialog();
       }
     });
   }
@@ -875,6 +1053,16 @@ function bindIO(loader) {
       } else if (e.key === "Enter" && document.activeElement === filenameInput) {
         e.preventDefault();
         exportJson();
+      }
+    } else if (saveLoadoutModal && saveLoadoutModal.style.display !== "none") {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hideSaveLoadoutConfirmationDialog();
+      }
+    } else if (resetLoadoutModal && resetLoadoutModal.style.display !== "none") {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hideResetLoadoutConfirmationDialog();
       }
     }
   });

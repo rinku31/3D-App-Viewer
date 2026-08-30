@@ -45,6 +45,15 @@
         <span class="item-text">Export Scene JSON</span>
       </button>
       <div class="dropdown-divider"></div>
+      <button id="menuSaveLoadoutBtn" class="dropdown-item" type="button">
+        <span class="item-icon">&#128190;</span>
+        <span class="item-text">Save Default Loadout</span>
+      </button>
+      <button id="menuResetLoadoutBtn" class="dropdown-item" type="button">
+        <span class="item-icon">&#8634;</span>
+        <span class="item-text">Reset Default Loadout</span>
+      </button>
+      <div class="dropdown-divider"></div>
       <a id="menuHubBtn" href="/index.html" class="dropdown-item">
         <span class="item-icon">&#8592;</span>
         <span class="item-text">Return to Hub</span>
@@ -146,6 +155,75 @@
       <button id="downloadExportModalBtn" class="secondary-accent-btn" type="button" title="Download directly to downloads folder">&#129095; Download</button>
       <button id="confirmExportModalBtn" class="primary-btn" type="button" title="Open native Save File dialog">&#128194; Save As...</button>
     </div>
+  </div>
+</div>
+
+<!-- Save Default Loadout Confirmation Modal -->
+<div id="saveLoadoutModal" class="editor-modal-backdrop" style="display: none;">
+  <div class="editor-modal-card loadout-modal-card">
+    <div class="editor-modal-header">
+      <div class="editor-modal-title">
+        <span class="modal-title-icon">&#128190;</span>
+        <h3>Save Default Loadout</h3>
+      </div>
+      <button id="closeSaveLoadoutModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
+    </div>
+    <div class="editor-modal-body">
+      <p class="modal-description">Save your current workspace setup as your personal startup loadout. It will automatically load on future sessions.</p>
+      
+      <div class="loadout-summary-container">
+        <div class="loadout-summary-header">
+          <span class="summary-header-title">Settings Summary</span>
+          <span class="inspector-badge-sm">Local Storage</span>
+        </div>
+        <div id="saveLoadoutSummaryList" class="loadout-summary-scroll">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+    <div class="editor-modal-footer">
+      <button id="cancelSaveLoadoutModalBtn" class="secondary" type="button">Cancel</button>
+      <button id="confirmSaveLoadoutModalBtn" class="primary-btn" type="button">&#10003; Save Default Loadout</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Default Loadout Confirmation Modal -->
+<div id="resetLoadoutModal" class="editor-modal-backdrop" style="display: none;">
+  <div class="editor-modal-card">
+    <div class="editor-modal-header">
+      <div class="editor-modal-title">
+        <span class="modal-title-icon">&#8634;</span>
+        <h3>Reset Default Loadout</h3>
+      </div>
+      <button id="closeResetLoadoutModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
+    </div>
+    <div class="editor-modal-body">
+      <p class="modal-description">Are you sure you want to reset your saved default loadout and restore factory defaults?</p>
+
+      <div class="modal-info-grid">
+        <div class="modal-info-row">
+          <span class="info-label">Custom Loadout Status</span>
+          <span id="resetLoadoutStatus" class="info-value">Saved in Browser</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="info-label">Action</span>
+          <span class="info-value" style="color: #f87171;">Reverts to Factory Defaults</span>
+        </div>
+      </div>
+    </div>
+    <div class="editor-modal-footer">
+      <button id="cancelResetLoadoutModalBtn" class="secondary" type="button">No, Cancel</button>
+      <button id="confirmResetLoadoutModalBtn" class="danger-btn" type="button">&#8634; Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Toast Notification Banner -->
+<div id="editorToast" class="editor-toast-container" style="display: none;">
+  <div class="editor-toast-card">
+    <span id="editorToastIcon" class="toast-icon">&#10003;</span>
+    <span id="editorToastMsg" class="toast-msg">Settings saved successfully.</span>
   </div>
 </div>
 
