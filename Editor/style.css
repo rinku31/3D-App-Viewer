@@ -193,7 +193,7 @@ canvas {
   display: none;
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  left: 250px;
   min-width: 220px;
   background: #18181c;
   border: 1px solid #2e2e36;

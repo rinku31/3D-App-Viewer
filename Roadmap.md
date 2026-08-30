@@ -28,3 +28,4 @@
 - [ ] Screen-edge clamping and distance fade for hotspot panels.
 - [ ] Line style controls and custom themes.
 
+<!-- WRITE_TEST -->
