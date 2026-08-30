@@ -4,7 +4,7 @@ import { clearSelection, state } from "../state/state.js";
 import { select, deselect } from "../selection/selection.js";
 import { initializeGizmo } from "../gizmo/gizmo.js";
 import { initializeHierarchy, renderHierarchy } from "../hierarchy/hierarchy.js";
-import { initializeInspector, renderInspector } from "../inspector/inspector.js";
+import { initializeInspector, renderInspector, applyGlobalHotspotSettings } from "../inspector/inspector.js";
 import {
   createHotspot,
   removeHotspot,
@@ -343,6 +343,577 @@ function bindEnvironmentTab() {
   }
 }
 
+function syncSettingsTabUI() {
+  if (!state.sceneSettings) state.sceneSettings = {};
+  if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+  if (!state.sceneSettings.line) state.sceneSettings.line = {};
+  if (!state.sceneSettings.controls) {
+    state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+  }
+
+  // 1. Hotspots & Line
+  const hotspots = state.sceneSettings.hotspots;
+  const line = state.sceneSettings.line;
+
+  const panelColor = hotspots.panelColor || "rgba(30, 30, 35, 0.92)";
+  const panelColorInput = document.getElementById("settings_hotspot_panel_color");
+  const panelColorText = document.getElementById("settings_hotspot_panel_color_text");
+  if (panelColorInput && panelColor.startsWith("#")) panelColorInput.value = panelColor;
+  if (panelColorText) panelColorText.value = panelColor;
+
+  const titleFontColor = hotspots.titleFontColor || "#ffffff";
+  const titleFontColorInput = document.getElementById("settings_hotspot_title_font_color");
+  const titleFontColorText = document.getElementById("settings_hotspot_title_font_color_text");
+  if (titleFontColorInput && titleFontColor.startsWith("#")) titleFontColorInput.value = titleFontColor;
+  if (titleFontColorText) titleFontColorText.value = titleFontColor;
+
+  const titleFontSize = hotspots.titleFontSize ?? 14;
+  const titleFontSizeInput = document.getElementById("settings_hotspot_title_font_size");
+  const valTitleFontSize = document.getElementById("val_settings_hotspot_title_font_size");
+  if (titleFontSizeInput) titleFontSizeInput.value = titleFontSize;
+  if (valTitleFontSize) valTitleFontSize.textContent = titleFontSize;
+
+  const descFontColor = hotspots.descFontColor || "#e0e0e0";
+  const descFontColorInput = document.getElementById("settings_hotspot_desc_font_color");
+  const descFontColorText = document.getElementById("settings_hotspot_desc_font_color_text");
+  if (descFontColorInput && descFontColor.startsWith("#")) descFontColorInput.value = descFontColor;
+  if (descFontColorText) descFontColorText.value = descFontColor;
+
+  const descFontSize = hotspots.descFontSize ?? 12.5;
+  const descFontSizeInput = document.getElementById("settings_hotspot_desc_font_size");
+  const valDescFontSize = document.getElementById("val_settings_hotspot_desc_font_size");
+  if (descFontSizeInput) descFontSizeInput.value = descFontSize;
+  if (valDescFontSize) valDescFontSize.textContent = descFontSize;
+
+  const listFontColor = hotspots.listFontColor || "#cccccc";
+  const listFontColorInput = document.getElementById("settings_hotspot_list_font_color");
+  const listFontColorText = document.getElementById("settings_hotspot_list_font_color_text");
+  if (listFontColorInput && listFontColor.startsWith("#")) listFontColorInput.value = listFontColor;
+  if (listFontColorText) listFontColorText.value = listFontColor;
+
+  const listFontSize = hotspots.listFontSize ?? 11;
+  const listFontSizeInput = document.getElementById("settings_hotspot_list_font_size");
+  const valListFontSize = document.getElementById("val_settings_hotspot_list_font_size");
+  if (listFontSizeInput) listFontSizeInput.value = listFontSize;
+  if (valListFontSize) valListFontSize.textContent = listFontSize;
+
+  // Buttons
+  const btnBgColor = hotspots.btnBgColor || "rgba(68, 214, 44, 0.28)";
+  const btnBgColorInput = document.getElementById("settings_hotspot_btn_bg_color");
+  const btnBgColorText = document.getElementById("settings_hotspot_btn_bg_color_text");
+  if (btnBgColorInput && btnBgColor.startsWith("#")) btnBgColorInput.value = btnBgColor;
+  if (btnBgColorText) btnBgColorText.value = btnBgColor;
+
+  const btnFontColor = hotspots.btnFontColor || "#ffffff";
+  const btnFontColorInput = document.getElementById("settings_hotspot_btn_font_color");
+  const btnFontColorText = document.getElementById("settings_hotspot_btn_font_color_text");
+  if (btnFontColorInput && btnFontColor.startsWith("#")) btnFontColorInput.value = btnFontColor;
+  if (btnFontColorText) btnFontColorText.value = btnFontColor;
+
+  const btnFontSize = hotspots.btnFontSize ?? 11;
+  const btnFontSizeInput = document.getElementById("settings_hotspot_btn_font_size");
+  const valBtnFontSize = document.getElementById("val_settings_hotspot_btn_font_size");
+  if (btnFontSizeInput) btnFontSizeInput.value = btnFontSize;
+  if (valBtnFontSize) valBtnFontSize.textContent = btnFontSize;
+
+  const btnPaddingV = hotspots.btnPaddingV ?? 5;
+  const btnPaddingH = hotspots.btnPaddingH ?? 12;
+  const btnPaddingVInput = document.getElementById("settings_hotspot_btn_padding_v");
+  const btnPaddingHInput = document.getElementById("settings_hotspot_btn_padding_h");
+  const valBtnPadding = document.getElementById("val_settings_hotspot_btn_padding");
+  if (btnPaddingVInput) btnPaddingVInput.value = btnPaddingV;
+  if (btnPaddingHInput) btnPaddingHInput.value = btnPaddingH;
+  if (valBtnPadding) valBtnPadding.textContent = `${btnPaddingV}px / ${btnPaddingH}px`;
+
+  const btnMargin = hotspots.btnMargin ?? 5;
+  const btnMarginInput = document.getElementById("settings_hotspot_btn_margin");
+  const valBtnMargin = document.getElementById("val_settings_hotspot_btn_margin");
+  if (btnMarginInput) btnMarginInput.value = btnMargin;
+  if (valBtnMargin) valBtnMargin.textContent = btnMargin;
+
+  // Connector Line
+  const lineStyleSelect = document.getElementById("settings_line_style");
+  if (lineStyleSelect) lineStyleSelect.value = line.style || "dashed";
+
+  const lineColor = line.color || "#44D62C";
+  const lineColorInput = document.getElementById("settings_line_color");
+  const lineColorText = document.getElementById("settings_line_color_text");
+  if (lineColorInput && lineColor.startsWith("#")) lineColorInput.value = lineColor;
+  if (lineColorText) lineColorText.value = lineColor;
+
+  const lineWidth = line.width ?? 1.5;
+  const lineWidthInput = document.getElementById("settings_line_width");
+  const valLineWidth = document.getElementById("val_settings_line_width");
+  if (lineWidthInput) lineWidthInput.value = lineWidth;
+  if (valLineWidth) valLineWidth.textContent = `${Number(lineWidth).toFixed(1)}px`;
+
+  // 2. Viewer Buttons
+  const controls = state.sceneSettings.controls;
+  const btnExplode = document.getElementById("settings_btn_explode");
+  if (btnExplode) btnExplode.checked = controls.explodeEnabled !== false;
+
+  const btnSim = document.getElementById("settings_btn_simulator");
+  const simBox = document.getElementById("settings_simulator_options_box");
+  if (btnSim) {
+    btnSim.checked = controls.simulatorEnabled !== false;
+    if (simBox) simBox.style.display = btnSim.checked ? "" : "none";
+  }
+
+  const simUrl = document.getElementById("settings_sim_btn_url");
+  if (simUrl) simUrl.value = controls.simulatorUrl || "";
+
+  const simFn = document.getElementById("settings_sim_btn_fn");
+  if (simFn) simFn.value = controls.simulatorJsFunction || "onSimulatorToggle";
+
+  // 3. Camera Navigation & Limits
+  if (state.cameraRig) {
+    const minPitch = Math.round(state.cameraRig.getMinPitchDeg ? state.cameraRig.getMinPitchDeg() : -82);
+    const maxPitch = Math.round(state.cameraRig.getMaxPitchDeg ? state.cameraRig.getMaxPitchDeg() : 82);
+    const minPitchSlider = document.getElementById("settings_cam_min_pitch");
+    const minPitchNum = document.getElementById("settings_cam_min_pitch_num");
+    const valMinPitch = document.getElementById("val_settings_cam_min_pitch");
+    if (minPitchSlider) minPitchSlider.value = minPitch;
+    if (minPitchNum) minPitchNum.value = minPitch;
+    if (valMinPitch) valMinPitch.textContent = `${minPitch}°`;
+
+    const maxPitchSlider = document.getElementById("settings_cam_max_pitch");
+    const maxPitchNum = document.getElementById("settings_cam_max_pitch_num");
+    const valMaxPitch = document.getElementById("val_settings_cam_max_pitch");
+    if (maxPitchSlider) maxPitchSlider.value = maxPitch;
+    if (maxPitchNum) maxPitchNum.value = maxPitch;
+    if (valMaxPitch) valMaxPitch.textContent = `+${maxPitch}°`;
+
+    const minDist = state.cameraRig.minDistance ?? 1.35;
+    const maxDist = state.cameraRig.maxDistance ?? 16.0;
+    const minDistSlider = document.getElementById("settings_cam_min_dist");
+    const minDistNum = document.getElementById("settings_cam_min_dist_num");
+    const valMinDist = document.getElementById("val_settings_cam_min_dist");
+    if (minDistSlider) minDistSlider.value = minDist;
+    if (minDistNum) minDistNum.value = minDist;
+    if (valMinDist) valMinDist.textContent = `${Number(minDist).toFixed(2)}m`;
+
+    const maxDistSlider = document.getElementById("settings_cam_max_dist");
+    const maxDistNum = document.getElementById("settings_cam_max_dist_num");
+    const valMaxDist = document.getElementById("val_settings_cam_max_dist");
+    if (maxDistSlider) maxDistSlider.value = maxDist;
+    if (maxDistNum) maxDistNum.value = maxDist;
+    if (valMaxDist) valMaxDist.textContent = `${Number(maxDist).toFixed(1)}m`;
+
+    const autoRotateCheck = document.getElementById("settings_cam_autorotate");
+    if (autoRotateCheck) autoRotateCheck.checked = Boolean(state.cameraRig.autoRotate);
+  }
+}
+
+function bindSettingsTab() {
+  window.addEventListener("editorselectionchange", syncSettingsTabUI);
+
+  // Panel background color
+  const panelColorPicker = document.getElementById("settings_hotspot_panel_color");
+  const panelColorText = document.getElementById("settings_hotspot_panel_color_text");
+  panelColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.panelColor = e.target.value;
+    if (panelColorText) panelColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  panelColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.panelColor = e.target.value;
+    if (panelColorPicker && e.target.value.startsWith("#")) panelColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // Title font color & size
+  const titleFontColorPicker = document.getElementById("settings_hotspot_title_font_color");
+  const titleFontColorText = document.getElementById("settings_hotspot_title_font_color_text");
+  const titleFontSizeSlider = document.getElementById("settings_hotspot_title_font_size");
+  const valTitleFontSize = document.getElementById("val_settings_hotspot_title_font_size");
+
+  titleFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontColor = e.target.value;
+    if (titleFontColorText) titleFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  titleFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontColor = e.target.value;
+    if (titleFontColorPicker && e.target.value.startsWith("#")) titleFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  titleFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.titleFontSize = Number(e.target.value);
+    if (valTitleFontSize) valTitleFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // Description font color & size
+  const descFontColorPicker = document.getElementById("settings_hotspot_desc_font_color");
+  const descFontColorText = document.getElementById("settings_hotspot_desc_font_color_text");
+  const descFontSizeSlider = document.getElementById("settings_hotspot_desc_font_size");
+  const valDescFontSize = document.getElementById("val_settings_hotspot_desc_font_size");
+
+  descFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontColor = e.target.value;
+    if (descFontColorText) descFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  descFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontColor = e.target.value;
+    if (descFontColorPicker && e.target.value.startsWith("#")) descFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  descFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.descFontSize = Number(e.target.value);
+    if (valDescFontSize) valDescFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // List font color & size
+  const listFontColorPicker = document.getElementById("settings_hotspot_list_font_color");
+  const listFontColorText = document.getElementById("settings_hotspot_list_font_color_text");
+  const listFontSizeSlider = document.getElementById("settings_hotspot_list_font_size");
+  const valListFontSize = document.getElementById("val_settings_hotspot_list_font_size");
+
+  listFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontColor = e.target.value;
+    if (listFontColorText) listFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  listFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontColor = e.target.value;
+    if (listFontColorPicker && e.target.value.startsWith("#")) listFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  listFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.listFontSize = Number(e.target.value);
+    if (valListFontSize) valListFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // Buttons: Background, Font Color, Font Size, Padding, Margin
+  const btnBgColorPicker = document.getElementById("settings_hotspot_btn_bg_color");
+  const btnBgColorText = document.getElementById("settings_hotspot_btn_bg_color_text");
+  const btnFontColorPicker = document.getElementById("settings_hotspot_btn_font_color");
+  const btnFontColorText = document.getElementById("settings_hotspot_btn_font_color_text");
+  const btnFontSizeSlider = document.getElementById("settings_hotspot_btn_font_size");
+  const valBtnFontSize = document.getElementById("val_settings_hotspot_btn_font_size");
+  const btnPaddingVInput = document.getElementById("settings_hotspot_btn_padding_v");
+  const btnPaddingHInput = document.getElementById("settings_hotspot_btn_padding_h");
+  const valBtnPadding = document.getElementById("val_settings_hotspot_btn_padding");
+  const btnMarginSlider = document.getElementById("settings_hotspot_btn_margin");
+  const valBtnMargin = document.getElementById("val_settings_hotspot_btn_margin");
+
+  btnBgColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnBgColor = e.target.value;
+    if (btnBgColorText) btnBgColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  btnBgColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnBgColor = e.target.value;
+    if (btnBgColorPicker && e.target.value.startsWith("#")) btnBgColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  btnFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnFontColor = e.target.value;
+    if (btnFontColorText) btnFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  btnFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnFontColor = e.target.value;
+    if (btnFontColorPicker && e.target.value.startsWith("#")) btnFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  btnFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnFontSize = Number(e.target.value);
+    if (valBtnFontSize) valBtnFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  const updatePadding = () => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const v = Number(btnPaddingVInput?.value || 5);
+    const h = Number(btnPaddingHInput?.value || 12);
+    state.sceneSettings.hotspots.btnPaddingV = v;
+    state.sceneSettings.hotspots.btnPaddingH = h;
+    if (valBtnPadding) valBtnPadding.textContent = `${v}px / ${h}px`;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  };
+  btnPaddingVInput?.addEventListener("input", updatePadding);
+  btnPaddingHInput?.addEventListener("input", updatePadding);
+
+  btnMarginSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnMargin = Number(e.target.value);
+    if (valBtnMargin) valBtnMargin.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // Connector Line: Style, Color, Width
+  const lineStyleSelect = document.getElementById("settings_line_style");
+  const lineColorPicker = document.getElementById("settings_line_color");
+  const lineColorText = document.getElementById("settings_line_color_text");
+  const lineWidthSlider = document.getElementById("settings_line_width");
+  const valLineWidth = document.getElementById("val_settings_line_width");
+
+  lineStyleSelect?.addEventListener("change", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.style = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  lineColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.color = e.target.value;
+    if (lineColorText) lineColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  lineColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.color = e.target.value;
+    if (lineColorPicker && e.target.value.startsWith("#")) lineColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+  lineWidthSlider?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.line) state.sceneSettings.line = {};
+    state.sceneSettings.line.width = val;
+    if (valLineWidth) valLineWidth.textContent = `${val.toFixed(1)}px`;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  // Viewer Floating Buttons
+  const btnExplodeCheck = document.getElementById("settings_btn_explode");
+  const btnSimCheck = document.getElementById("settings_btn_simulator");
+  const simBox = document.getElementById("settings_simulator_options_box");
+  const simUrl = document.getElementById("settings_sim_btn_url");
+  const simFn = document.getElementById("settings_sim_btn_fn");
+
+  btnExplodeCheck?.addEventListener("change", (e) => {
+    if (!state.sceneSettings.controls) {
+      state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+    }
+    state.sceneSettings.controls.explodeEnabled = Boolean(e.target.checked);
+    pushHistoryState();
+  });
+
+  btnSimCheck?.addEventListener("change", (e) => {
+    if (!state.sceneSettings.controls) {
+      state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+    }
+    const enabled = Boolean(e.target.checked);
+    state.sceneSettings.controls.simulatorEnabled = enabled;
+    if (simBox) simBox.style.display = enabled ? "" : "none";
+    pushHistoryState();
+  });
+
+  simUrl?.addEventListener("input", (e) => {
+    if (!state.sceneSettings.controls) {
+      state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+    }
+    state.sceneSettings.controls.simulatorUrl = e.target.value;
+    pushHistoryState();
+  });
+
+  simFn?.addEventListener("input", (e) => {
+    if (!state.sceneSettings.controls) {
+      state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
+    }
+    state.sceneSettings.controls.simulatorJsFunction = e.target.value;
+    pushHistoryState();
+  });
+
+  // Camera & Orbit Constraints
+  document.getElementById("settingsSetDefaultCamBtn")?.addEventListener("click", () => {
+    if (state.cameraRig) {
+      const camState = state.cameraRig.getState();
+      state.cameraRig.setDefaultState(camState);
+      if (!state.sceneDocument) state.sceneDocument = {};
+      state.sceneDocument.camera = {
+        yaw: camState.yaw,
+        pitch: camState.pitch,
+        distance: camState.distance,
+        minDistance: state.cameraRig.minDistance,
+        maxDistance: state.cameraRig.maxDistance,
+        minPitch: state.cameraRig.getMinPitchDeg(),
+        maxPitch: state.cameraRig.getMaxPitchDeg(),
+        target: camState.target,
+        fov: camState.fov
+      };
+      const btn = document.getElementById("settingsSetDefaultCamBtn");
+      if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "&#10003; Default Saved!";
+        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+      }
+    }
+  });
+
+  document.getElementById("settingsResetDefaultCamBtn")?.addEventListener("click", () => {
+    if (state.cameraRig) {
+      state.cameraRig.reset();
+    }
+  });
+
+  document.getElementById("settingsFrameModelBtn")?.addEventListener("click", () => {
+    if (state.cameraRig && state.currentModel) {
+      state.cameraRig.focus(state.currentModel);
+    }
+  });
+
+  const autoRotateCheck = document.getElementById("settings_cam_autorotate");
+  autoRotateCheck?.addEventListener("change", (e) => {
+    if (state.cameraRig) {
+      state.cameraRig.autoRotate = Boolean(e.target.checked);
+    }
+  });
+
+  // Pitch constraints
+  const minPitchSlider = document.getElementById("settings_cam_min_pitch");
+  const minPitchNum = document.getElementById("settings_cam_min_pitch_num");
+  const valMinPitch = document.getElementById("val_settings_cam_min_pitch");
+  const maxPitchSlider = document.getElementById("settings_cam_max_pitch");
+  const maxPitchNum = document.getElementById("settings_cam_max_pitch_num");
+  const valMaxPitch = document.getElementById("val_settings_cam_max_pitch");
+
+  const updatePitchConstraints = (minDeg, maxDeg) => {
+    if (state.cameraRig) {
+      state.cameraRig.setMinPitchDeg(minDeg);
+      state.cameraRig.setMaxPitchDeg(maxDeg);
+    }
+    if (minPitchSlider) minPitchSlider.value = minDeg;
+    if (minPitchNum) minPitchNum.value = minDeg;
+    if (valMinPitch) valMinPitch.textContent = `${minDeg}°`;
+    if (maxPitchSlider) maxPitchSlider.value = maxDeg;
+    if (maxPitchNum) maxPitchNum.value = maxDeg;
+    if (valMaxPitch) valMaxPitch.textContent = `+${maxDeg}°`;
+    pushHistoryState();
+  };
+
+  minPitchSlider?.addEventListener("input", (e) => {
+    const minVal = parseInt(e.target.value, 10);
+    const maxVal = parseInt(maxPitchSlider?.value || "82", 10);
+    updatePitchConstraints(minVal, maxVal);
+  });
+  minPitchNum?.addEventListener("input", (e) => {
+    const minVal = parseInt(e.target.value, 10);
+    const maxVal = parseInt(maxPitchSlider?.value || "82", 10);
+    updatePitchConstraints(minVal, maxVal);
+  });
+
+  maxPitchSlider?.addEventListener("input", (e) => {
+    const minVal = parseInt(minPitchSlider?.value || "-82", 10);
+    const maxVal = parseInt(e.target.value, 10);
+    updatePitchConstraints(minVal, maxVal);
+  });
+  maxPitchNum?.addEventListener("input", (e) => {
+    const minVal = parseInt(minPitchSlider?.value || "-82", 10);
+    const maxVal = parseInt(e.target.value, 10);
+    updatePitchConstraints(minVal, maxVal);
+  });
+
+  document.querySelectorAll(".settings-pitch-preset-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const minP = parseInt(btn.dataset.min, 10);
+      const maxP = parseInt(btn.dataset.max, 10);
+      updatePitchConstraints(minP, maxP);
+    });
+  });
+
+  // Distance limits
+  const minDistSlider = document.getElementById("settings_cam_min_dist");
+  const minDistNum = document.getElementById("settings_cam_min_dist_num");
+  const valMinDist = document.getElementById("val_settings_cam_min_dist");
+  const maxDistSlider = document.getElementById("settings_cam_max_dist");
+  const maxDistNum = document.getElementById("settings_cam_max_dist_num");
+  const valMaxDist = document.getElementById("val_settings_cam_max_dist");
+
+  minDistSlider?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (state.cameraRig) state.cameraRig.minDistance = val;
+    if (minDistNum) minDistNum.value = val;
+    if (valMinDist) valMinDist.textContent = `${val.toFixed(2)}m`;
+    pushHistoryState();
+  });
+  minDistNum?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (state.cameraRig) state.cameraRig.minDistance = val;
+    if (minDistSlider) minDistSlider.value = val;
+    if (valMinDist) valMinDist.textContent = `${val.toFixed(2)}m`;
+    pushHistoryState();
+  });
+
+  maxDistSlider?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (state.cameraRig) state.cameraRig.maxDistance = val;
+    if (maxDistNum) maxDistNum.value = val;
+    if (valMaxDist) valMaxDist.textContent = `${val.toFixed(1)}m`;
+    pushHistoryState();
+  });
+  maxDistNum?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (state.cameraRig) state.cameraRig.maxDistance = val;
+    if (maxDistSlider) maxDistSlider.value = val;
+    if (valMaxDist) valMaxDist.textContent = `${val.toFixed(1)}m`;
+    pushHistoryState();
+  });
+}
+
 function setAddMode(active) {
   state.addMode = active;
   state.currentMode = active ? "add-hotspot" : "idle";
@@ -398,6 +969,7 @@ function initializeEditor(loader) {
   bindIO(loader);
   bindLightUI();
   bindEnvironmentTab();
+  bindSettingsTab();
 
   // Phase 2 Modules
   initializeGizmo();
@@ -632,4 +1204,4 @@ function initializeEditor(loader) {
   }
 }
 
-export { initializeEditor, syncEnvironmentTabUI };
+export { initializeEditor, syncEnvironmentTabUI, syncSettingsTabUI };

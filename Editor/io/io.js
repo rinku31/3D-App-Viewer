@@ -314,21 +314,85 @@ async function importJsonData(rawData, fileName = "scene.json") {
 
   if (Array.isArray(data.hotspots)) {
     data.hotspots.forEach((h) => {
+      const rawList = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
+      const legacyButton = h.button ? {
+        enabled: Boolean(h.button.enabled),
+        text: h.button.text || "Show Article",
+        url: h.button.url || "",
+        jsFunction: h.button.jsFunction || ""
+      } : {
+        enabled: false,
+        text: "Show Article",
+        url: "",
+        jsFunction: ""
+      };
+
+      let sections = [];
+      if (Array.isArray(h.sections) && h.sections.length > 0) {
+        sections = h.sections.map((s, sIdx) => {
+          const sItems = Array.isArray(s.listItems) ? s.listItems : (Array.isArray(s.items) ? s.items : []);
+          let sButtons = [];
+          if (Array.isArray(s.buttons)) {
+            sButtons = s.buttons.map((b) => ({
+              enabled: b.enabled !== undefined ? Boolean(b.enabled) : true,
+              text: b.text !== undefined ? String(b.text) : "Action",
+              url: b.url !== undefined ? String(b.url) : "",
+              jsFunction: b.jsFunction !== undefined ? String(b.jsFunction) : ""
+            }));
+          } else if (s.button && typeof s.button === "object") {
+            sButtons = [{
+              enabled: Boolean(s.button.enabled),
+              text: s.button.text || "Action",
+              url: s.button.url || "",
+              jsFunction: s.button.jsFunction || ""
+            }];
+          }
+
+          return {
+            id: s.id || `sec_${sIdx + 1}_${Date.now().toString(36)}`,
+            title: s.title || "",
+            description: s.description || "",
+            listItems: sItems.map((item) => String(item || "")),
+            buttons: sButtons
+          };
+        });
+      } else {
+        const legacyButtons = [];
+        if (Array.isArray(h.buttons) && h.buttons.length > 0) {
+          h.buttons.forEach((b) => {
+            legacyButtons.push({
+              enabled: b.enabled !== undefined ? Boolean(b.enabled) : true,
+              text: b.text || "Show Article",
+              url: b.url || "",
+              jsFunction: b.jsFunction || ""
+            });
+          });
+        } else if (legacyButton.enabled || legacyButton.url || legacyButton.jsFunction) {
+          legacyButtons.push(legacyButton);
+        }
+
+        if (h.description || rawList.length > 0 || legacyButtons.length > 0) {
+          sections = [
+            {
+              id: `sec_1_${Date.now().toString(36)}`,
+              title: "",
+              description: h.description || "",
+              listItems: rawList.map((item) => String(item || "")),
+              buttons: legacyButtons
+            }
+          ];
+        }
+      }
+
       const hotspot = {
         id: h.id || ("hotspot_" + Math.random().toString(36).slice(2)),
         title: h.title ?? "",
+        description: h.description ?? "",
         visible: Boolean(h.visible !== false),
         locked: Boolean(h.locked),
-        sections: Array.isArray(h.sections) ? h.sections.map(sec => ({
-          description: sec.description ?? "",
-          listItems: Array.isArray(sec.listItems) ? sec.listItems.map(item => String(item || "")) : [],
-          buttons: Array.isArray(sec.buttons) ? sec.buttons.map(b => ({
-            enabled: Boolean(b.enabled),
-            text: b.text || "Show Article",
-            url: b.url || "",
-            jsFunction: b.jsFunction || ""
-          })) : []
-        })) : [],
+        listItems: rawList.map((item) => String(item || "")),
+        button: legacyButton,
+        sections,
         position: Array.isArray(h.position)
           ? [Number(h.position[0]) || 0, Number(h.position[1]) || 0, Number(h.position[2]) || 0]
           : [0, 0, 0],
@@ -520,6 +584,18 @@ function serializeSceneDocument() {
       },
       hotspots: {
         panelColor: state.sceneSettings?.hotspots?.panelColor || "rgba(30, 30, 36, 0.95)",
+        titleFontColor: state.sceneSettings?.hotspots?.titleFontColor || "#ffffff",
+        titleFontSize: Number(state.sceneSettings?.hotspots?.titleFontSize || 14),
+        descFontColor: state.sceneSettings?.hotspots?.descFontColor || "#e0e0e0",
+        descFontSize: Number(state.sceneSettings?.hotspots?.descFontSize || 12.5),
+        listFontColor: state.sceneSettings?.hotspots?.listFontColor || "#cccccc",
+        listFontSize: Number(state.sceneSettings?.hotspots?.listFontSize || 11),
+        btnFontColor: state.sceneSettings?.hotspots?.btnFontColor || "#ffffff",
+        btnFontSize: Number(state.sceneSettings?.hotspots?.btnFontSize || 11),
+        btnBgColor: state.sceneSettings?.hotspots?.btnBgColor || "rgba(68, 214, 44, 0.28)",
+        btnPaddingV: Number(state.sceneSettings?.hotspots?.btnPaddingV || 5),
+        btnPaddingH: Number(state.sceneSettings?.hotspots?.btnPaddingH || 12),
+        btnMargin: Number(state.sceneSettings?.hotspots?.btnMargin || 5),
         pulseAnimation: state.sceneSettings?.hotspots?.pulseAnimation !== false,
         theme: state.sceneSettings?.hotspots?.theme || "default",
         occlusionTolerance: typeof state.sceneSettings?.hotspots?.occlusionTolerance === "number" ? state.sceneSettings.hotspots.occlusionTolerance : 0.08
@@ -532,26 +608,45 @@ function serializeSceneDocument() {
         simulatorUrl: state.sceneSettings?.controls?.simulatorUrl || ""
       }
     },
-    hotspots: state.hotspots.map((h) => ({
-      id: h.id,
-      title: h.title,
-      visible: Boolean(h.visible !== false),
-      locked: Boolean(h.locked),
-      sections: Array.isArray(h.sections) ? h.sections.map(sec => ({
-        description: sec.description,
-        listItems: Array.isArray(sec.listItems) ? [...sec.listItems] : [],
-        buttons: Array.isArray(sec.buttons) ? sec.buttons.map(b => ({
-          enabled: Boolean(b.enabled),
-          text: b.text || "Show Article",
+    hotspots: state.hotspots.map((h) => {
+      const sections = Array.isArray(h.sections) ? h.sections.map((s) => ({
+        id: s.id,
+        title: s.title || "",
+        description: s.description || "",
+        listItems: Array.isArray(s.listItems) ? [...s.listItems] : [],
+        buttons: Array.isArray(s.buttons) ? s.buttons.map((b) => ({
+          enabled: b.enabled !== false,
+          text: b.text || "Action",
           url: b.url || "",
           jsFunction: b.jsFunction || ""
         })) : []
-      })) : [],
-      position: h.position,
-      panelOffset: h.panelOffset,
-      ...(h.color ? { color: h.color } : {}),
-      ...(h.cameraViewpointId ? { cameraViewpointId: h.cameraViewpointId } : {})
-    })),
+      })) : [];
+
+      return {
+        id: h.id,
+        title: h.title,
+        description: h.description,
+        visible: Boolean(h.visible !== false),
+        locked: Boolean(h.locked),
+        sections,
+        listItems: Array.isArray(h.listItems) ? [...h.listItems] : [],
+        button: h.button ? {
+          enabled: Boolean(h.button.enabled),
+          text: h.button.text || "Show Article",
+          url: h.button.url || "",
+          jsFunction: h.button.jsFunction || ""
+        } : {
+          enabled: false,
+          text: "Show Article",
+          url: "",
+          jsFunction: ""
+        },
+        position: h.position,
+        panelOffset: h.panelOffset,
+        ...(h.color ? { color: h.color } : {}),
+        ...(h.cameraViewpointId ? { cameraViewpointId: h.cameraViewpointId } : {})
+      };
+    }),
   };
 }
 

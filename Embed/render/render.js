@@ -4,10 +4,10 @@
  */
 
 import * as THREE from "three";
-import { CameraRig } from "../shared/CameraRig.js";
+import { CameraRig } from "../../shared/CameraRig.js";
 import { state } from "../state/state.js";
-import { createEnvironmentManager } from "../shared/environment.js";
-import { createBloomManager } from "../shared/bloom.js";
+import { createEnvironmentManager } from "../../shared/environment.js";
+import { createBloomManager } from "../../shared/bloom.js";
 
 /**
  * Initializes the Viewer WebGL renderer, scene, camera, and CameraRig

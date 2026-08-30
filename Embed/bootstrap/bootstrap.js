@@ -10,7 +10,7 @@ import { initializeViewerLights } from "../lights/lights.js";
 import { loadViewerModel, loadViewerSceneJson } from "../loading/loader.js";
 import { updateHotspotVisibility } from "../visibility/visibility.js";
 import { updateOverlayPositions } from "../overlay/overlay.js";
-import { sanitizeAssetUrl } from "../shared/schema.js";
+import { sanitizeAssetUrl } from "../../shared/schema.js";
 import {
   initializeViewerHUD,
   resetViewerCamera,

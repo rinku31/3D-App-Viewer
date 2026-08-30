@@ -403,7 +403,7 @@ function handleTreeSelection(type, itemId) {
 
   if (type === "scene") {
     select("scene", state.scene);
-    showSidebarTab("scene");
+    showSidebarTab("settings");
   } else if (type === "model") {
     select("model", state.currentModel);
     showSidebarTab("scene");

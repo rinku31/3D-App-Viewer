@@ -140,6 +140,12 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
         descFontSize: 12.5,
         listFontColor: "#cccccc",
         listFontSize: 11,
+        btnFontColor: "#ffffff",
+        btnFontSize: 11,
+        btnBgColor: "rgba(68, 214, 44, 0.28)",
+        btnPaddingV: 5,
+        btnPaddingH: 12,
+        btnMargin: 5,
         pulseAnimation: true,
         theme: "default",
         occlusionTolerance: 0.08
@@ -347,6 +353,12 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       descFontSize: typeof raw.settings?.hotspots?.descFontSize === "number" ? raw.settings.hotspots.descFontSize : (typeof raw.settings?.hotspots?.fontSize === "number" ? raw.settings.hotspots.fontSize - 1.5 : (base.settings.hotspots?.descFontSize || 12.5)),
       listFontColor: raw.settings?.hotspots?.listFontColor || raw.settings?.hotspots?.fontColor || base.settings.hotspots?.listFontColor || "#cccccc",
       listFontSize: typeof raw.settings?.hotspots?.listFontSize === "number" ? raw.settings.hotspots.listFontSize : (typeof raw.settings?.hotspots?.fontSize === "number" ? raw.settings.hotspots.fontSize - 3 : (base.settings.hotspots?.listFontSize || 11)),
+      btnFontColor: raw.settings?.hotspots?.btnFontColor || base.settings.hotspots?.btnFontColor || "#ffffff",
+      btnFontSize: typeof raw.settings?.hotspots?.btnFontSize === "number" ? raw.settings.hotspots.btnFontSize : (base.settings.hotspots?.btnFontSize || 11),
+      btnBgColor: raw.settings?.hotspots?.btnBgColor || base.settings.hotspots?.btnBgColor || "rgba(68, 214, 44, 0.28)",
+      btnPaddingV: typeof raw.settings?.hotspots?.btnPaddingV === "number" ? raw.settings.hotspots.btnPaddingV : (base.settings.hotspots?.btnPaddingV || 5),
+      btnPaddingH: typeof raw.settings?.hotspots?.btnPaddingH === "number" ? raw.settings.hotspots.btnPaddingH : (base.settings.hotspots?.btnPaddingH || 12),
+      btnMargin: typeof raw.settings?.hotspots?.btnMargin === "number" ? raw.settings.hotspots.btnMargin : (base.settings.hotspots?.btnMargin || 5),
       ...(raw.settings?.hotspots || {})
     },
     controls: {
@@ -371,56 +383,87 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       const rawItems = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
       const listItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
 
-      const buttons = [];
-      if (Array.isArray(h.buttons)) {
-        h.buttons.forEach(btn => {
-          buttons.push({
-            enabled: Boolean(btn.enabled),
-            text: btn.text !== undefined ? String(btn.text) : "Show Article",
-            url: btn.url !== undefined ? String(btn.url) : "",
-            jsFunction: btn.jsFunction !== undefined ? String(btn.jsFunction) : ""
-          });
-        });
-      } else if (h.button && typeof h.button === "object" && h.button.enabled) {
-        buttons.push({
-          enabled: Boolean(h.button.enabled),
-          text: h.button.text !== undefined ? String(h.button.text) : "Show Article",
-          url: h.button.url !== undefined ? String(h.button.url) : "",
-          jsFunction: h.button.jsFunction !== undefined ? String(h.button.jsFunction) : ""
-        });
-      }
+      const legacyButton = h.button && typeof h.button === "object" ? {
+        enabled: Boolean(h.button.enabled),
+        text: h.button.text !== undefined ? String(h.button.text) : "Show Article",
+        url: h.button.url !== undefined ? String(h.button.url) : "",
+        jsFunction: h.button.jsFunction !== undefined ? String(h.button.jsFunction) : ""
+      } : {
+        enabled: false,
+        text: "Show Article",
+        url: "",
+        jsFunction: ""
+      };
 
       let sections = [];
       if (Array.isArray(h.sections) && h.sections.length > 0) {
-        sections = h.sections.map(sec => {
-          const secItems = Array.isArray(sec.listItems) ? sec.listItems.map(i => String(i || "").trim()).filter(Boolean) : [];
-          const secButtons = Array.isArray(sec.buttons) ? sec.buttons.map(b => ({
-            enabled: Boolean(b.enabled),
-            text: b.text !== undefined ? String(b.text) : "Show Article",
-            url: b.url !== undefined ? String(b.url) : "",
-            jsFunction: b.jsFunction !== undefined ? String(b.jsFunction) : ""
-          })) : [];
+        sections = h.sections.map((s, sIdx) => {
+          const sItems = Array.isArray(s.listItems) ? s.listItems : (Array.isArray(s.items) ? s.items : []);
+          const validSectionItems = sItems.map((item) => String(item || "").trim()).filter(Boolean);
+
+          let sectionButtons = [];
+          if (Array.isArray(s.buttons)) {
+            sectionButtons = s.buttons.map((b) => ({
+              enabled: b.enabled !== undefined ? Boolean(b.enabled) : true,
+              text: b.text !== undefined ? String(b.text) : "Action",
+              url: b.url !== undefined ? String(b.url) : "",
+              jsFunction: b.jsFunction !== undefined ? String(b.jsFunction) : ""
+            }));
+          } else if (s.button && typeof s.button === "object") {
+            sectionButtons = [{
+              enabled: Boolean(s.button.enabled),
+              text: s.button.text !== undefined ? String(s.button.text) : "Action",
+              url: s.button.url !== undefined ? String(s.button.url) : "",
+              jsFunction: s.button.jsFunction !== undefined ? String(s.button.jsFunction) : ""
+            }];
+          }
+
           return {
-            description: sec.description !== undefined ? String(sec.description) : "",
-            listItems: secItems,
-            buttons: secButtons
+            id: s.id || `sec_${idx + 1}_${sIdx + 1}_${Date.now().toString(36)}`,
+            title: s.title !== undefined ? String(s.title) : "",
+            description: s.description !== undefined ? String(s.description) : "",
+            listItems: validSectionItems,
+            buttons: sectionButtons
           };
         });
-      } else if (h.description || listItems.length > 0 || buttons.length > 0) {
-        // Migrate legacy flat structure into a single section
-        sections.push({
-          description: h.description !== undefined ? String(h.description) : "",
-          listItems: listItems,
-          buttons: buttons
-        });
+      } else {
+        // Fallback/Legacy migration: construct a single section from top-level description, listItems, and button
+        const legacyButtons = [];
+        if (Array.isArray(h.buttons) && h.buttons.length > 0) {
+          h.buttons.forEach((b) => {
+            legacyButtons.push({
+              enabled: b.enabled !== undefined ? Boolean(b.enabled) : true,
+              text: b.text !== undefined ? String(b.text) : "Show Article",
+              url: b.url !== undefined ? String(b.url) : "",
+              jsFunction: b.jsFunction !== undefined ? String(b.jsFunction) : ""
+            });
+          });
+        } else if (legacyButton.enabled || legacyButton.url || legacyButton.jsFunction) {
+          legacyButtons.push(legacyButton);
+        }
+
+        if (h.description || listItems.length > 0 || legacyButtons.length > 0) {
+          sections = [
+            {
+              id: `sec_${idx + 1}_1`,
+              title: "",
+              description: h.description !== undefined ? String(h.description) : "",
+              listItems: listItems,
+              buttons: legacyButtons
+            }
+          ];
+        }
       }
 
       return {
         id: h.id || `hotspot_${Date.now()}_${idx}`,
         title: h.title !== undefined ? String(h.title) : "",
+        description: h.description !== undefined ? String(h.description) : "",
         position: [posX, posY, posZ],
         panelOffset: { x: panelX, y: panelY },
-        sections: sections,
+        listItems,
+        button: legacyButton,
+        sections,
         ...(h.color ? { color: h.color } : {}),
         ...(h.cameraViewpointId ? { cameraViewpointId: h.cameraViewpointId } : {})
       };

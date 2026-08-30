@@ -9,14 +9,23 @@ function createHotspot(point){
   const hotspot = {
     id: "hotspot_" + Date.now(),
     title: "New Hotspot",
-    description: "Description",
-    listItems: [],
-    button: {
-      enabled: false,
-      text: "Show Article",
-      url: "",
-      jsFunction: ""
-    },
+    description: "",
+    sections: [
+      {
+        id: "sec_" + Date.now(),
+        title: "",
+        description: "Hotspot description and overview.",
+        listItems: ["Key feature highlight 1", "Key feature highlight 2"],
+        buttons: [
+          {
+            enabled: true,
+            text: "Learn More",
+            url: "",
+            jsFunction: ""
+          }
+        ]
+      }
+    ],
     position: [
       point.x,
       point.y,
@@ -84,34 +93,182 @@ function updatePanelHTML(h, panel){
   const descFontSize = Number(state.sceneSettings?.hotspots?.descFontSize || 12.5);
   const listFontColor = state.sceneSettings?.hotspots?.listFontColor || "#cccccc";
   const listFontSize = Number(state.sceneSettings?.hotspots?.listFontSize || 11);
+  const btnBgColor = state.sceneSettings?.hotspots?.btnBgColor || "rgba(68, 214, 44, 0.28)";
+  const btnFontColor = state.sceneSettings?.hotspots?.btnFontColor || "#ffffff";
+  const btnFontSize = Number(state.sceneSettings?.hotspots?.btnFontSize || 11);
+  const btnPaddingV = Number(state.sceneSettings?.hotspots?.btnPaddingV || 5);
+  const btnPaddingH = Number(state.sceneSettings?.hotspots?.btnPaddingH || 12);
+  const btnMargin = Number(state.sceneSettings?.hotspots?.btnMargin || 5);
 
-  const title = document.createElement("div");
-  title.className = "panel-title";
-  title.style.fontWeight = "bold";
-  title.style.fontSize = `${titleFontSize}px`;
-  title.style.color = titleFontColor;
-  title.style.marginBottom = "5px";
-  title.textContent = h.title || "";
-  children.push(title);
+  // Main Hotspot Title
+  if (h.title) {
+    const title = document.createElement("div");
+    title.className = "panel-title";
+    title.style.fontWeight = "bold";
+    title.style.fontSize = `${titleFontSize}px`;
+    title.style.color = titleFontColor;
+    title.style.marginBottom = "6px";
+    title.textContent = h.title || "";
+    children.push(title);
+  }
 
-  const sections = Array.isArray(h.sections) ? h.sections : [];
+  // Get paragraphs list
+  const paragraphs = Array.isArray(h.paragraphs) ? h.paragraphs : (Array.isArray(h.sections) ? h.sections : []);
 
-  sections.forEach((sec, secIdx) => {
-    const secContainer = document.createElement("div");
-    secContainer.className = "panel-section-block";
-    secContainer.style.marginTop = secIdx > 0 ? "12px" : "8px";
+  // Top-level description fallback if no paragraphs exist
+  if (paragraphs.length === 0 && h.description) {
+    const description = document.createElement("div");
+    description.className = "panel-desc";
+    description.style.fontSize = `${descFontSize}px`;
+    description.style.color = descFontColor;
+    description.style.marginBottom = "4px";
+    description.style.lineHeight = "1.45";
+    description.textContent = h.description;
+    children.push(description);
+  }
 
-    if (sec.description) {
-      const description = document.createElement("div");
-      description.className = "panel-desc";
-      description.style.fontSize = `${descFontSize}px`;
-      description.style.color = descFontColor;
-      description.style.marginBottom = "6px";
-      description.textContent = sec.description;
-      secContainer.appendChild(description);
-    }
+  // Render Paragraphs smoothly without horizontal lines
+  if (paragraphs.length > 0) {
+    paragraphs.forEach((para, pIdx) => {
+      const paraContainer = document.createElement("div");
+      paraContainer.className = "panel-paragraph";
+      paraContainer.style.border = "none";
+      if (pIdx > 0 || (children.length > 0 && (para.text || para.description))) {
+        paraContainer.style.marginTop = "6px";
+      }
 
-    const rawItems = Array.isArray(sec.listItems) ? sec.listItems : (Array.isArray(sec.items) ? sec.items : []);
+      // Paragraph Text
+      const text = para.text !== undefined ? para.text : (para.description !== undefined ? para.description : "");
+      if (text) {
+        const paraText = document.createElement("div");
+        paraText.className = "panel-desc";
+        paraText.style.fontSize = `${descFontSize}px`;
+        paraText.style.color = descFontColor;
+        paraText.style.lineHeight = "1.45";
+        paraText.style.marginBottom = "4px";
+        paraText.textContent = text;
+        paraContainer.appendChild(paraText);
+      }
+
+      // Paragraph List items
+      const rawList = Array.isArray(para.listItems) ? para.listItems : (Array.isArray(para.items) ? para.items : []);
+      const validItems = rawList.map((item) => String(item || "").trim()).filter(Boolean);
+
+      if (validItems.length > 0) {
+        const ul = document.createElement("ul");
+        ul.className = "panel-list";
+        ul.style.margin = "4px 0 0 0";
+        ul.style.padding = "0 0 0 16px";
+        ul.style.listStyle = "none";
+        ul.style.listStyleType = "none";
+        ul.style.display = "flex";
+        ul.style.flexDirection = "column";
+        ul.style.gap = "4px";
+
+        validItems.forEach((itemText) => {
+          const li = document.createElement("li");
+          li.className = "panel-list-item";
+          li.style.listStyle = "none";
+          li.style.listStyleType = "none";
+          li.style.padding = "0";
+          li.style.margin = "0";
+          li.style.fontSize = `${listFontSize}px`;
+          li.style.color = listFontColor;
+          li.style.lineHeight = "1.4";
+          li.textContent = itemText;
+          ul.appendChild(li);
+        });
+
+        paraContainer.appendChild(ul);
+      }
+
+      // Paragraph Action Buttons
+      const buttons = Array.isArray(para.buttons) ? para.buttons : (para.button ? [para.button] : []);
+      const enabledButtons = buttons.filter((b) => b && b.enabled !== false);
+
+      if (enabledButtons.length > 0) {
+        const btnGroup = document.createElement("div");
+        btnGroup.className = "panel-btn-group";
+        btnGroup.style.display = "flex";
+        btnGroup.style.flexDirection = "column";
+        btnGroup.style.alignItems = "flex-end";
+        btnGroup.style.gap = `${btnMargin}px`;
+        btnGroup.style.marginTop = `${btnMargin}px`;
+
+        enabledButtons.forEach((btnData) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "panel-btn";
+          btn.textContent = btnData.text || "Action";
+          btn.style.display = "inline-flex";
+          btn.style.alignSelf = "flex-end";
+          btn.style.alignItems = "center";
+          btn.style.justifyContent = "center";
+          btn.style.gap = "5px";
+          btn.style.width = "auto";
+          btn.style.padding = `${btnPaddingV}px ${btnPaddingH}px`;
+          btn.style.fontSize = `${btnFontSize}px`;
+          btn.style.fontWeight = "600";
+          btn.style.borderRadius = "5px";
+          btn.style.border = "1px solid rgba(255,255,255,0.18)";
+          btn.style.background = btnBgColor;
+          btn.style.color = btnFontColor;
+          btn.style.whiteSpace = "nowrap";
+          btn.style.cursor = "pointer";
+          btn.style.pointerEvents = "auto";
+          btn.style.transition = "all 0.2s ease";
+
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const url = (btnData.url || "").trim();
+            const funcName = (btnData.jsFunction || "").trim();
+
+            if (url) {
+              try {
+                window.open(url, "_blank", "noopener,noreferrer");
+              } catch (_) {}
+            }
+
+            if (funcName) {
+              try {
+                if (window.parent && typeof window.parent[funcName] === "function") {
+                  window.parent[funcName](h, btnData);
+                } else if (typeof window[funcName] === "function") {
+                  window[funcName](h, btnData);
+                }
+
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: "HOTSPOT_BUTTON_CLICK",
+                    functionName: funcName,
+                    button: {
+                      text: btnData.text,
+                      url: btnData.url,
+                      jsFunction: btnData.jsFunction
+                    },
+                    hotspot: {
+                      id: h.id,
+                      title: h.title,
+                      description: h.description,
+                      position: h.position
+                    }
+                  }, "*");
+                }
+              } catch (_) {}
+            }
+          });
+
+          btnGroup.appendChild(btn);
+        });
+
+        paraContainer.appendChild(btnGroup);
+      }
+
+      children.push(paraContainer);
+    });
+  } else {
+    // Legacy single-section rendering if no sections defined
+    const rawItems = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
     const validItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
 
     if (validItems.length > 0) {
@@ -139,90 +296,69 @@ function updatePanelHTML(h, panel){
         ul.appendChild(li);
       });
 
-      secContainer.appendChild(ul);
+      children.push(ul);
     }
 
-    const buttons = Array.isArray(sec.buttons) ? sec.buttons : [];
+    if (h.button && h.button.enabled) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "panel-btn";
+      btn.textContent = h.button.text || "Show Article";
+      btn.style.marginTop = "10px";
+      btn.style.display = "inline-flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "center";
+      btn.style.gap = "6px";
+      btn.style.width = "100%";
+      btn.style.padding = "7px 12px";
+      btn.style.fontSize = "0.8rem";
+      btn.style.fontWeight = "600";
+      btn.style.borderRadius = "6px";
+      btn.style.border = "1px solid rgba(255,255,255,0.2)";
+      btn.style.background = "rgba(68, 214, 44, 0.25)";
+      btn.style.color = "#ffffff";
+      btn.style.cursor = "pointer";
+      btn.style.pointerEvents = "auto";
+      btn.style.transition = "all 0.2s ease";
 
-    if (buttons.length > 0) {
-      const btnContainer = document.createElement("div");
-      btnContainer.style.display = "flex";
-      btnContainer.style.flexDirection = "column";
-      btnContainer.style.alignItems = "flex-end";
-      btnContainer.style.gap = "6px";
-      btnContainer.style.marginTop = "12px";
-      btnContainer.style.width = "100%";
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const url = (h.button?.url || "").trim();
+        const funcName = (h.button?.jsFunction || "").trim();
 
-      buttons.forEach((bData) => {
-        if (!bData.enabled) return;
+        if (url) {
+          try {
+            window.open(url, "_blank", "noopener,noreferrer");
+          } catch (_) {}
+        }
 
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "panel-btn";
-        btn.textContent = bData.text || "Show Article";
-        btn.style.display = "inline-flex";
-        btn.style.alignItems = "center";
-        btn.style.justifyContent = "center";
-        btn.style.gap = "6px";
-        btn.style.width = "auto";
-        btn.style.padding = "5px 10px";
-        btn.style.fontSize = "0.7rem";
-        btn.style.fontWeight = "600";
-        btn.style.borderRadius = "4px";
-        btn.style.border = "1px solid rgba(255,255,255,0.2)";
-        btn.style.background = "rgba(68, 214, 44, 0.25)";
-        btn.style.color = "#ffffff";
-        btn.style.cursor = "pointer";
-        btn.style.pointerEvents = "auto";
-        btn.style.transition = "all 0.2s ease";
+        if (funcName) {
+          try {
+            if (window.parent && typeof window.parent[funcName] === "function") {
+              window.parent[funcName](h);
+            } else if (typeof window[funcName] === "function") {
+              window[funcName](h);
+            }
 
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const url = (bData.url || "").trim();
-          const funcName = (bData.jsFunction || "").trim();
-
-          if (url) {
-            try {
-              window.open(url, "_blank", "noopener,noreferrer");
-            } catch (_) {}
-          }
-
-          if (funcName) {
-            try {
-              if (window.parent && typeof window.parent[funcName] === "function") {
-                window.parent[funcName](h);
-              } else if (typeof window[funcName] === "function") {
-                window[funcName](h);
-              }
-
-              if (window.parent && window.parent !== window) {
-                window.parent.postMessage({
-                  type: "HOTSPOT_BUTTON_CLICK",
-                  functionName: funcName,
-                  hotspot: {
-                    id: h.id,
-                    title: h.title,
-                    description: sec.description,
-                    position: h.position
-                  }
-                }, "*");
-              }
-            } catch (_) {}
-          }
-        });
-
-        btnContainer.appendChild(btn);
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({
+                type: "HOTSPOT_BUTTON_CLICK",
+                functionName: funcName,
+                hotspot: {
+                  id: h.id,
+                  title: h.title,
+                  description: h.description,
+                  position: h.position
+                }
+              }, "*");
+            }
+          } catch (_) {}
+        }
       });
 
-      if (btnContainer.children.length > 0) {
-        secContainer.appendChild(btnContainer);
-      }
+      children.push(btn);
     }
-
-    if (secContainer.children.length > 0) {
-      children.push(secContainer);
-    }
-  });
+  }
 
   panel.replaceChildren(...children);
 }

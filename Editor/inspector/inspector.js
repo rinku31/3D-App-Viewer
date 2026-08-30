@@ -255,10 +255,34 @@ function buildModelInspector(model) {
 
 function buildHotspotInspector(hotspot) {
   const pos = new THREE.Vector3(hotspot.position[0], hotspot.position[1], hotspot.position[2]);
-  const sections = Array.isArray(hotspot.sections) ? hotspot.sections : [];
+  
+  if (!Array.isArray(hotspot.paragraphs)) {
+    if (Array.isArray(hotspot.sections)) {
+      hotspot.paragraphs = hotspot.sections;
+    } else {
+      hotspot.paragraphs = [];
+      if (hotspot.description || (hotspot.listItems && hotspot.listItems.length > 0) || (hotspot.button && hotspot.button.enabled)) {
+        hotspot.paragraphs.push({
+          id: "para_" + Date.now(),
+          text: hotspot.description || "",
+          listItems: Array.isArray(hotspot.listItems) ? [...hotspot.listItems] : [],
+          buttons: hotspot.button ? [{
+            enabled: Boolean(hotspot.button.enabled),
+            text: hotspot.button.text || "Show Article",
+            url: hotspot.button.url || "",
+            jsFunction: hotspot.button.jsFunction || ""
+          }] : []
+        });
+      }
+    }
+  }
+
+  hotspot.sections = hotspot.paragraphs;
+  const paragraphs = hotspot.paragraphs;
 
   return `
     ${buildHeader("HOTSPOT", hotspot.title || "Hotspot", true)}
+
     <div class="section">
       <label>Title</label>
       <input id="prop_hotspot_title" type="text" value="${escapeHTML(hotspot.title)}" placeholder="Hotspot Title">
@@ -266,69 +290,81 @@ function buildHotspotInspector(hotspot) {
 
     <div class="section-group">
       <div class="section-group-title" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Hotspot Sections</span>
-        <button id="btnAddHotspotSection" class="secondary" style="font-size:10px; padding:2px 6px;">+ Add Section</button>
+        <span>Hotspot Paragraphs (${paragraphs.length})</span>
+        <button id="btnAddHotspotParagraph" class="secondary" style="font-size:10px; padding:3px 8px; cursor:pointer;">+ Add Paragraph</button>
       </div>
 
-      <div id="hotspot_sections_container" style="display:flex; flex-direction:column; gap:16px; margin-top:10px;">
-        ${sections.length === 0 ? `
-          <div style="font-size:11px; color:var(--text-dim, #888); font-style:italic; padding:4px 0;">No sections. Click "+ Add Section" to add content blocks.</div>
-        ` : sections.map((sec, secIdx) => `
-          <div class="hotspot-section-card" style="background:var(--bg-panel, #1e1e24); padding:10px; border:1px solid var(--border, #333); border-radius:6px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05);">
-              <label style="font-size:11px; font-weight:bold; color:var(--text-bright, #fff);">Section ${secIdx + 1}</label>
-              <button class="delete-btn btn-delete-hotspot-section" data-sec-idx="${secIdx}" title="Remove section" style="padding:2px 6px; font-size:11px;">&#128465;</button>
-            </div>
-            
-            <div class="param-row" style="margin-bottom:12px;">
-              <label style="font-size:10px; color:var(--text-dim, #aaa);">Description</label>
-              <textarea class="hotspot-sec-desc-input" data-sec-idx="${secIdx}" rows="2" placeholder="Description text" style="font-size:11px; padding:6px; width:100%; box-sizing:border-box;">${escapeHTML(sec.description || "")}</textarea>
-            </div>
-
-            <div class="sub-section" style="margin-bottom:12px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:10px; color:var(--text-dim, #aaa);">List Items</span>
-                <button class="secondary btn-add-list-item" data-sec-idx="${secIdx}" style="font-size:9px; padding:2px 4px;">+ Item</button>
-              </div>
-              <div style="display:flex; flex-direction:column; gap:4px;">
-                ${(!sec.listItems || sec.listItems.length === 0) ? `
-                  <div style="font-size:10px; color:var(--text-dim, #666); font-style:italic;">No items</div>
-                ` : sec.listItems.map((item, itemIdx) => `
-                  <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:10px; color:var(--accent, #44D62C);">&bull;</span>
-                    <input type="text" class="hotspot-list-item-input" data-sec-idx="${secIdx}" data-item-idx="${itemIdx}" value="${escapeHTML(item)}" placeholder="List item..." style="flex:1; font-size:10px; padding:3px 5px;">
-                    <button class="delete-btn btn-delete-list-item" data-sec-idx="${secIdx}" data-item-idx="${itemIdx}" title="Remove item" style="padding:1px 4px; font-size:10px;">&times;</button>
-                  </div>
-                `).join("")}
-              </div>
-            </div>
-
-            <div class="sub-section">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:10px; color:var(--text-dim, #aaa);">Action Buttons</span>
-                <button class="secondary btn-add-action-button" data-sec-idx="${secIdx}" style="font-size:9px; padding:2px 4px;">+ Button</button>
-              </div>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                ${(!sec.buttons || sec.buttons.length === 0) ? `
-                  <div style="font-size:10px; color:var(--text-dim, #666); font-style:italic;">No buttons</div>
-                ` : sec.buttons.map((btn, btnIdx) => `
-                  <div style="background:rgba(0,0,0,0.2); padding:6px; border:1px solid rgba(255,255,255,0.05); border-radius:4px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                      <span style="font-size:9px; font-weight:bold;">Button ${btnIdx + 1}</span>
-                      <button class="delete-btn btn-delete-action-button" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" title="Remove button" style="padding:1px 4px; font-size:9px;">&times;</button>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                      <input type="text" class="hotspot-btn-text-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.text || "")}" placeholder="Text" style="font-size:10px; padding:3px 5px;">
-                      <input type="url" class="hotspot-btn-url-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.url || "")}" placeholder="URL (optional)" style="font-size:10px; padding:3px 5px;">
-                      <input type="text" class="hotspot-btn-fn-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.jsFunction || "")}" placeholder="JS Function (optional)" style="font-size:10px; padding:3px 5px;">
-                    </div>
-                  </div>
-                `).join("")}
-              </div>
-            </div>
-
+      <div id="hotspot_paragraphs_container" style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+        ${paragraphs.length === 0 ? `
+          <div style="font-size:11px; color:var(--text-dim, #888); font-style:italic; padding:8px 0; text-align:center; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.12); border-radius:6px;">
+            No paragraphs yet. Click "+ Add Paragraph" to add content.
           </div>
-        `).join("")}
+        ` : paragraphs.map((p, pIdx) => {
+          const pList = Array.isArray(p.listItems) ? p.listItems : [];
+          const pBtns = Array.isArray(p.buttons) ? p.buttons : (p.button ? [p.button] : []);
+          const pText = p.text !== undefined ? p.text : (p.description !== undefined ? p.description : "");
+
+          return `
+            <div class="hotspot-paragraph-card" data-para-idx="${pIdx}" style="background:rgba(25, 25, 30, 0.7); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:var(--accent, #44D62C); text-transform:uppercase; letter-spacing:0.5px;">Paragraph ${pIdx + 1}</span>
+                <button class="delete-btn btn-delete-paragraph" data-para-idx="${pIdx}" title="Delete Paragraph" style="padding:2px 6px; font-size:11px;">&#128465;</button>
+              </div>
+
+              <div>
+                <label style="font-size:10.5px; color:var(--text-dim, #999); margin-bottom:2px; display:block;">Paragraph Text</label>
+                <textarea class="prop-para-text" data-para-idx="${pIdx}" rows="3" placeholder="Paragraph description text..." style="font-size:12px; padding:5px 8px; margin-bottom:0;">${escapeHTML(pText)}</textarea>
+              </div>
+
+              <!-- Paragraph List Items -->
+              <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.06); border-radius:4px; padding:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-size:10.5px; font-weight:600; color:#ddd;">List Items (${pList.length})</span>
+                  <button class="secondary btn-add-para-list-item" data-para-idx="${pIdx}" style="font-size:9.5px; padding:2px 6px;">+ Add Item</button>
+                </div>
+                <div class="para-list-items-container" data-para-idx="${pIdx}" style="display:flex; flex-direction:column; gap:4px;">
+                  ${pList.length === 0 ? `
+                    <div style="font-size:10px; color:var(--text-dim, #777); font-style:italic;">No list items in this paragraph.</div>
+                  ` : pList.map((item, iIdx) => `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span style="font-size:11px; color:var(--accent, #44D62C);">&bull;</span>
+                      <input type="text" class="prop-para-list-item-input" data-para-idx="${pIdx}" data-item-idx="${iIdx}" value="${escapeHTML(item)}" placeholder="Bullet point item..." style="flex:1; font-size:11px; padding:4px 6px; margin:0;">
+                      <button class="delete-btn btn-delete-para-list-item" data-para-idx="${pIdx}" data-item-idx="${iIdx}" title="Remove item" style="padding:2px 5px; font-size:10px;">&#128465;</button>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+
+              <!-- Paragraph Action Buttons -->
+              <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.06); border-radius:4px; padding:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-size:10.5px; font-weight:600; color:#ddd;">Action Buttons (${pBtns.length})</span>
+                  <button class="secondary btn-add-para-btn" data-para-idx="${pIdx}" style="font-size:9.5px; padding:2px 6px;">+ Add Button</button>
+                </div>
+                <div class="para-buttons-container" data-para-idx="${pIdx}" style="display:flex; flex-direction:column; gap:6px;">
+                  ${pBtns.length === 0 ? `
+                    <div style="font-size:10px; color:var(--text-dim, #777); font-style:italic;">No action buttons in this paragraph.</div>
+                  ` : pBtns.map((b, bIdx) => `
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:4px; padding:6px; display:flex; flex-direction:column; gap:4px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="font-size:10.5px; display:flex; align-items:center; gap:4px; color:#eee; margin:0; cursor:pointer;">
+                          <input type="checkbox" class="prop-para-btn-enable" data-para-idx="${pIdx}" data-btn-idx="${bIdx}" ${b.enabled !== false ? 'checked' : ''} style="margin:0; width:auto;">
+                          <span>Enabled</span>
+                        </label>
+                        <button class="delete-btn btn-delete-para-btn" data-para-idx="${pIdx}" data-btn-idx="${bIdx}" title="Remove button" style="padding:1px 5px; font-size:10px;">&#128465;</button>
+                      </div>
+                      <div style="display:grid; grid-template-columns: 1fr; gap:4px;">
+                        <input type="text" class="prop-para-btn-text" data-para-idx="${pIdx}" data-btn-idx="${bIdx}" value="${escapeHTML(b.text || 'Action')}" placeholder="Button Label" style="font-size:11px; padding:3px 6px; margin:0;">
+                        <input type="url" class="prop-para-btn-url" data-para-idx="${pIdx}" data-btn-idx="${bIdx}" value="${escapeHTML(b.url || '')}" placeholder="Link URL (https://...)" style="font-size:11px; padding:3px 6px; margin:0;">
+                        <input type="text" class="prop-para-btn-fn" data-para-idx="${pIdx}" data-btn-idx="${bIdx}" value="${escapeHTML(b.jsFunction || '')}" placeholder="JS Function Name (optional)" style="font-size:11px; padding:3px 6px; margin:0;">
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
       </div>
     </div>
 
@@ -341,75 +377,6 @@ function buildHotspotInspector(hotspot) {
           <div class="vec-item"><span class="vec-label">X</span><input id="prop_panel_x" type="number" value="${Math.round(hotspot.panelOffset.x)}"></div>
           <div class="vec-item"><span class="vec-label">Y</span><input id="prop_panel_y" type="number" value="${Math.round(hotspot.panelOffset.y)}"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Hotspots &amp; Connector Line (Global)</div>
-
-      <div class="param-row-flex">
-        <label>Panel Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_panel_color" type="color" value="${(state.sceneSettings?.hotspots?.panelColor || '#1e1e24').startsWith('#') ? (state.sceneSettings?.hotspots?.panelColor || '#1e1e24') : '#1e1e24'}">
-          <input id="prop_hotspot_panel_color_text" type="text" value="${state.sceneSettings?.hotspots?.panelColor || 'rgba(30, 30, 35, 0.92)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row-flex">
-        <label>Title Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_title_font_color" type="color" value="${(state.sceneSettings?.hotspots?.titleFontColor || '#ffffff').startsWith('#') ? (state.sceneSettings?.hotspots?.titleFontColor || '#ffffff') : '#ffffff'}">
-          <input id="prop_hotspot_title_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.titleFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_hotspot_title_font_size">${state.sceneSettings?.hotspots?.titleFontSize || 14}</span></div>
-        <input id="prop_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="${state.sceneSettings?.hotspots?.titleFontSize || 14}">
-      </div>
-
-      <div class="param-row-flex">
-        <label>Description Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_desc_font_color" type="color" value="${(state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0').startsWith('#') ? (state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0') : '#e0e0e0'}">
-          <input id="prop_hotspot_desc_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.descFontColor || '#e0e0e0'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_hotspot_desc_font_size">${state.sceneSettings?.hotspots?.descFontSize || 12.5}</span></div>
-        <input id="prop_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="${state.sceneSettings?.hotspots?.descFontSize || 12.5}">
-      </div>
-
-      <div class="param-row-flex">
-        <label>List Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_list_font_color" type="color" value="${(state.sceneSettings?.hotspots?.listFontColor || '#cccccc').startsWith('#') ? (state.sceneSettings?.hotspots?.listFontColor || '#cccccc') : '#cccccc'}">
-          <input id="prop_hotspot_list_font_color_text" type="text" value="${state.sceneSettings?.hotspots?.listFontColor || '#cccccc'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_hotspot_list_font_size">${state.sceneSettings?.hotspots?.listFontSize || 11}</span></div>
-        <input id="prop_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="${state.sceneSettings?.hotspots?.listFontSize || 11}">
-      </div>
-
-      <div class="param-row">
-        <label>Connector Line Style</label>
-        <select id="prop_line_style" class="inspector-select">
-          <option value="dashed" ${(state.sceneSettings?.line?.style || 'dashed') === 'dashed' ? 'selected' : ''}>Broken / Dashed Line</option>
-          <option value="solid" ${state.sceneSettings?.line?.style === 'solid' ? 'selected' : ''}>Solid Line</option>
-        </select>
-      </div>
-
-      <div class="param-row-flex">
-        <label>Connector Line Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_line_color" type="color" value="${(state.sceneSettings?.line?.color || '#44D62C').startsWith('#') ? (state.sceneSettings?.line?.color || '#44D62C') : '#44D62C'}">
-          <input id="prop_line_color_text" type="text" value="${state.sceneSettings?.line?.color || '#44D62C'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_line_width">${Number(state.sceneSettings?.line?.width || 1.5).toFixed(1)}px</span></div>
-        <input id="prop_line_width" type="range" min="1" max="6" step="0.5" value="${state.sceneSettings?.line?.width || 1.5}">
       </div>
     </div>
   `;
@@ -920,6 +887,46 @@ function buildSceneInspector() {
         <input id="prop_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="${sceneSettings.hotspots?.listFontSize || 11}">
       </div>
 
+      <div class="param-row-flex" style="border-top:1px solid rgba(255,255,255,0.08); margin-top:8px; padding-top:8px;">
+        <label>Button Background Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_btn_bg_color" type="color" value="${(sceneSettings.hotspots?.btnBgColor || '#44D62C').startsWith('#') ? (sceneSettings.hotspots?.btnBgColor || '#44D62C') : '#44D62C'}">
+          <input id="prop_hotspot_btn_bg_color_text" type="text" value="${sceneSettings.hotspots?.btnBgColor || 'rgba(68, 214, 44, 0.28)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row-flex">
+        <label>Button Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="prop_hotspot_btn_font_color" type="color" value="${(sceneSettings.hotspots?.btnFontColor || '#ffffff').startsWith('#') ? (sceneSettings.hotspots?.btnFontColor || '#ffffff') : '#ffffff'}">
+          <input id="prop_hotspot_btn_font_color_text" type="text" value="${sceneSettings.hotspots?.btnFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Font Size (px)</label><span class="value-badge" id="val_hotspot_btn_font_size">${sceneSettings.hotspots?.btnFontSize || 11}</span></div>
+        <input id="prop_hotspot_btn_font_size" type="range" min="8" max="18" step="0.5" value="${sceneSettings.hotspots?.btnFontSize || 11}">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Padding (Vertical / Horizontal)</label><span class="value-badge" id="val_hotspot_btn_padding">${sceneSettings.hotspots?.btnPaddingV || 5}px / ${sceneSettings.hotspots?.btnPaddingH || 12}px</span></div>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; display:flex; align-items:center; gap:4px;">
+            <span style="font-size:10px; color:var(--text-dim, #888);">V:</span>
+            <input id="prop_hotspot_btn_padding_v" type="number" min="1" max="24" step="1" value="${sceneSettings.hotspots?.btnPaddingV || 5}" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+          </div>
+          <div style="flex:1; display:flex; align-items:center; gap:4px;">
+            <span style="font-size:10px; color:var(--text-dim, #888);">H:</span>
+            <input id="prop_hotspot_btn_padding_h" type="number" min="1" max="36" step="1" value="${sceneSettings.hotspots?.btnPaddingH || 12}" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+          </div>
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Margin / Spacing (px)</label><span class="value-badge" id="val_hotspot_btn_margin">${sceneSettings.hotspots?.btnMargin || 5}</span></div>
+        <input id="prop_hotspot_btn_margin" type="range" min="0" max="20" step="1" value="${sceneSettings.hotspots?.btnMargin || 5}">
+      </div>
+
       <div class="param-row">
         <label>Connector Line Style</label>
         <select id="prop_line_style" class="inspector-select">
@@ -1093,131 +1100,166 @@ function bindInspectorEvents(type, object, target) {
     const panelX = document.getElementById("prop_panel_x");
     const panelY = document.getElementById("prop_panel_y");
 
-    if (!Array.isArray(object.sections)) {
-      object.sections = [];
+    if (!Array.isArray(object.paragraphs)) {
+      object.paragraphs = Array.isArray(object.sections) ? object.sections : [];
     }
+    object.sections = object.paragraphs;
 
     titleInput?.addEventListener("input", (e) => {
       object.title = e.target.value;
       if (object.panel) updatePanelHTML(object, object.panel);
     });
 
-    // Sections handlers
-    document.getElementById("btnAddHotspotSection")?.addEventListener("click", () => {
-      object.sections.push({ description: "", listItems: [], buttons: [] });
+    // Add Paragraph
+    document.getElementById("btnAddHotspotParagraph")?.addEventListener("click", () => {
+      if (!Array.isArray(object.paragraphs)) object.paragraphs = [];
+      object.paragraphs.push({
+        id: "para_" + Date.now(),
+        text: "",
+        listItems: [],
+        buttons: []
+      });
+      object.sections = object.paragraphs;
       renderInspector();
       if (object.panel) updatePanelHTML(object, object.panel);
     });
 
-    document.querySelectorAll(".btn-delete-hotspot-section").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const secIdx = parseInt(btn.dataset.secIdx, 10);
-        if (!isNaN(secIdx)) {
-          object.sections.splice(secIdx, 1);
+    // Delete Paragraph
+    document.querySelectorAll(".btn-delete-paragraph").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pIdx = parseInt(btn.dataset.paraIdx, 10);
+        if (!isNaN(pIdx) && Array.isArray(object.paragraphs)) {
+          object.paragraphs.splice(pIdx, 1);
+          object.sections = object.paragraphs;
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".hotspot-sec-desc-input").forEach(input => {
-      input.addEventListener("input", (e) => {
-        const secIdx = parseInt(e.target.dataset.secIdx, 10);
-        if (!isNaN(secIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].description = e.target.value;
+    // Paragraph Text
+    document.querySelectorAll(".prop-para-text").forEach((textarea) => {
+      textarea.addEventListener("input", (e) => {
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        if (!isNaN(pIdx) && object.paragraphs?.[pIdx]) {
+          object.paragraphs[pIdx].text = e.target.value;
+          object.paragraphs[pIdx].description = e.target.value;
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    // List items inside sections
-    document.querySelectorAll(".btn-add-list-item").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const secIdx = parseInt(btn.dataset.secIdx, 10);
-        if (!isNaN(secIdx) && object.sections[secIdx]) {
-          if (!Array.isArray(object.sections[secIdx].listItems)) object.sections[secIdx].listItems = [];
-          object.sections[secIdx].listItems.push("");
+    // Add List Item
+    document.querySelectorAll(".btn-add-para-list-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pIdx = parseInt(btn.dataset.paraIdx, 10);
+        if (!isNaN(pIdx) && object.paragraphs?.[pIdx]) {
+          if (!Array.isArray(object.paragraphs[pIdx].listItems)) object.paragraphs[pIdx].listItems = [];
+          object.paragraphs[pIdx].listItems.push("");
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".hotspot-list-item-input").forEach(input => {
+    // Edit List Item
+    document.querySelectorAll(".prop-para-list-item-input").forEach((input) => {
       input.addEventListener("input", (e) => {
-        const secIdx = parseInt(e.target.dataset.secIdx, 10);
-        const itemIdx = parseInt(e.target.dataset.itemIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(itemIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].listItems[itemIdx] = e.target.value;
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        const iIdx = parseInt(e.target.dataset.itemIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(iIdx) && object.paragraphs?.[pIdx]?.listItems) {
+          object.paragraphs[pIdx].listItems[iIdx] = e.target.value;
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".btn-delete-list-item").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const secIdx = parseInt(btn.dataset.secIdx, 10);
-        const itemIdx = parseInt(btn.dataset.itemIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(itemIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].listItems.splice(itemIdx, 1);
+    // Delete List Item
+    document.querySelectorAll(".btn-delete-para-list-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pIdx = parseInt(btn.dataset.paraIdx, 10);
+        const iIdx = parseInt(btn.dataset.itemIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(iIdx) && object.paragraphs?.[pIdx]?.listItems) {
+          object.paragraphs[pIdx].listItems.splice(iIdx, 1);
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    // Action buttons inside sections
-    document.querySelectorAll(".btn-add-action-button").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const secIdx = parseInt(btn.dataset.secIdx, 10);
-        if (!isNaN(secIdx) && object.sections[secIdx]) {
-          if (!Array.isArray(object.sections[secIdx].buttons)) object.sections[secIdx].buttons = [];
-          object.sections[secIdx].buttons.push({ enabled: true, text: "Show Article", url: "", jsFunction: "" });
+    // Add Button
+    document.querySelectorAll(".btn-add-para-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pIdx = parseInt(btn.dataset.paraIdx, 10);
+        if (!isNaN(pIdx) && object.paragraphs?.[pIdx]) {
+          if (!Array.isArray(object.paragraphs[pIdx].buttons)) object.paragraphs[pIdx].buttons = [];
+          object.paragraphs[pIdx].buttons.push({
+            enabled: true,
+            text: "Action",
+            url: "",
+            jsFunction: ""
+          });
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".hotspot-btn-text-input").forEach(input => {
-      input.addEventListener("input", (e) => {
-        const secIdx = parseInt(e.target.dataset.secIdx, 10);
-        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].buttons[btnIdx].text = e.target.value;
+    // Button Toggle Enable
+    document.querySelectorAll(".prop-para-btn-enable").forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        const bIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(bIdx) && object.paragraphs?.[pIdx]?.buttons?.[bIdx]) {
+          object.paragraphs[pIdx].buttons[bIdx].enabled = Boolean(e.target.checked);
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".hotspot-btn-url-input").forEach(input => {
+    // Button Text
+    document.querySelectorAll(".prop-para-btn-text").forEach((input) => {
       input.addEventListener("input", (e) => {
-        const secIdx = parseInt(e.target.dataset.secIdx, 10);
-        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].buttons[btnIdx].url = e.target.value;
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        const bIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(bIdx) && object.paragraphs?.[pIdx]?.buttons?.[bIdx]) {
+          object.paragraphs[pIdx].buttons[bIdx].text = e.target.value;
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".hotspot-btn-fn-input").forEach(input => {
+    // Button URL
+    document.querySelectorAll(".prop-para-btn-url").forEach((input) => {
       input.addEventListener("input", (e) => {
-        const secIdx = parseInt(e.target.dataset.secIdx, 10);
-        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].buttons[btnIdx].jsFunction = e.target.value;
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        const bIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(bIdx) && object.paragraphs?.[pIdx]?.buttons?.[bIdx]) {
+          object.paragraphs[pIdx].buttons[bIdx].url = e.target.value;
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    document.querySelectorAll(".btn-delete-action-button").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const secIdx = parseInt(btn.dataset.secIdx, 10);
-        const btnIdx = parseInt(btn.dataset.btnIdx, 10);
-        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
-          object.sections[secIdx].buttons.splice(btnIdx, 1);
+    // Button JS Function
+    document.querySelectorAll(".prop-para-btn-fn").forEach((input) => {
+      input.addEventListener("input", (e) => {
+        const pIdx = parseInt(e.target.dataset.paraIdx, 10);
+        const bIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(bIdx) && object.paragraphs?.[pIdx]?.buttons?.[bIdx]) {
+          object.paragraphs[pIdx].buttons[bIdx].jsFunction = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    // Delete Button
+    document.querySelectorAll(".btn-delete-para-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pIdx = parseInt(btn.dataset.paraIdx, 10);
+        const bIdx = parseInt(btn.dataset.btnIdx, 10);
+        if (!isNaN(pIdx) && !isNaN(bIdx) && object.paragraphs?.[pIdx]?.buttons) {
+          object.paragraphs[pIdx].buttons.splice(bIdx, 1);
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
@@ -1827,69 +1869,6 @@ function bindInspectorEvents(type, object, target) {
   const lineWidthSlider = document.getElementById("prop_line_width");
   const valLineWidth = document.getElementById("val_line_width");
 
-  const applyGlobalHotspotSettings = () => {
-    if (!state.sceneSettings) state.sceneSettings = {};
-    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
-    if (!state.sceneSettings.line) state.sceneSettings.line = {};
-    if (!state.sceneDocument) state.sceneDocument = {};
-    if (!state.sceneDocument.settings) state.sceneDocument.settings = state.sceneSettings;
-    state.sceneDocument.settings.hotspots = state.sceneSettings.hotspots;
-    state.sceneDocument.settings.line = state.sceneSettings.line;
-
-    const panelBg = state.sceneSettings.hotspots.panelColor;
-    const titleFontColor = state.sceneSettings.hotspots.titleFontColor || "#ffffff";
-    const titleFontSize = Number(state.sceneSettings.hotspots.titleFontSize || 14);
-    const descFontColor = state.sceneSettings.hotspots.descFontColor || "#e0e0e0";
-    const descFontSize = Number(state.sceneSettings.hotspots.descFontSize || 12.5);
-    const listFontColor = state.sceneSettings.hotspots.listFontColor || "#cccccc";
-    const listFontSize = Number(state.sceneSettings.hotspots.listFontSize || 11);
-
-    const lStyle = state.sceneSettings.line.style || "dashed";
-    const lColor = state.sceneSettings.line.color || "#44D62C";
-    const lWidth = Number(state.sceneSettings.line.width || 1.5);
-
-    // Update all hotspot panels in editor
-    document.querySelectorAll(".panel").forEach((p) => {
-      if (panelBg) p.style.backgroundColor = panelBg;
-      
-      const titleEl = p.querySelector(".panel-title");
-      if (titleEl) {
-        titleEl.style.color = titleFontColor;
-        titleEl.style.fontSize = `${titleFontSize}px`;
-      }
-      
-      const descEl = p.querySelector(".panel-desc");
-      if (descEl) {
-        descEl.style.color = descFontColor;
-        descEl.style.fontSize = `${descFontSize}px`;
-      }
-
-      p.querySelectorAll(".panel-list-item").forEach((li) => {
-        li.style.color = listFontColor;
-        li.style.fontSize = `${listFontSize}px`;
-      });
-    });
-
-    // Update all SVG connector lines in editor
-    document.querySelectorAll("svg line").forEach((l) => {
-      l.setAttribute("stroke", lColor);
-      l.setAttribute("stroke-width", String(lWidth));
-      l.style.stroke = lColor;
-      l.style.strokeWidth = `${lWidth}px`;
-      if (lStyle === "solid") {
-        l.classList.remove("dashed-line");
-        l.classList.add("solid-line");
-        l.style.strokeDasharray = "none";
-        l.style.animation = "none";
-      } else {
-        l.classList.remove("solid-line");
-        l.classList.add("dashed-line");
-        l.style.strokeDasharray = "4, 3";
-        l.style.animation = "dash 1s linear infinite";
-      }
-    });
-  };
-
   panelColorPicker?.addEventListener("input", (e) => {
     if (!state.sceneSettings) state.sceneSettings = {};
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
@@ -2009,6 +1988,170 @@ function bindInspectorEvents(type, object, target) {
     if (valLineWidth) valLineWidth.textContent = `${val.toFixed(1)}px`;
     applyGlobalHotspotSettings();
   });
+
+  // Global button settings event listeners
+  const btnBgColorPicker = document.getElementById("prop_hotspot_btn_bg_color");
+  const btnBgColorText = document.getElementById("prop_hotspot_btn_bg_color_text");
+  const btnFontColorPicker = document.getElementById("prop_hotspot_btn_font_color");
+  const btnFontColorText = document.getElementById("prop_hotspot_btn_font_color_text");
+  const btnFontSizeSlider = document.getElementById("prop_hotspot_btn_font_size");
+  const valBtnFontSize = document.getElementById("val_hotspot_btn_font_size");
+  const btnPaddingVInput = document.getElementById("prop_hotspot_btn_padding_v");
+  const btnPaddingHInput = document.getElementById("prop_hotspot_btn_padding_h");
+  const valBtnPadding = document.getElementById("val_hotspot_btn_padding");
+  const btnMarginSlider = document.getElementById("prop_hotspot_btn_margin");
+  const valBtnMargin = document.getElementById("val_hotspot_btn_margin");
+
+  btnBgColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnBgColor = e.target.value;
+    if (btnBgColorText) btnBgColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  btnBgColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnBgColor = e.target.value;
+    if (btnBgColorPicker && e.target.value.startsWith("#")) btnBgColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  btnFontColorPicker?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnFontColor = e.target.value;
+    if (btnFontColorText) btnFontColorText.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  btnFontColorText?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    state.sceneSettings.hotspots.btnFontColor = e.target.value;
+    if (btnFontColorPicker && e.target.value.startsWith("#")) btnFontColorPicker.value = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  btnFontSizeSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const val = Number(e.target.value);
+    state.sceneSettings.hotspots.btnFontSize = val;
+    if (valBtnFontSize) valBtnFontSize.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+
+  const updatePadding = () => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const v = Number(btnPaddingVInput?.value || 5);
+    const h = Number(btnPaddingHInput?.value || 12);
+    state.sceneSettings.hotspots.btnPaddingV = v;
+    state.sceneSettings.hotspots.btnPaddingH = h;
+    if (valBtnPadding) valBtnPadding.textContent = `${v}px / ${h}px`;
+    applyGlobalHotspotSettings();
+  };
+
+  btnPaddingVInput?.addEventListener("input", updatePadding);
+  btnPaddingHInput?.addEventListener("input", updatePadding);
+
+  btnMarginSlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const val = Number(e.target.value);
+    state.sceneSettings.hotspots.btnMargin = val;
+    if (valBtnMargin) valBtnMargin.textContent = e.target.value;
+    applyGlobalHotspotSettings();
+  });
+}
+
+function applyGlobalHotspotSettings() {
+  if (!state.sceneSettings) state.sceneSettings = {};
+  if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+  if (!state.sceneSettings.line) state.sceneSettings.line = {};
+  if (!state.sceneDocument) state.sceneDocument = {};
+  if (!state.sceneDocument.settings) state.sceneDocument.settings = state.sceneSettings;
+  state.sceneDocument.settings.hotspots = state.sceneSettings.hotspots;
+  state.sceneDocument.settings.line = state.sceneSettings.line;
+
+  const panelBg = state.sceneSettings.hotspots.panelColor;
+  const titleFontColor = state.sceneSettings.hotspots.titleFontColor || "#ffffff";
+  const titleFontSize = Number(state.sceneSettings.hotspots.titleFontSize || 14);
+  const descFontColor = state.sceneSettings.hotspots.descFontColor || "#e0e0e0";
+  const descFontSize = Number(state.sceneSettings.hotspots.descFontSize || 12.5);
+  const listFontColor = state.sceneSettings.hotspots.listFontColor || "#cccccc";
+  const listFontSize = Number(state.sceneSettings.hotspots.listFontSize || 11);
+  const btnBgColor = state.sceneSettings.hotspots.btnBgColor || "rgba(68, 214, 44, 0.28)";
+  const btnFontColor = state.sceneSettings.hotspots.btnFontColor || "#ffffff";
+  const btnFontSize = Number(state.sceneSettings.hotspots.btnFontSize || 11);
+  const btnPaddingV = Number(state.sceneSettings.hotspots.btnPaddingV || 5);
+  const btnPaddingH = Number(state.sceneSettings.hotspots.btnPaddingH || 12);
+  const btnMargin = Number(state.sceneSettings.hotspots.btnMargin || 5);
+
+  const lStyle = state.sceneSettings.line.style || "dashed";
+  const lColor = state.sceneSettings.line.color || "#44D62C";
+  const lWidth = Number(state.sceneSettings.line.width || 1.5);
+
+  // Update all hotspot panels in editor
+  document.querySelectorAll(".panel").forEach((p) => {
+    if (panelBg) p.style.backgroundColor = panelBg;
+    
+    const titleEl = p.querySelector(".panel-title");
+    if (titleEl) {
+      titleEl.style.color = titleFontColor;
+      titleEl.style.fontSize = `${titleFontSize}px`;
+    }
+    
+    const descEl = p.querySelector(".panel-desc");
+    if (descEl) {
+      descEl.style.color = descFontColor;
+      descEl.style.fontSize = `${descFontSize}px`;
+    }
+
+    p.querySelectorAll(".panel-list-item").forEach((li) => {
+      li.style.color = listFontColor;
+      li.style.fontSize = `${listFontSize}px`;
+    });
+
+    p.querySelectorAll(".panel-btn-group").forEach((grp) => {
+      grp.style.display = "flex";
+      grp.style.flexDirection = "column";
+      grp.style.alignItems = "flex-end";
+      grp.style.gap = `${btnMargin}px`;
+      grp.style.marginTop = `${btnMargin}px`;
+    });
+
+    p.querySelectorAll(".panel-btn").forEach((b) => {
+      b.style.display = "inline-flex";
+      b.style.alignSelf = "flex-end";
+      b.style.width = "auto";
+      b.style.backgroundColor = btnBgColor;
+      b.style.color = btnFontColor;
+      b.style.fontSize = `${btnFontSize}px`;
+      b.style.padding = `${btnPaddingV}px ${btnPaddingH}px`;
+    });
+  });
+
+  // Update all SVG connector lines in editor
+  document.querySelectorAll("svg line").forEach((l) => {
+    l.setAttribute("stroke", lColor);
+    l.setAttribute("stroke-width", String(lWidth));
+    l.style.stroke = lColor;
+    l.style.strokeWidth = `${lWidth}px`;
+    if (lStyle === "solid") {
+      l.classList.remove("dashed-line");
+      l.classList.add("solid-line");
+      l.style.strokeDasharray = "none";
+      l.style.animation = "none";
+    } else {
+      l.classList.remove("solid-line");
+      l.classList.add("dashed-line");
+      l.style.strokeDasharray = "4, 3";
+      l.style.animation = "dash 1s linear infinite";
+    }
+  });
 }
 
 function escapeHTML(str) {
@@ -2023,5 +2166,6 @@ function escapeHTML(str) {
 
 export {
   initializeInspector,
-  renderInspector
+  renderInspector,
+  applyGlobalHotspotSettings
 };
