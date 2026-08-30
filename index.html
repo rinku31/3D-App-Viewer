@@ -224,9 +224,9 @@
       <span class="brand-title">3D App Viewer</span>
     </div>
     <div class="nav-links">
-      <a href="./Editor/editor.html" class="nav-btn nav-btn-primary">Launch Editor</a>
-      <a href="./Viewer/viewer.html" class="nav-btn nav-btn-secondary">Launch Viewer</a>
-      <a href="./Embed/index.html" class="nav-btn nav-btn-secondary">Launch Embed</a>
+      <a href="/Editor/editor.html" class="nav-btn nav-btn-primary">Launch Editor</a>
+      <a href="/Viewer/viewer.html" class="nav-btn nav-btn-secondary">Launch Viewer</a>
+      <a href="/Embed/index.html" class="nav-btn nav-btn-secondary">Launch Embed</a>
     </div>
   </header>
 
@@ -251,7 +251,7 @@
             <li>Directional lighting, shadows &amp; JSON export</li>
           </ul>
         </div>
-        <a href="./Editor/editor.html" class="card-btn nav-btn-primary">Open Editor</a>
+        <a href="/Editor/editor.html" class="card-btn nav-btn-primary">Open Editor</a>
       </div>
 
       <div class="app-card">
@@ -268,20 +268,21 @@
             <li>HDR environment &amp; ACES tone mapping</li>
           </ul>
         </div>
-        <a href="./Viewer/viewer.html" class="card-btn nav-btn-secondary">Open Viewer</a>
+        <a href="/Viewer/viewer.html" class="card-btn nav-btn-secondary">Open Viewer</a>
       </div>
     </div>
 
     <div class="frame-container">
       <div class="frame-toolbar">
         <div class="toolbar-tabs">
-          <button class="tab-btn active" onclick="switchFrame('./Editor/editor.html', this)">Editor Preview</button>
-          <button class="tab-btn" onclick="switchFrame('./Viewer/viewer.html', this)">Viewer Preview</button>
-          <button class="tab-btn" onclick="switchFrame('./Embed/index.html?glb=https://quietlang13.github.io/3D-IPE-Files/Viper%20V4%20Pro/Viper%20V4%20Pro.glb&scene=https://quietlang13.github.io/3D-IPE-Files/Viper%20V4%20Pro/Viper%20V4%20Pro.json', this)">Embed Live Showcase</button>
+          <button class="tab-btn active" onclick="switchFrame('/Editor/editor.html', this)">Editor Preview</button>
+          <button class="tab-btn" onclick="switchFrame('/Viewer/viewer.html', this)">Viewer Preview</button>
+          <button class="tab-btn" onclick="switchFrame('/Embed/index.html', this)">Embed Viewer</button>
+          <button class="tab-btn" onclick="switchFrame('/Embed/index.html?glb=https://quietlang13.github.io/3D-IPE-Files/Viper%20V4%20Pro/Viper%20V4%20Pro.glb&scene=https://quietlang13.github.io/3D-IPE-Files/Viper%20V4%20Pro/Viper%20V4%20Pro.json', this)">Embed with Viper V4 Pro URL</button>
         </div>
-        <a id="externalLink" href="./Editor/editor.html" target="_blank" class="nav-btn nav-btn-secondary" style="font-size: 12px; padding: 4px 10px;">Open in Full Window ↗</a>
+        <a id="externalLink" href="/Editor/editor.html" target="_blank" class="nav-btn nav-btn-secondary" style="font-size: 12px; padding: 4px 10px;">Open in Full Window ↗</a>
       </div>
-      <iframe id="appFrame" class="preview-frame" src="./Editor/editor.html"></iframe>
+      <iframe id="appFrame" class="preview-frame" src="/Editor/editor.html"></iframe>
     </div>
   </main>
 

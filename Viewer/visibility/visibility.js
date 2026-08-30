@@ -1,32 +1,38 @@
+/**
+ * Viewer Visibility Module
+ * Throttled occlusion testing against model geometry using shared hotspotMath.
+ */
+
+import { state } from "../state/state.js";
 import { testHotspotOcclusion } from "../../shared/hotspotMath.js";
 
-export { testHotspotOcclusion };
-
-export function updateHotspotVisibility(viewerState, force = false) {
-  const stateObj = viewerState || window.viewerInstance?.state;
-  if (!stateObj?.sceneDocument || !stateObj?.camera || !stateObj?.currentModel || !stateObj?.hotspots?.length) {
-    return;
-  }
+/**
+ * Updates the visibility status of all active hotspots.
+ */
+export function updateHotspotVisibility(force = false) {
+  if (!state.sceneDocument || !state.camera || !state.currentModel || !state.hotspots.length) return;
 
   const now = performance.now();
-  if (!force && now - stateObj.lastVisibilityUpdate < stateObj.visibilityInterval) {
+  if (!force && (now - state.lastVisibilityUpdate < state.visibilityInterval)) {
     return;
   }
 
-  stateObj.lastVisibilityUpdate = now;
-  stateObj.visibilityDirty = false;
+  state.lastVisibilityUpdate = now;
+  state.visibilityDirty = false;
 
-  const tolerance = stateObj.sceneDocument.settings?.hotspots?.occlusionTolerance ?? 0.08;
+  const tolerance = state.sceneDocument.settings?.hotspots?.occlusionTolerance ?? 0.08;
 
-  stateObj.hotspots.forEach((h) => {
+  state.hotspots.forEach((h) => {
     if (!h.position) return;
+
     const isVisible = testHotspotOcclusion(
       h.position,
-      stateObj.camera,
-      stateObj.currentModel,
-      stateObj.raycaster,
+      state.camera,
+      state.currentModel,
+      state.raycaster,
       tolerance
     );
+
     h.visible = isVisible;
   });
 }

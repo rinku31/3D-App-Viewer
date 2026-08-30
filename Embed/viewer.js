@@ -1,9 +1,11 @@
 /**
- * 3D Embed Viewer Module Export
+ * Embed 3D Hotspot Viewer - Entry Point
  */
-import { createViewerCore } from "../shared/viewerCore.js";
 
-export { createViewerCore };
-export async function bootstrapEmbedViewer() {
-  return createViewerCore({ isEmbed: true, enableDrop: true });
-}
+import { bootstrapEmbedViewer } from "./bootstrap/bootstrap.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  bootstrapEmbedViewer().catch((err) => {
+    console.error("Fatal error during Embed Viewer bootstrap:", err);
+  });
+});

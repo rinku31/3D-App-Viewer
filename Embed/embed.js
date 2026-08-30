@@ -1,15 +1,18 @@
 /**
- * 3D Embed Viewer Entry Point (Optimized for iframes)
+ * Embed 3D Hotspot Viewer - Entry Point
+ * Streamlined standalone package for iframe embedding and dynamic query params.
  */
-import { createViewerCore } from "../shared/viewerCore.js";
 
-window.addEventListener("DOMContentLoaded", async () => {
-  try {
-    window.viewerInstance = await createViewerCore({
-      isEmbed: true,
-      enableDrop: true
-    });
-  } catch (err) {
-    console.error("Error bootstrapping 3D Embed Viewer:", err);
-  }
-});
+import { bootstrapEmbedViewer } from "./bootstrap/bootstrap.js";
+
+function start() {
+  bootstrapEmbedViewer().catch((err) => {
+    console.error("Fatal error during Embed Viewer bootstrap:", err);
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", start);
+} else {
+  start();
+}
