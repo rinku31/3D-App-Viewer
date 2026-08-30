@@ -33,3 +33,6 @@ vendor/
 secrets.json
 *.pem
 *.key
+
+# Electron Build Output
+dist-electron/

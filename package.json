@@ -29,7 +29,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "favicon/favicon.ico"
+      "icon": "favicon/android-chrome-512x512.png"
     }
   },
   "dependencies": {

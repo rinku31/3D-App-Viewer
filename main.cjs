@@ -14,6 +14,9 @@ function createWindow() {
     }
   });
 
+  // Start the window maximized
+  win.maximize();
+
   // Hide the default electron menu bar
   win.setMenu(null);
 
