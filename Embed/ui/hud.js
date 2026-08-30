@@ -85,6 +85,29 @@ function createActionStackMarkup() {
   state.actionStack = stack;
 }
 
+const ENV_PRESET_CONFIG = {
+  studio_small_09: {
+    id: "studio_small_09",
+    name: "Studio",
+    iconSvg: `<svg class="env-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v3h10V7a5 5 0 0 0-5-5Z"></path><path d="M5 10h14"></path><path d="M12 13v8"></path><path d="M8 21h8"></path><circle cx="12" cy="6.5" r="1" fill="currentColor"></circle></svg>`
+  },
+  potsdamer_platz: {
+    id: "potsdamer_platz",
+    name: "Urban",
+    iconSvg: `<svg class="env-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9h1"></path><path d="M9 13h1"></path><path d="M9 17h1"></path></svg>`
+  },
+  autumn_ground: {
+    id: "autumn_ground",
+    name: "Nature",
+    iconSvg: `<svg class="env-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>`
+  },
+  aircraft_workshop: {
+    id: "aircraft_workshop",
+    name: "Industrial",
+    iconSvg: `<svg class="env-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>`
+  }
+};
+
 /**
  * Injects the bottom-right Environment Option selector into the DOM.
  */
@@ -116,55 +139,36 @@ function createEnvironmentSelectorMarkup() {
 
     <div class="env-divider"></div>
 
-    <div class="env-group" role="toolbar" aria-label="Environment Presets">
-      <!-- 1. Balance (Studio Small 09) -->
-      <button class="env-btn active" data-preset="studio_small_09" data-name="Balance" type="button" aria-label="Balance Environment" title="Balance Environment">
-        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2"></path>
-          <path d="M12 20v2"></path>
-          <path d="m4.93 4.93 1.41 1.41"></path>
-          <path d="m17.66 17.66 1.41 1.41"></path>
-          <path d="M2 12h2"></path>
-          <path d="M20 12h2"></path>
-          <path d="m6.34 17.66-1.41 1.41"></path>
-          <path d="m19.07 4.93-1.41 1.41"></path>
+    <!-- Environment Dropdown -->
+    <div class="env-dropdown-wrapper" id="hudEnvDropdownWrapper">
+      <button id="hudEnvDropdownBtn" class="env-dropdown-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Select Environment Lighting">
+        <span class="env-dropdown-icon" id="hudEnvCurrentIcon">
+          ${ENV_PRESET_CONFIG.studio_small_09.iconSvg}
+        </span>
+        <span class="env-dropdown-label" id="hudEnvCurrentLabel">Studio</span>
+        <svg class="env-dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6"/>
         </svg>
-        <span class="env-tooltip">Balance</span>
       </button>
 
-      <!-- 2. Urban (Potsdamer Platz) -->
-      <button class="env-btn" data-preset="potsdamer_platz" data-name="Urban" type="button" aria-label="Urban Environment" title="Urban Environment">
-        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 21h18"></path>
-          <path d="M5 21V7l8-4v18"></path>
-          <path d="M19 21V11l-6-4"></path>
-          <path d="M9 9h1"></path>
-          <path d="M9 13h1"></path>
-          <path d="M9 17h1"></path>
-        </svg>
-        <span class="env-tooltip">Urban</span>
-      </button>
-
-      <!-- 3. Nature (Autumn Park) -->
-      <button class="env-btn" data-preset="autumn_ground" data-name="Nature" type="button" aria-label="Nature Environment" title="Nature Environment">
-        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
-          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-        </svg>
-        <span class="env-tooltip">Nature</span>
-      </button>
-
-      <!-- 4. Industrial (Aircraft Workshop) -->
-      <button class="env-btn" data-preset="aircraft_workshop" data-name="Industrial" type="button" aria-label="Industrial Environment" title="Industrial Environment">
-        <svg class="env-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-          <path d="M17 18h1"></path>
-          <path d="M12 18h1"></path>
-          <path d="M7 18h1"></path>
-        </svg>
-        <span class="env-tooltip">Industrial</span>
-      </button>
+      <div class="env-dropdown-menu" id="hudEnvDropdownMenu" role="menu">
+        <button class="env-dropdown-item active" data-preset="studio_small_09" data-name="Studio" type="button" role="menuitem">
+          <span class="env-dropdown-item-icon">${ENV_PRESET_CONFIG.studio_small_09.iconSvg}</span>
+          <span class="env-dropdown-item-label">Studio</span>
+        </button>
+        <button class="env-dropdown-item" data-preset="potsdamer_platz" data-name="Urban" type="button" role="menuitem">
+          <span class="env-dropdown-item-icon">${ENV_PRESET_CONFIG.potsdamer_platz.iconSvg}</span>
+          <span class="env-dropdown-item-label">Urban</span>
+        </button>
+        <button class="env-dropdown-item" data-preset="autumn_ground" data-name="Nature" type="button" role="menuitem">
+          <span class="env-dropdown-item-icon">${ENV_PRESET_CONFIG.autumn_ground.iconSvg}</span>
+          <span class="env-dropdown-item-label">Nature</span>
+        </button>
+        <button class="env-dropdown-item" data-preset="aircraft_workshop" data-name="Industrial" type="button" role="menuitem">
+          <span class="env-dropdown-item-icon">${ENV_PRESET_CONFIG.aircraft_workshop.iconSvg}</span>
+          <span class="env-dropdown-item-label">Industrial</span>
+        </button>
+      </div>
     </div>
   `;
 
@@ -242,11 +246,40 @@ function bindEnvironmentSelectorActions() {
     });
   }
 
-  container.querySelectorAll(".env-btn[data-preset]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  const dropdownWrapper = document.getElementById("hudEnvDropdownWrapper");
+  const dropdownBtn = document.getElementById("hudEnvDropdownBtn");
+
+  // Toggle dropdown menu
+  if (dropdownBtn && dropdownWrapper) {
+    dropdownBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const preset = btn.getAttribute("data-preset");
+      const isOpen = dropdownWrapper.classList.toggle("open");
+      dropdownBtn.setAttribute("aria-expanded", String(isOpen));
+    });
+  }
+
+  // Close dropdown on outside click
+  window.addEventListener("click", (e) => {
+    if (dropdownWrapper && dropdownWrapper.classList.contains("open")) {
+      if (!dropdownWrapper.contains(e.target)) {
+        dropdownWrapper.classList.remove("open");
+        dropdownBtn?.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+
+  // Handle preset option clicks
+  container.querySelectorAll(".env-dropdown-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const preset = item.getAttribute("data-preset");
       if (!preset || !state.environmentManager) return;
+
+      // Close dropdown
+      if (dropdownWrapper) {
+        dropdownWrapper.classList.remove("open");
+        dropdownBtn?.setAttribute("aria-expanded", "false");
+      }
 
       setEnvironmentPreset(preset);
     });
@@ -279,7 +312,7 @@ export function setEnvironmentPreset(preset) {
 }
 
 /**
- * Updates the active visual indicator for environment preset buttons.
+ * Updates the active visual indicator and trigger button for environment preset.
  */
 export function updateActiveEnvButton(activePreset) {
   const container = document.getElementById("viewerEnvSelector");
@@ -291,9 +324,16 @@ export function updateActiveEnvButton(activePreset) {
     : activePreset === "industrial" ? "aircraft_workshop"
     : activePreset;
 
-  container.querySelectorAll(".env-btn[data-preset]").forEach((btn) => {
-    const isTarget = btn.getAttribute("data-preset") === normalized;
-    btn.classList.toggle("active", isTarget);
+  const config = ENV_PRESET_CONFIG[normalized] || ENV_PRESET_CONFIG.studio_small_09;
+
+  const currentIcon = document.getElementById("hudEnvCurrentIcon");
+  const currentLabel = document.getElementById("hudEnvCurrentLabel");
+  if (currentIcon) currentIcon.innerHTML = config.iconSvg;
+  if (currentLabel) currentLabel.textContent = config.name;
+
+  container.querySelectorAll(".env-dropdown-item[data-preset]").forEach((item) => {
+    const isTarget = item.getAttribute("data-preset") === normalized;
+    item.classList.toggle("active", isTarget);
   });
 }
 

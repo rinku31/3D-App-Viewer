@@ -628,8 +628,8 @@ canvas {
 }
 
 .env-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   display: block;
   pointer-events: none;
   transition: transform 0.2s ease;
@@ -637,6 +637,150 @@ canvas {
 
 .env-btn:hover .env-icon {
   transform: scale(1.1);
+}
+
+/* ==========================================================================
+   HDRI Environment Dropdown Component
+   ========================================================================== */
+
+.env-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.env-dropdown-btn {
+  background: rgba(42, 42, 50, 0.85);
+  color: #e4e4ec;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  height: 34px;
+  padding: 0 10px 0 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  white-space: nowrap;
+}
+
+.env-dropdown-btn:hover {
+  background: #363644;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.env-dropdown-btn:active {
+  transform: scale(0.96);
+}
+
+.env-dropdown-wrapper.open .env-dropdown-btn {
+  background: #363644;
+  color: #44D62C;
+  border-color: rgba(68, 214, 44, 0.6);
+  box-shadow: 0 0 12px rgba(68, 214, 44, 0.25);
+}
+
+.env-dropdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.env-dropdown-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.env-dropdown-chevron {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.env-dropdown-wrapper.open .env-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.env-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 136px;
+  background: rgba(20, 20, 26, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.96);
+  transform-origin: bottom right;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s ease;
+  pointer-events: none;
+}
+
+.env-dropdown-wrapper.open .env-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.env-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #c4c4cc;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.env-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.env-dropdown-item.active {
+  background: rgba(68, 214, 44, 0.16);
+  color: #44D62C;
+  font-weight: 600;
+}
+
+.env-dropdown-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+}
+
+.env-dropdown-item-label {
+  flex: 1;
 }
 
 .env-tooltip {

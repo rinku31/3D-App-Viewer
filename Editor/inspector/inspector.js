@@ -540,104 +540,17 @@ function buildLightTargetInspector(lightData) {
 
 function buildCameraInspector(camera) {
   const target = state.cameraRig?.target || new THREE.Vector3();
-  const camWorldPos = new THREE.Vector3();
-  camera.getWorldPosition(camWorldPos);
-
-  const viewpoints = state.cameraSettings?.viewpoints || [];
-  const currentMinPitchDeg = state.cameraRig ? state.cameraRig.getMinPitchDeg() : (state.cameraSettings?.minPitch ?? -82);
-  const currentMaxPitchDeg = state.cameraRig ? state.cameraRig.getMaxPitchDeg() : (state.cameraSettings?.maxPitch ?? 82);
 
   return `
-    ${buildHeader("CAMERA", "Perspective Camera & Default View")}
+    ${buildHeader("CAMERA", "Perspective Camera")}
 
     <div class="section-group">
-      <div class="section-group-title">Default View Actions</div>
-      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-        <button id="btnSetDefaultCamInspector" class="primary-btn" style="width:100%; padding:8px 12px; font-size:12px; font-weight:700;">
-          &#9733; Set Current as Default View
-        </button>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <button id="btnResetDefaultCamInspector" class="secondary" style="font-size:11px; padding:6px;">
-            &#8634; Reset to Default
-          </button>
-          <button id="btnFrameModelFromCam" class="secondary" style="font-size:11px; padding:6px;">
-            &#128269; Frame Model
-          </button>
-        </div>
-      </div>
-
-      <div class="param-row-flex" style="margin-top:8px;">
-        <label>Auto-Rotate Preview</label>
-        <input id="prop_cam_autorotate" type="checkbox" ${state.cameraRig?.autoRotate ? "checked" : ""}>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Snap Camera View to Axis</div>
-      <div class="button-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 8px;">
-        <button class="secondary inspector-camera-axis-btn" data-axis="front" title="Snap to Front View">Front</button>
-        <button class="secondary inspector-camera-axis-btn" data-axis="back" title="Snap to Back View">Back</button>
-        <button class="secondary inspector-camera-axis-btn" data-axis="left" title="Snap to Left View">Left</button>
-        <button class="secondary inspector-camera-axis-btn" data-axis="right" title="Snap to Right View">Right</button>
-        <button class="secondary inspector-camera-axis-btn" data-axis="top" title="Snap to Top View">Top</button>
-        <button class="secondary inspector-camera-axis-btn" data-axis="bottom" title="Snap to Bottom View">Bottom</button>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Orbit Target (LookAt Center)</div>
-      <div class="param-row">
-        <div class="vector3-inputs">
-          <div class="vec-item"><span class="vec-label x">X</span><input id="prop_cam_target_x" type="number" step="0.1" value="${target.x.toFixed(2)}"></div>
-          <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_cam_target_y" type="number" step="0.1" value="${target.y.toFixed(2)}"></div>
-          <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_cam_target_z" type="number" step="0.1" value="${target.z.toFixed(2)}"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Vertical Pitch Limits (Rotation Clamping)</div>
-      <div class="param-row">
-        <div class="slider-header"><label>Min Pitch (Look Down / Bottom Limit)</label><span class="value-badge" id="val_cam_min_pitch">${currentMinPitchDeg}°</span></div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_cam_min_pitch" type="range" min="-89" max="0" step="1" value="${currentMinPitchDeg}" style="flex:1;">
-          <input id="prop_cam_min_pitch_num" type="number" min="-89" max="89" step="1" value="${currentMinPitchDeg}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Max Pitch (Look Up / Top Limit)</label><span class="value-badge" id="val_cam_max_pitch">${currentMaxPitchDeg > 0 ? `+${currentMaxPitchDeg}` : currentMaxPitchDeg}°</span></div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_cam_max_pitch" type="range" min="0" max="89" step="1" value="${currentMaxPitchDeg}" style="flex:1;">
-          <input id="prop_cam_max_pitch_num" type="number" min="-89" max="89" step="1" value="${currentMaxPitchDeg}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row" style="margin-top:6px;">
-        <div class="button-group" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
-          <button class="secondary inspector-pitch-preset-btn" data-min="-82" data-max="82" title="Standard Clamping (-82° to +82°)">-82° / +82°</button>
-          <button class="secondary inspector-pitch-preset-btn" data-min="0" data-max="82" title="Horizon to Sky (0° to +82°)">0° / +82°</button>
-          <button class="secondary inspector-pitch-preset-btn" data-min="-89" data-max="89" title="Full Orbit (-89° to +89°)">-89° / +89°</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Zoom &amp; Distance Limits</div>
-      <div class="param-row">
-        <div class="slider-header"><label>Nearest Zoom (Min Distance)</label><span class="value-badge" id="val_cam_min_dist">${(state.cameraRig?.minDistance ?? 1.35).toFixed(2)}m</span></div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_cam_min_dist" type="range" min="0.1" max="20" step="0.1" value="${state.cameraRig?.minDistance ?? 1.35}" style="flex:1;">
-          <input id="prop_cam_min_dist_num" type="number" min="0.01" max="500" step="0.1" value="${(state.cameraRig?.minDistance ?? 1.35).toFixed(2)}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Farthest Zoom (Max Distance)</label><span class="value-badge" id="val_cam_max_dist">${(state.cameraRig?.maxDistance ?? 16.0).toFixed(1)}m</span></div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_cam_max_dist" type="range" min="1.0" max="100" step="0.5" value="${state.cameraRig?.maxDistance ?? 16.0}" style="flex:1;">
-          <input id="prop_cam_max_dist_num" type="number" min="0.1" max="2000" step="0.5" value="${(state.cameraRig?.maxDistance ?? 16.0).toFixed(1)}" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
+      <div class="section-group-title">Camera Settings &amp; Navigation Limits</div>
+      <button id="btnInspectorGotoCamSettings" class="primary-btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 12px; font-size:12px; font-weight:700;">
+        &#9881; Configure Camera Limits &amp; Default View
+      </button>
+      <div style="font-size:11px; color:var(--text-dim, #888); margin-top:6px; line-height:1.4;">
+        Default capture view, vertical pitch clamping (-89° to +89°), and zoom distance limits are configured in the <b>Settings</b> tab.
       </div>
     </div>
 
@@ -658,294 +571,70 @@ function buildCameraInspector(camera) {
         <input id="prop_cam_far" type="range" min="50" max="2000" step="50" value="${camera.far}">
       </div>
     </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Orbit Target (LookAt Center)</div>
+      <div class="param-row">
+        <div class="vector3-inputs">
+          <div class="vec-item"><span class="vec-label x">X</span><input id="prop_cam_target_x" type="number" step="0.1" value="${target.x.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label y">Y</span><input id="prop_cam_target_y" type="number" step="0.1" value="${target.y.toFixed(2)}"></div>
+          <div class="vec-item"><span class="vec-label z">Z</span><input id="prop_cam_target_z" type="number" step="0.1" value="${target.z.toFixed(2)}"></div>
+        </div>
+      </div>
+
+      <div class="param-row-flex" style="margin-top:10px;">
+        <label>Auto-Rotate Preview</label>
+        <input id="prop_cam_autorotate" type="checkbox" ${state.cameraRig?.autoRotate ? "checked" : ""}>
+      </div>
+    </div>
   `;
 }
 
 function buildSceneInspector() {
-  const sceneSettings = state.sceneSettings || {};
-  const env = sceneSettings.environment || {};
-  const rendering = sceneSettings.rendering || {};
-  const helpers = sceneSettings.helpers || {};
-
-  const currentExposure = env.exposure !== undefined ? Number(env.exposure) : 1.0;
-  const currentEV = env.exposureEV !== undefined ? Number(env.exposureEV) : Math.log2(Math.max(0.01, currentExposure));
+  const modelName = state.currentModel?.name || (state.currentModel ? "Active 3D Model" : "None Loaded");
+  const hotspotsCount = state.hotspots?.length || 0;
+  const lightsCount = state.lights?.length || 0;
+  const explodeCount = state.explodeNodes?.length || 0;
 
   return `
-    ${buildHeader("SCENE", "Scene & Blender Color Management")}
+    ${buildHeader("SCENE ROOT", "Global Scene & Overview")}
 
     <div class="section-group">
-      <div class="section-group-title">Background</div>
-      
-      <div class="param-row">
-        <label>Background Type</label>
-        <select id="prop_scene_bg_type" class="inspector-select">
-          <option value="color" ${sceneSettings.backgroundType === "color" ? "selected" : ""}>Solid Color</option>
-          <option value="environment" ${sceneSettings.backgroundType === "environment" ? "selected" : ""}>HDR Skybox</option>
-          <option value="transparent" ${sceneSettings.backgroundType === "transparent" ? "selected" : ""}>Transparent</option>
-        </select>
+      <div class="section-group-title">Configuration Panels</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button id="btnInspectorGotoSettings" class="primary-btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; font-size:12px; font-weight:700;">
+          &#9881; Go to Scene Settings Tab
+        </button>
+        <button id="btnInspectorGotoEnv" class="secondary" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 12px; font-size:12px; font-weight:600;">
+          &#9728; Go to Environment &amp; Lighting Tab
+        </button>
       </div>
-
-      <div class="param-row-flex" id="row_scene_bg_color" style="${sceneSettings.backgroundType === 'transparent' ? 'display:none;' : ''}">
-        <label>Background Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_scene_bg" type="color" value="${sceneSettings.background || '#222228'}">
-          <span style="font-size:0.8rem; font-family:monospace; color:var(--text-dim);">${sceneSettings.background || '#222228'}</span>
-        </div>
-      </div>
-
-      <div class="param-row" id="row_scene_bg_blur" style="${sceneSettings.backgroundType === 'environment' ? '' : 'display:none;'}">
-        <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="val_bg_blur">${Number(sceneSettings.backgroundBlur || 0).toFixed(2)}</span></div>
-        <input id="prop_scene_bg_blur" type="range" min="0" max="1" step="0.05" value="${sceneSettings.backgroundBlur || 0}">
+      <div style="font-size:11px; color:var(--text-dim, #888); margin-top:8px; line-height:1.4;">
+        Global hotspot card styling, viewer floating buttons, and camera orbit limits are managed in <b>Settings</b>. HDR world illumination, tone mapping, and shadows are in <b>Environment</b>.
       </div>
     </div>
 
     <div class="section-group">
-      <div class="section-group-title">Blender World &amp; HDR Environment</div>
-
-      <div class="param-row">
-        <label>Environment Preset</label>
-        <select id="prop_scene_env_preset" class="inspector-select">
-          <option value="studio_small_09" ${env.preset === "studio_small_09" ? "selected" : ""}>Studio Small 09 (Balanced Neutral)</option>
-          <option value="potsdamer_platz" ${env.preset === "potsdamer_platz" ? "selected" : ""}>Potsdamer Platz (Urban Daylight)</option>
-          <option value="autumn_ground" ${env.preset === "autumn_ground" ? "selected" : ""}>Autumn Park (Warm Sunlight)</option>
-          <option value="aircraft_workshop" ${env.preset === "aircraft_workshop" ? "selected" : ""}>Aircraft Workshop (High Dynamic Range)</option>
-        </select>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>World Strength</label><span class="value-badge" id="val_env_intensity">${Number(env.intensity !== undefined ? env.intensity : 1.0).toFixed(2)}</span></div>
-        <input id="prop_scene_env_intensity" type="range" min="0" max="4.0" step="0.05" value="${env.intensity !== undefined ? env.intensity : 1.0}">
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>World Rotation</label><span class="value-badge" id="val_env_rotation">${Math.round(env.rotation || 0)}°</span></div>
-        <input id="prop_scene_env_rotation" type="range" min="0" max="360" step="5" value="${env.rotation || 0}">
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Blender Color Management (AgX)</div>
-
-      <div class="param-row">
-        <label>View Transform</label>
-        <select id="prop_scene_tonemapping" class="inspector-select">
-          <option value="AgX" ${env.toneMapping === "AgX" ? "selected" : ""}>AgX (Blender 4.0+ Default)</option>
-          <option value="ACESFilmic" ${env.toneMapping === "ACESFilmic" ? "selected" : ""}>ACES Filmic</option>
-          <option value="Cineon" ${env.toneMapping === "Cineon" ? "selected" : ""}>Filmic / Cineon</option>
-          <option value="Reinhard" ${env.toneMapping === "Reinhard" ? "selected" : ""}>Reinhard</option>
-          <option value="Linear" ${env.toneMapping === "Linear" ? "selected" : ""}>Standard / Raw Linear</option>
-          <option value="None" ${env.toneMapping === "None" ? "selected" : ""}>None (Unclamped)</option>
-        </select>
-      </div>
-
-      <div class="param-row">
-        <label>Look / Contrast</label>
-        <select id="prop_scene_look" class="inspector-select">
-          <option value="None" ${env.look === "None" ? "selected" : ""}>None (Natural)</option>
-          <option value="Medium Contrast" ${env.look === "Medium Contrast" ? "selected" : ""}>Medium Contrast</option>
-          <option value="High Contrast" ${env.look === "High Contrast" ? "selected" : ""}>High Contrast</option>
-          <option value="Very High Contrast" ${env.look === "Very High Contrast" ? "selected" : ""}>Very High Contrast</option>
-        </select>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Exposure (EV)</label><span class="value-badge" id="val_exposure_ev">${currentEV >= 0 ? "+" : ""}${currentEV.toFixed(2)} EV</span></div>
-        <input id="prop_scene_exposure_ev" type="range" min="-3.0" max="3.0" step="0.1" value="${currentEV.toFixed(2)}">
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Bloom &amp; Post-Processing</div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_bloom_enable" type="checkbox" ${sceneSettings.bloom?.enabled ? "checked" : ""}>
-          Enable Bloom / Glow Effect
-        </label>
-      </div>
-
-      <div id="inspector_bloom_controls" style="${sceneSettings.bloom?.enabled ? '' : 'display:none;'}">
-        <div class="param-row">
-          <div class="slider-header"><label>Bloom Strength</label><span class="value-badge" id="val_bloom_strength">${Number(sceneSettings.bloom?.strength !== undefined ? sceneSettings.bloom.strength : 0.6).toFixed(2)}</span></div>
-          <input id="prop_scene_bloom_strength" type="range" min="0" max="3.0" step="0.05" value="${sceneSettings.bloom?.strength !== undefined ? sceneSettings.bloom.strength : 0.6}">
+      <div class="section-group-title">Scene Summary</div>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
+        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:var(--text-dim, #999);">Active Model:</span>
+          <span style="color:#eee; font-weight:500;">${escapeHTML(modelName)}</span>
         </div>
-
-        <div class="param-row">
-          <div class="slider-header"><label>Bloom Radius</label><span class="value-badge" id="val_bloom_radius">${Number(sceneSettings.bloom?.radius !== undefined ? sceneSettings.bloom.radius : 0.4).toFixed(2)}</span></div>
-          <input id="prop_scene_bloom_radius" type="range" min="0" max="2.0" step="0.05" value="${sceneSettings.bloom?.radius !== undefined ? sceneSettings.bloom.radius : 0.4}">
+        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:var(--text-dim, #999);">Hotspots:</span>
+          <span style="color:var(--accent, #44D62C); font-weight:600;">${hotspotsCount}</span>
         </div>
-
-        <div class="param-row">
-          <div class="slider-header"><label>Bloom Threshold</label><span class="value-badge" id="val_bloom_threshold">${Number(sceneSettings.bloom?.threshold !== undefined ? sceneSettings.bloom.threshold : 0.85).toFixed(2)}</span></div>
-          <input id="prop_scene_bloom_threshold" type="range" min="0" max="2.0" step="0.05" value="${sceneSettings.bloom?.threshold !== undefined ? sceneSettings.bloom.threshold : 0.85}">
+        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:var(--text-dim, #999);">Cycles Lights:</span>
+          <span style="color:#eee; font-weight:500;">${lightsCount}</span>
         </div>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Cycles Rendering &amp; Shadows</div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_shadows" type="checkbox" ${rendering.shadows !== false ? "checked" : ""}>
-          Enable Physically Soft Shadows
-        </label>
-      </div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_grid" type="checkbox" ${helpers.grid !== false ? "checked" : ""}>
-          Show Ground Grid Helper
-        </label>
-      </div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_axes" type="checkbox" ${helpers.axes ? "checked" : ""}>
-          Show 3D Coordinate Axes Helper
-        </label>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Viewer &amp; Embed Floating Buttons</div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_btn_explode" type="checkbox" ${sceneSettings.controls?.explodeEnabled !== false ? "checked" : ""}>
-          Enable "Explode" View Button
-        </label>
-      </div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_scene_btn_simulator" type="checkbox" ${sceneSettings.controls?.simulatorEnabled !== false ? "checked" : ""}>
-          Enable "Simulator" Button
-        </label>
-      </div>
-
-      <div id="simulator_btn_options_box" style="${sceneSettings.controls?.simulatorEnabled !== false ? '' : 'display:none;'} margin-top:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--border, #333);">
-        <div class="param-row">
-          <label>Link URL (optional)</label>
-          <input id="prop_sim_btn_url" type="url" value="${escapeHTML(sceneSettings.controls?.simulatorUrl || "")}" placeholder="https://example.com/simulator">
+        ${explodeCount > 0 ? `
+        <div style="display:flex; justify-content:space-between; padding:4px 0;">
+          <span style="color:var(--text-dim, #999);">Explode Meshes:</span>
+          <span style="color:#eee; font-weight:500;">${explodeCount}</span>
         </div>
-
-        <div class="param-row">
-          <label>Parent JS Function Name (optional)</label>
-          <input id="prop_sim_btn_fn" type="text" value="${escapeHTML(sceneSettings.controls?.simulatorJsFunction || "onSimulatorToggle")}" placeholder="onSimulatorToggle">
-          <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
-            Calls function on parent page outside embed iframe or dispatches message.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Hotspots &amp; Connector Line (Global)</div>
-
-      <div class="param-row-flex">
-        <label>Panel Background Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_panel_color" type="color" value="${(sceneSettings.hotspots?.panelColor || '#1e1e24').startsWith('#') ? (sceneSettings.hotspots?.panelColor || '#1e1e24') : '#1e1e24'}">
-          <input id="prop_hotspot_panel_color_text" type="text" value="${sceneSettings.hotspots?.panelColor || 'rgba(30, 30, 35, 0.92)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row-flex">
-        <label>Title Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_title_font_color" type="color" value="${(sceneSettings.hotspots?.titleFontColor || '#ffffff').startsWith('#') ? (sceneSettings.hotspots?.titleFontColor || '#ffffff') : '#ffffff'}">
-          <input id="prop_hotspot_title_font_color_text" type="text" value="${sceneSettings.hotspots?.titleFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_hotspot_title_font_size">${sceneSettings.hotspots?.titleFontSize || 14}</span></div>
-        <input id="prop_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="${sceneSettings.hotspots?.titleFontSize || 14}">
-      </div>
-
-      <div class="param-row-flex">
-        <label>Description Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_desc_font_color" type="color" value="${(sceneSettings.hotspots?.descFontColor || '#e0e0e0').startsWith('#') ? (sceneSettings.hotspots?.descFontColor || '#e0e0e0') : '#e0e0e0'}">
-          <input id="prop_hotspot_desc_font_color_text" type="text" value="${sceneSettings.hotspots?.descFontColor || '#e0e0e0'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_hotspot_desc_font_size">${sceneSettings.hotspots?.descFontSize || 12.5}</span></div>
-        <input id="prop_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="${sceneSettings.hotspots?.descFontSize || 12.5}">
-      </div>
-
-      <div class="param-row-flex">
-        <label>List Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_list_font_color" type="color" value="${(sceneSettings.hotspots?.listFontColor || '#cccccc').startsWith('#') ? (sceneSettings.hotspots?.listFontColor || '#cccccc') : '#cccccc'}">
-          <input id="prop_hotspot_list_font_color_text" type="text" value="${sceneSettings.hotspots?.listFontColor || '#cccccc'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-      <div class="param-row">
-        <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_hotspot_list_font_size">${sceneSettings.hotspots?.listFontSize || 11}</span></div>
-        <input id="prop_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="${sceneSettings.hotspots?.listFontSize || 11}">
-      </div>
-
-      <div class="param-row-flex" style="border-top:1px solid rgba(255,255,255,0.08); margin-top:8px; padding-top:8px;">
-        <label>Button Background Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_btn_bg_color" type="color" value="${(sceneSettings.hotspots?.btnBgColor || '#44D62C').startsWith('#') ? (sceneSettings.hotspots?.btnBgColor || '#44D62C') : '#44D62C'}">
-          <input id="prop_hotspot_btn_bg_color_text" type="text" value="${sceneSettings.hotspots?.btnBgColor || 'rgba(68, 214, 44, 0.28)'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row-flex">
-        <label>Button Font Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_hotspot_btn_font_color" type="color" value="${(sceneSettings.hotspots?.btnFontColor || '#ffffff').startsWith('#') ? (sceneSettings.hotspots?.btnFontColor || '#ffffff') : '#ffffff'}">
-          <input id="prop_hotspot_btn_font_color_text" type="text" value="${sceneSettings.hotspots?.btnFontColor || '#ffffff'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Button Font Size (px)</label><span class="value-badge" id="val_hotspot_btn_font_size">${sceneSettings.hotspots?.btnFontSize || 11}</span></div>
-        <input id="prop_hotspot_btn_font_size" type="range" min="8" max="18" step="0.5" value="${sceneSettings.hotspots?.btnFontSize || 11}">
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Button Padding (Vertical / Horizontal)</label><span class="value-badge" id="val_hotspot_btn_padding">${sceneSettings.hotspots?.btnPaddingV || 5}px / ${sceneSettings.hotspots?.btnPaddingH || 12}px</span></div>
-        <div style="display:flex; gap:8px;">
-          <div style="flex:1; display:flex; align-items:center; gap:4px;">
-            <span style="font-size:10px; color:var(--text-dim, #888);">V:</span>
-            <input id="prop_hotspot_btn_padding_v" type="number" min="1" max="24" step="1" value="${sceneSettings.hotspots?.btnPaddingV || 5}" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-          </div>
-          <div style="flex:1; display:flex; align-items:center; gap:4px;">
-            <span style="font-size:10px; color:var(--text-dim, #888);">H:</span>
-            <input id="prop_hotspot_btn_padding_h" type="number" min="1" max="36" step="1" value="${sceneSettings.hotspots?.btnPaddingH || 12}" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-          </div>
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Button Margin / Spacing (px)</label><span class="value-badge" id="val_hotspot_btn_margin">${sceneSettings.hotspots?.btnMargin || 5}</span></div>
-        <input id="prop_hotspot_btn_margin" type="range" min="0" max="20" step="1" value="${sceneSettings.hotspots?.btnMargin || 5}">
-      </div>
-
-      <div class="param-row">
-        <label>Connector Line Style</label>
-        <select id="prop_line_style" class="inspector-select">
-          <option value="dashed" ${(sceneSettings.line?.style || 'dashed') === 'dashed' ? 'selected' : ''}>Broken / Dashed Line</option>
-          <option value="solid" ${sceneSettings.line?.style === 'solid' ? 'selected' : ''}>Solid Line</option>
-        </select>
-      </div>
-
-      <div class="param-row-flex">
-        <label>Connector Line Color</label>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <input id="prop_line_color" type="color" value="${(sceneSettings.line?.color || '#44D62C').startsWith('#') ? (sceneSettings.line?.color || '#44D62C') : '#44D62C'}">
-          <input id="prop_line_color_text" type="text" value="${sceneSettings.line?.color || '#44D62C'}" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-
-      <div class="param-row">
-        <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_line_width">${Number(sceneSettings.line?.width || 1.5).toFixed(1)}px</span></div>
-        <input id="prop_line_width" type="range" min="1" max="6" step="0.5" value="${sceneSettings.line?.width || 1.5}">
+        ` : ""}
       </div>
     </div>
   `;
@@ -1414,16 +1103,16 @@ function bindInspectorEvents(type, object, target) {
 
     // Preset buttons handled via delegated click on inspector or sidebar
   } else if (type === "camera") {
+    document.getElementById("btnInspectorGotoCamSettings")?.addEventListener("click", () => {
+      showSidebarTab("settings");
+    });
+
     const targetX = document.getElementById("prop_cam_target_x");
     const targetY = document.getElementById("prop_cam_target_y");
     const targetZ = document.getElementById("prop_cam_target_z");
     const camFov = document.getElementById("prop_cam_fov");
     const camNear = document.getElementById("prop_cam_near");
     const camFar = document.getElementById("prop_cam_far");
-    const camMinDist = document.getElementById("prop_cam_min_dist");
-    const camMinDistNum = document.getElementById("prop_cam_min_dist_num");
-    const camMaxDist = document.getElementById("prop_cam_max_dist");
-    const camMaxDistNum = document.getElementById("prop_cam_max_dist_num");
 
     const onCamTargetChange = () => {
       const tx = parseFloat(targetX?.value || 0);
@@ -1439,15 +1128,6 @@ function bindInspectorEvents(type, object, target) {
     };
 
     [targetX, targetY, targetZ].forEach((el) => el?.addEventListener("input", onCamTargetChange));
-
-    document.querySelectorAll(".inspector-camera-axis-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const axis = btn.getAttribute("data-axis");
-        if (state.cameraRig && axis) {
-          state.cameraRig.snapToAxis(axis);
-        }
-      });
-    });
 
     camFov?.addEventListener("input", (e) => {
       const fovVal = parseFloat(e.target.value);
@@ -1476,181 +1156,6 @@ function bindInspectorEvents(type, object, target) {
       if (badge) badge.textContent = `${Math.round(farVal)}m`;
     });
 
-    const updateCamMinDist = (val) => {
-      const num = Math.max(0.01, parseFloat(val) || 0.1);
-      if (state.cameraRig) {
-        state.cameraRig.minDistance = num;
-        state.cameraRig.hasExplicitLimits = true;
-        if (state.cameraRig.initialState) state.cameraRig.initialState.minDistance = num;
-        if (state.cameraRig.maxDistance < num + 0.05) {
-          state.cameraRig.maxDistance = num + 0.5;
-          if (state.cameraRig.initialState) state.cameraRig.initialState.maxDistance = state.cameraRig.maxDistance;
-          if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
-          if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
-          const maxBadge = document.getElementById("val_cam_max_dist");
-          if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
-        }
-        state.cameraRig.targetDistance = THREE.MathUtils.clamp(state.cameraRig.targetDistance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
-        state.cameraRig.distance = THREE.MathUtils.clamp(state.cameraRig.distance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
-      }
-      if (state.cameraSettings) state.cameraSettings.minDistance = num;
-      if (!state.sceneDocument) state.sceneDocument = {};
-      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
-      state.sceneDocument.camera.minDistance = num;
-      if (state.cameraRig?.maxDistance) state.sceneDocument.camera.maxDistance = state.cameraRig.maxDistance;
-
-      if (camMinDist && parseFloat(camMinDist.value) !== num && num <= 20) camMinDist.value = num;
-      if (camMinDistNum && parseFloat(camMinDistNum.value) !== num) camMinDistNum.value = num.toFixed(2);
-      const badge = document.getElementById("val_cam_min_dist");
-      if (badge) badge.textContent = `${num.toFixed(2)}m`;
-    };
-
-    const updateCamMaxDist = (val) => {
-      const minVal = state.cameraRig?.minDistance ?? 0.1;
-      const num = Math.max(minVal + 0.05, parseFloat(val) || (minVal + 1));
-      if (state.cameraRig) {
-        state.cameraRig.maxDistance = num;
-        state.cameraRig.hasExplicitLimits = true;
-        if (state.cameraRig.initialState) state.cameraRig.initialState.maxDistance = num;
-        state.cameraRig.targetDistance = THREE.MathUtils.clamp(state.cameraRig.targetDistance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
-        state.cameraRig.distance = THREE.MathUtils.clamp(state.cameraRig.distance, state.cameraRig.minDistance, state.cameraRig.maxDistance);
-      }
-      if (state.cameraSettings) state.cameraSettings.maxDistance = num;
-      if (!state.sceneDocument) state.sceneDocument = {};
-      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
-      state.sceneDocument.camera.maxDistance = num;
-
-      if (camMaxDist && parseFloat(camMaxDist.value) !== num && num <= 100) camMaxDist.value = num;
-      if (camMaxDistNum && parseFloat(camMaxDistNum.value) !== num) camMaxDistNum.value = num.toFixed(1);
-      const badge = document.getElementById("val_cam_max_dist");
-      if (badge) badge.textContent = `${num.toFixed(1)}m`;
-    };
-
-    const camMinPitch = document.getElementById("prop_cam_min_pitch");
-    const camMinPitchNum = document.getElementById("prop_cam_min_pitch_num");
-    const camMaxPitch = document.getElementById("prop_cam_max_pitch");
-    const camMaxPitchNum = document.getElementById("prop_cam_max_pitch_num");
-
-    const updateCamMinPitch = (val) => {
-      let num = parseInt(val, 10);
-      if (isNaN(num)) return;
-      num = Math.max(-89, Math.min(89, num));
-      if (state.cameraRig) {
-        state.cameraRig.setMinPitch(num, true);
-      }
-      if (state.cameraSettings) state.cameraSettings.minPitch = num;
-      if (!state.sceneDocument) state.sceneDocument = {};
-      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
-      state.sceneDocument.camera.minPitch = num;
-
-      if (camMinPitch && parseInt(camMinPitch.value, 10) !== num && num <= 0 && num >= -89) camMinPitch.value = num;
-      if (camMinPitchNum && parseInt(camMinPitchNum.value, 10) !== num) camMinPitchNum.value = num;
-      const badge = document.getElementById("val_cam_min_pitch");
-      if (badge) badge.textContent = `${num}°`;
-    };
-
-    const updateCamMaxPitch = (val) => {
-      let num = parseInt(val, 10);
-      if (isNaN(num)) return;
-      num = Math.max(-89, Math.min(89, num));
-      if (state.cameraRig) {
-        state.cameraRig.setMaxPitch(num, true);
-      }
-      if (state.cameraSettings) state.cameraSettings.maxPitch = num;
-      if (!state.sceneDocument) state.sceneDocument = {};
-      if (!state.sceneDocument.camera) state.sceneDocument.camera = {};
-      state.sceneDocument.camera.maxPitch = num;
-
-      if (camMaxPitch && parseInt(camMaxPitch.value, 10) !== num && num >= 0 && num <= 89) camMaxPitch.value = num;
-      if (camMaxPitchNum && parseInt(camMaxPitchNum.value, 10) !== num) camMaxPitchNum.value = num;
-      const badge = document.getElementById("val_cam_max_pitch");
-      if (badge) badge.textContent = `${num > 0 ? `+${num}` : num}°`;
-    };
-
-    camMinPitch?.addEventListener("input", (e) => updateCamMinPitch(e.target.value));
-    camMinPitchNum?.addEventListener("input", (e) => updateCamMinPitch(e.target.value));
-    camMaxPitch?.addEventListener("input", (e) => updateCamMaxPitch(e.target.value));
-    camMaxPitchNum?.addEventListener("input", (e) => updateCamMaxPitch(e.target.value));
-
-    document.querySelectorAll(".inspector-pitch-preset-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const minP = parseInt(btn.dataset.min, 10);
-        const maxP = parseInt(btn.dataset.max, 10);
-        updateCamMinPitch(minP);
-        updateCamMaxPitch(maxP);
-      });
-    });
-
-    camMinDist?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
-    camMinDistNum?.addEventListener("input", (e) => updateCamMinDist(e.target.value));
-    camMaxDist?.addEventListener("input", (e) => updateCamMaxDist(e.target.value));
-    camMaxDistNum?.addEventListener("input", (e) => updateCamMaxDist(e.target.value));
-
-    document.getElementById("btnFrameModelFromCam")?.addEventListener("click", () => {
-      if (state.cameraRig && state.currentModel) {
-        state.cameraRig.focus(state.currentModel);
-        const minBadge = document.getElementById("val_cam_min_dist");
-        if (minBadge) minBadge.textContent = `${state.cameraRig.minDistance.toFixed(2)}m`;
-        if (camMinDist) camMinDist.value = state.cameraRig.minDistance;
-        if (camMinDistNum) camMinDistNum.value = state.cameraRig.minDistance.toFixed(2);
-        const maxBadge = document.getElementById("val_cam_max_dist");
-        if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
-        if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
-        if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
-      }
-    });
-
-    document.getElementById("btnSetDefaultCamInspector")?.addEventListener("click", () => {
-      if (state.cameraRig) {
-        const camState = state.cameraRig.getState();
-        state.cameraRig.setDefaultState(camState);
-        if (!state.sceneDocument) state.sceneDocument = {};
-        state.sceneDocument.camera = {
-          yaw: camState.yaw,
-          pitch: camState.pitch,
-          distance: camState.distance,
-          minDistance: state.cameraRig.minDistance,
-          maxDistance: state.cameraRig.maxDistance,
-          minPitch: state.cameraRig.getMinPitchDeg(),
-          maxPitch: state.cameraRig.getMaxPitchDeg(),
-          target: camState.target,
-          fov: camState.fov
-        };
-        const btn = document.getElementById("btnSetDefaultCamInspector");
-        if (btn) {
-          const original = btn.innerHTML;
-          btn.innerHTML = "&#10003; Default Saved!";
-          setTimeout(() => { btn.innerHTML = original; }, 1500);
-        }
-      }
-    });
-
-    document.getElementById("btnResetDefaultCamInspector")?.addEventListener("click", () => {
-      if (state.cameraRig) {
-        state.cameraRig.reset();
-        const minBadge = document.getElementById("val_cam_min_dist");
-        if (minBadge) minBadge.textContent = `${state.cameraRig.minDistance.toFixed(2)}m`;
-        if (camMinDist) camMinDist.value = state.cameraRig.minDistance;
-        if (camMinDistNum) camMinDistNum.value = state.cameraRig.minDistance.toFixed(2);
-        const maxBadge = document.getElementById("val_cam_max_dist");
-        if (maxBadge) maxBadge.textContent = `${state.cameraRig.maxDistance.toFixed(1)}m`;
-        if (camMaxDist) camMaxDist.value = state.cameraRig.maxDistance;
-        if (camMaxDistNum) camMaxDistNum.value = state.cameraRig.maxDistance.toFixed(1);
-
-        const curMinPitch = state.cameraRig.getMinPitchDeg();
-        const curMaxPitch = state.cameraRig.getMaxPitchDeg();
-        const minPitchBadge = document.getElementById("val_cam_min_pitch");
-        if (minPitchBadge) minPitchBadge.textContent = `${curMinPitch}°`;
-        if (camMinPitch && curMinPitch <= 0 && curMinPitch >= -89) camMinPitch.value = curMinPitch;
-        if (camMinPitchNum) camMinPitchNum.value = curMinPitch;
-        const maxPitchBadge = document.getElementById("val_cam_max_pitch");
-        if (maxPitchBadge) maxPitchBadge.textContent = `${curMaxPitch > 0 ? `+${curMaxPitch}` : curMaxPitch}°`;
-        if (camMaxPitch && curMaxPitch >= 0 && curMaxPitch <= 89) camMaxPitch.value = curMaxPitch;
-        if (camMaxPitchNum) camMaxPitchNum.value = curMaxPitch;
-      }
-    });
-
     const autoRotateToggle = document.getElementById("prop_cam_autorotate");
     autoRotateToggle?.addEventListener("change", (e) => {
       if (state.cameraRig) {
@@ -1658,191 +1163,11 @@ function bindInspectorEvents(type, object, target) {
       }
     });
   } else if (type === "scene") {
-    const bgType = document.getElementById("prop_scene_bg_type");
-    const bg = document.getElementById("prop_scene_bg");
-    const bgBlur = document.getElementById("prop_scene_bg_blur");
-    const envPreset = document.getElementById("prop_scene_env_preset");
-    const envIntensity = document.getElementById("prop_scene_env_intensity");
-    const envRotation = document.getElementById("prop_scene_env_rotation");
-    const tonemapping = document.getElementById("prop_scene_tonemapping");
-    const exposure = document.getElementById("prop_scene_exposure");
-    const shadows = document.getElementById("prop_scene_shadows");
-    const grid = document.getElementById("prop_scene_grid");
-    const axes = document.getElementById("prop_scene_axes");
-
-    bgType?.addEventListener("change", (e) => {
-      state.sceneSettings.backgroundType = e.target.value;
-      applyBackgroundSettings();
-      renderInspector();
+    document.getElementById("btnInspectorGotoSettings")?.addEventListener("click", () => {
+      showSidebarTab("settings");
     });
-
-    bg?.addEventListener("input", (e) => {
-      state.sceneSettings.background = e.target.value;
-      applyBackgroundSettings();
-      const bgInput = document.getElementById("backgroundColor");
-      if (bgInput) bgInput.value = e.target.value;
-    });
-
-    bgBlur?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      state.sceneSettings.backgroundBlur = val;
-      applyBackgroundSettings();
-      const badge = document.getElementById("val_bg_blur");
-      if (badge) badge.textContent = val.toFixed(2);
-    });
-
-    envPreset?.addEventListener("change", (e) => {
-      state.sceneSettings.environment.preset = e.target.value;
-      loadEnvironment(e.target.value);
-    });
-
-    envIntensity?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      state.sceneSettings.environment.intensity = val;
-      applyEnvironmentParams();
-      const badge = document.getElementById("val_env_intensity");
-      if (badge) badge.textContent = val.toFixed(1);
-    });
-
-    envRotation?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      state.sceneSettings.environment.rotation = val;
-      applyEnvironmentParams();
-      const badge = document.getElementById("val_env_rotation");
-      if (badge) badge.textContent = `${Math.round(val)}°`;
-    });
-
-    tonemapping?.addEventListener("change", (e) => {
-      state.sceneSettings.environment.toneMapping = e.target.value;
-      applyEnvironmentParams();
-    });
-
-    const lookSelect = document.getElementById("prop_scene_look");
-    const exposureEV = document.getElementById("prop_scene_exposure_ev");
-
-    lookSelect?.addEventListener("change", (e) => {
-      state.sceneSettings.environment.look = e.target.value;
-      applyEnvironmentParams();
-    });
-
-    exposureEV?.addEventListener("input", (e) => {
-      const evVal = parseFloat(e.target.value);
-      state.sceneSettings.environment.exposureEV = evVal;
-      // Linear exposure = 2^EV
-      const linearExposure = Math.pow(2, evVal);
-      state.sceneSettings.environment.exposure = linearExposure;
-      applyEnvironmentParams();
-      const badge = document.getElementById("val_exposure_ev");
-      if (badge) badge.textContent = `${evVal >= 0 ? "+" : ""}${evVal.toFixed(2)} EV`;
-    });
-
-    exposure?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      state.sceneSettings.environment.exposure = val;
-      state.sceneSettings.environment.exposureEV = Math.log2(Math.max(0.01, val));
-      applyEnvironmentParams();
-      const badge = document.getElementById("val_exposure");
-      if (badge) badge.textContent = val.toFixed(1);
-    });
-
-    shadows?.addEventListener("change", (e) => {
-      setShadowsEnabled(e.target.checked);
-    });
-
-    // Bloom & Post-processing handlers
-    const bloomEnable = document.getElementById("prop_scene_bloom_enable");
-    const bloomControls = document.getElementById("inspector_bloom_controls");
-    const bloomStrength = document.getElementById("prop_scene_bloom_strength");
-    const bloomRadius = document.getElementById("prop_scene_bloom_radius");
-    const bloomThreshold = document.getElementById("prop_scene_bloom_threshold");
-
-    bloomEnable?.addEventListener("change", (e) => {
-      const enabled = Boolean(e.target.checked);
-      setBloomEnabled(enabled);
-      if (bloomControls) bloomControls.style.display = enabled ? "" : "none";
-      // Also synchronize Environment tab checkbox if present
-      const envTabBloom = document.getElementById("envTabBloomEnabled");
-      if (envTabBloom) envTabBloom.checked = enabled;
-      const envTabControls = document.getElementById("envTabBloomControls");
-      if (envTabControls) envTabControls.style.display = enabled ? "" : "none";
-    });
-
-    bloomStrength?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      applyBloomSettings({ strength: val });
-      const badge = document.getElementById("val_bloom_strength");
-      if (badge) badge.textContent = val.toFixed(2);
-      const envTabStrength = document.getElementById("envTabBloomStrength");
-      if (envTabStrength) envTabStrength.value = val;
-      const envTabStrengthVal = document.getElementById("envTabBloomStrengthVal");
-      if (envTabStrengthVal) envTabStrengthVal.textContent = val.toFixed(2);
-    });
-
-    bloomRadius?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      applyBloomSettings({ radius: val });
-      const badge = document.getElementById("val_bloom_radius");
-      if (badge) badge.textContent = val.toFixed(2);
-      const envTabRadius = document.getElementById("envTabBloomRadius");
-      if (envTabRadius) envTabRadius.value = val;
-      const envTabRadiusVal = document.getElementById("envTabBloomRadiusVal");
-      if (envTabRadiusVal) envTabRadiusVal.textContent = val.toFixed(2);
-    });
-
-    bloomThreshold?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      applyBloomSettings({ threshold: val });
-      const badge = document.getElementById("val_bloom_threshold");
-      if (badge) badge.textContent = val.toFixed(2);
-      const envTabThreshold = document.getElementById("envTabBloomThreshold");
-      if (envTabThreshold) envTabThreshold.value = val;
-      const envTabThresholdVal = document.getElementById("envTabBloomThresholdVal");
-      if (envTabThresholdVal) envTabThresholdVal.textContent = val.toFixed(2);
-    });
-
-    grid?.addEventListener("change", (e) => {
-      setGridVisible(e.target.checked);
-    });
-
-    axes?.addEventListener("change", (e) => {
-      setAxesVisible(e.target.checked);
-    });
-
-    // Scene viewer controls checkboxes
-    const btnExplodeCheck = document.getElementById("prop_scene_btn_explode");
-    const btnSimCheck = document.getElementById("prop_scene_btn_simulator");
-    const simBox = document.getElementById("simulator_btn_options_box");
-    const simUrl = document.getElementById("prop_sim_btn_url");
-    const simFn = document.getElementById("prop_sim_btn_fn");
-
-    btnExplodeCheck?.addEventListener("change", (e) => {
-      if (!state.sceneSettings.controls) {
-        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
-      }
-      state.sceneSettings.controls.explodeEnabled = Boolean(e.target.checked);
-    });
-
-    btnSimCheck?.addEventListener("change", (e) => {
-      if (!state.sceneSettings.controls) {
-        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
-      }
-      const enabled = Boolean(e.target.checked);
-      state.sceneSettings.controls.simulatorEnabled = enabled;
-      if (simBox) simBox.style.display = enabled ? "" : "none";
-    });
-
-    simUrl?.addEventListener("input", (e) => {
-      if (!state.sceneSettings.controls) {
-        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
-      }
-      state.sceneSettings.controls.simulatorUrl = e.target.value;
-    });
-
-    simFn?.addEventListener("input", (e) => {
-      if (!state.sceneSettings.controls) {
-        state.sceneSettings.controls = { defaultEnabled: true, explodeEnabled: true, simulatorEnabled: true };
-      }
-      state.sceneSettings.controls.simulatorJsFunction = e.target.value;
+    document.getElementById("btnInspectorGotoEnv")?.addEventListener("click", () => {
+      showSidebarTab("env");
     });
   }
 
