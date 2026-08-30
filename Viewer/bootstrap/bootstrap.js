@@ -107,12 +107,25 @@ export async function bootstrapViewer() {
 
   // Auto-load default demo showcase if present
   try {
-    const res = await fetch("/Viewer/assets/Products/Cube.json");
-    if (res.ok) {
-      const data = await res.json();
-      if (data) {
-        loadViewerSceneJson(data, "Cube");
-      }
+    const candidatePaths = [
+      "./assets/Products/Cube.json",
+      "assets/Products/Cube.json",
+      "../Viewer/assets/Products/Cube.json",
+      "/Viewer/assets/Products/Cube.json",
+      "/assets/Products/Cube.json"
+    ];
+    let cubeData = null;
+    for (const p of candidatePaths) {
+      try {
+        const res = await fetch(p);
+        if (res.ok) {
+          cubeData = await res.json();
+          if (cubeData) break;
+        }
+      } catch (_) {}
+    }
+    if (cubeData) {
+      loadViewerSceneJson(cubeData, "Cube");
     }
   } catch (_) {}
 }

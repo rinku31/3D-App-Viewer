@@ -26,12 +26,25 @@ async function loadDefaultEditorScene() {
   createDefaultEditorCube();
 
   try {
-    const res = await fetch("/Viewer/assets/Products/Cube.json");
-    if (res.ok) {
-      const cubeJson = await res.json();
-      if (cubeJson) {
-        await importJsonData(cubeJson, "Cube.json");
-      }
+    const candidatePaths = [
+      "../Viewer/assets/Products/Cube.json",
+      "./Viewer/assets/Products/Cube.json",
+      "/Viewer/assets/Products/Cube.json",
+      "./assets/Products/Cube.json",
+      "/assets/Products/Cube.json"
+    ];
+    let cubeJson = null;
+    for (const p of candidatePaths) {
+      try {
+        const res = await fetch(p);
+        if (res.ok) {
+          cubeJson = await res.json();
+          if (cubeJson) break;
+        }
+      } catch (_) {}
+    }
+    if (cubeJson) {
+      await importJsonData(cubeJson, "Cube.json");
     }
   } catch (err) {
     console.warn("[Editor] Failed to fetch default Cube.json:", err);
