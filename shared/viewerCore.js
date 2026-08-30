@@ -336,11 +336,11 @@ async function ingestURLParameters(viewerState) {
     return;
   }
 
-  // Default Demo Asset Ingestion
+  // Default Demo Asset Ingestion (relative paths for GitHub Pages / subpaths)
   const defaultCandidates = [
-    "/Viewer/assets/Products/Viper V4 Pro.json",
+    "./assets/Products/Viper V4 Pro.json",
     "../Viewer/assets/Products/Viper V4 Pro.json",
-    "./assets/Products/Viper V4 Pro.json"
+    "/Viewer/assets/Products/Viper V4 Pro.json"
   ];
 
   for (const path of defaultCandidates) {

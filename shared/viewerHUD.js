@@ -253,18 +253,6 @@ function bindActionStackEvents(viewerState) {
 }
 
 /**
- * Binds Environment preset select changes.
- */
-function bindEnvironmentSelectorActions(viewerState) {
-  const select = document.getElementById("envPresetSelect");
-  if (!select) return;
-
-  select.addEventListener("change", (e) => {
-    setEnvironmentPreset(viewerState, e.target.value);
-  });
-}
-
-/**
  * Resets camera orientation and framing to fit the loaded 3D model.
  */
 export function resetViewerCamera(viewerState) {

@@ -55,7 +55,15 @@ const globalLoadingPromises = new Map();
 /**
  * Creates an Environment Manager instance for a given scene and renderer
  */
-export function createEnvironmentManager({ scene, renderer }) {
+export function createEnvironmentManager(arg1, arg2) {
+  let scene, renderer;
+  if (arg1 && arg1.scene) {
+    scene = arg1.scene;
+    renderer = arg1.renderer;
+  } else {
+    scene = arg1;
+    renderer = arg2;
+  }
   let pmremGenerator = new THREE.PMREMGenerator(renderer);
   pmremGenerator.compileEquirectangularShader();
   const rgbeLoader = new RGBELoader();

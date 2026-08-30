@@ -12,7 +12,21 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 
-export function createBloomManager({ renderer, scene, camera, width, height }) {
+export function createBloomManager(arg1, arg2, arg3, arg4, arg5) {
+  let renderer, scene, camera, width, height;
+  if (arg1 && arg1.renderer) {
+    renderer = arg1.renderer;
+    scene = arg1.scene;
+    camera = arg1.camera;
+    width = arg1.width;
+    height = arg1.height;
+  } else {
+    renderer = arg1;
+    scene = arg2;
+    camera = arg3;
+    width = arg4;
+    height = arg5;
+  }
   const w = width || window.innerWidth || 300;
   const h = height || window.innerHeight || 150;
 
