@@ -1272,9 +1272,13 @@ function bindIO(loader) {
       const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
       const jsonFile = files.find((f) => /\.json$/i.test(f.name));
 
-      // If in Electron, files will have a .path property
-      if (jsonFile && jsonFile.path) {
-        state.currentFilePath = jsonFile.path;
+      // Extract native file path for Electron Overwrite feature
+      if (jsonFile) {
+        if (window.electronAPI && typeof window.electronAPI.getPathForFile === "function") {
+          state.currentFilePath = window.electronAPI.getPathForFile(jsonFile);
+        } else if (jsonFile.path) {
+          state.currentFilePath = jsonFile.path;
+        }
       }
 
       try {
@@ -1330,9 +1334,14 @@ function bindIO(loader) {
       const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
       const jsonFile = files.find((f) => /\.json$/i.test(f.name));
 
-      if (jsonFile && jsonFile.path) {
-        state.currentFilePath = jsonFile.path;
+      if (jsonFile) {
+        if (window.electronAPI && typeof window.electronAPI.getPathForFile === "function") {
+          state.currentFilePath = window.electronAPI.getPathForFile(jsonFile);
+        } else if (jsonFile.path) {
+          state.currentFilePath = jsonFile.path;
+        }
       }
+      
       if (jsonHandle) {
         state.currentFileHandle = jsonHandle;
       }
