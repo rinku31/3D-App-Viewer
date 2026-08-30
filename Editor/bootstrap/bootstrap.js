@@ -53,27 +53,66 @@ function syncEnvironmentTabUI() {
     if (rotVal) rotVal.textContent = `${Math.round(val)}°`;
   }
 
-  const bgTypeSelect = document.getElementById("envTabBgType");
-  const bgColorRow = document.getElementById("envTabBgColorRow");
-  const bgBlurRow = document.getElementById("envTabBgBlurRow");
-  if (bgTypeSelect) {
-    const bgType = state.sceneSettings.backgroundType || "color";
-    bgTypeSelect.value = bgType;
-    if (bgColorRow) bgColorRow.style.display = bgType === "transparent" ? "none" : "flex";
-    if (bgBlurRow) bgBlurRow.style.display = bgType === "environment" ? "block" : "none";
+  // 1. Editor Workspace Backdrop
+  const editorBg = state.editorBackground || { type: "color", color: "#222228", blur: 0 };
+  const editorBgTypeSelect = document.getElementById("envTabEditorBgType");
+  const editorBgColorRow = document.getElementById("envTabEditorBgColorRow");
+  const editorBgBlurRow = document.getElementById("envTabEditorBgBlurRow");
+  if (editorBgTypeSelect) {
+    const bgType = editorBg.type || "color";
+    editorBgTypeSelect.value = bgType;
+    if (editorBgColorRow) editorBgColorRow.style.display = bgType === "transparent" ? "none" : "flex";
+    if (editorBgBlurRow) editorBgBlurRow.style.display = bgType === "environment" ? "block" : "none";
   }
 
-  const bgColorInput = document.getElementById("envTabBgColor");
-  if (bgColorInput && state.sceneSettings.background) {
-    bgColorInput.value = state.sceneSettings.background;
+  const editorBgColorInput = document.getElementById("envTabEditorBgColor");
+  const editorBgColorText = document.getElementById("envTabEditorBgColorText");
+  if (editorBgColorInput && editorBg.color) {
+    if (editorBg.color.startsWith("#")) editorBgColorInput.value = editorBg.color;
+  }
+  if (editorBgColorText && editorBg.color) {
+    editorBgColorText.value = editorBg.color;
   }
 
-  const bgBlurInput = document.getElementById("envTabBgBlur");
-  const bgBlurVal = document.getElementById("envTabBgBlurVal");
-  if (bgBlurInput) {
-    const val = state.sceneSettings.backgroundBlur || 0;
-    bgBlurInput.value = val;
-    if (bgBlurVal) bgBlurVal.textContent = Number(val).toFixed(2);
+  const editorBgBlurInput = document.getElementById("envTabEditorBgBlur");
+  const editorBgBlurVal = document.getElementById("envTabEditorBgBlurVal");
+  if (editorBgBlurInput) {
+    const val = editorBg.blur || 0;
+    editorBgBlurInput.value = val;
+    if (editorBgBlurVal) editorBgBlurVal.textContent = Number(val).toFixed(2);
+  }
+
+  // 2. Exported Viewer Background
+  const viewerBg = state.sceneSettings?.viewerBackground || {
+    type: state.sceneSettings?.backgroundType || "color",
+    color: state.sceneSettings?.background || "#ffffff",
+    blur: state.sceneSettings?.backgroundBlur || 0
+  };
+  const viewerBgTypeSelect = document.getElementById("envTabViewerBgType");
+  const viewerBgColorRow = document.getElementById("envTabViewerBgColorRow");
+  const viewerBgBlurRow = document.getElementById("envTabViewerBgBlurRow");
+  if (viewerBgTypeSelect) {
+    const bgType = viewerBg.type || "color";
+    viewerBgTypeSelect.value = bgType;
+    if (viewerBgColorRow) viewerBgColorRow.style.display = bgType === "transparent" ? "none" : "flex";
+    if (viewerBgBlurRow) viewerBgBlurRow.style.display = bgType === "environment" ? "block" : "none";
+  }
+
+  const viewerBgColorInput = document.getElementById("envTabViewerBgColor");
+  const viewerBgColorText = document.getElementById("envTabViewerBgColorText");
+  if (viewerBgColorInput && viewerBg.color) {
+    if (viewerBg.color.startsWith("#")) viewerBgColorInput.value = viewerBg.color;
+  }
+  if (viewerBgColorText && viewerBg.color) {
+    viewerBgColorText.value = viewerBg.color;
+  }
+
+  const viewerBgBlurInput = document.getElementById("envTabViewerBgBlur");
+  const viewerBgBlurVal = document.getElementById("envTabViewerBgBlurVal");
+  if (viewerBgBlurInput) {
+    const val = viewerBg.blur || 0;
+    viewerBgBlurInput.value = val;
+    if (viewerBgBlurVal) viewerBgBlurVal.textContent = Number(val).toFixed(2);
   }
 
   const toneSelect = document.getElementById("envTabToneMapping");
@@ -178,42 +217,108 @@ function bindEnvironmentTab() {
     });
   }
 
-  // Background Mode
-  const bgTypeSelect = document.getElementById("envTabBgType");
-  const bgColorRow = document.getElementById("envTabBgColorRow");
-  const bgBlurRow = document.getElementById("envTabBgBlurRow");
-  if (bgTypeSelect) {
-    bgTypeSelect.value = state.sceneSettings.backgroundType || "color";
-    bgTypeSelect.addEventListener("change", (e) => {
-      state.sceneSettings.backgroundType = e.target.value;
-      if (bgColorRow) bgColorRow.style.display = e.target.value === "transparent" ? "none" : "flex";
-      if (bgBlurRow) bgBlurRow.style.display = e.target.value === "environment" ? "block" : "none";
+  // 1. Editor Workspace Backdrop Listeners
+  const editorBgTypeSelect = document.getElementById("envTabEditorBgType");
+  const editorBgColorRow = document.getElementById("envTabEditorBgColorRow");
+  const editorBgBlurRow = document.getElementById("envTabEditorBgBlurRow");
+  if (editorBgTypeSelect) {
+    editorBgTypeSelect.value = state.editorBackground?.type || "color";
+    editorBgTypeSelect.addEventListener("change", (e) => {
+      if (!state.editorBackground) state.editorBackground = {};
+      state.editorBackground.type = e.target.value;
+      if (editorBgColorRow) editorBgColorRow.style.display = e.target.value === "transparent" ? "none" : "flex";
+      if (editorBgBlurRow) editorBgBlurRow.style.display = e.target.value === "environment" ? "block" : "none";
       applyBackgroundSettings();
       pushHistoryState();
     });
   }
 
-  // Background Color
-  const bgColorInput = document.getElementById("envTabBgColor");
-  if (bgColorInput) {
-    bgColorInput.value = state.sceneSettings.background || "#222228";
-    bgColorInput.addEventListener("input", (e) => {
-      state.sceneSettings.background = e.target.value;
+  const editorBgColorInput = document.getElementById("envTabEditorBgColor");
+  const editorBgColorText = document.getElementById("envTabEditorBgColorText");
+  if (editorBgColorInput) {
+    editorBgColorInput.value = state.editorBackground?.color || "#222228";
+    editorBgColorInput.addEventListener("input", (e) => {
+      if (!state.editorBackground) state.editorBackground = {};
+      state.editorBackground.color = e.target.value;
+      if (editorBgColorText) editorBgColorText.value = e.target.value;
+      applyBackgroundSettings();
+      pushHistoryState();
+    });
+  }
+  if (editorBgColorText) {
+    editorBgColorText.value = state.editorBackground?.color || "#222228";
+    editorBgColorText.addEventListener("input", (e) => {
+      if (!state.editorBackground) state.editorBackground = {};
+      state.editorBackground.color = e.target.value;
+      if (editorBgColorInput && e.target.value.startsWith("#")) editorBgColorInput.value = e.target.value;
       applyBackgroundSettings();
       pushHistoryState();
     });
   }
 
-  // Background Blur
-  const bgBlurInput = document.getElementById("envTabBgBlur");
-  const bgBlurVal = document.getElementById("envTabBgBlurVal");
-  if (bgBlurInput) {
-    bgBlurInput.value = state.sceneSettings.backgroundBlur || 0;
-    bgBlurInput.addEventListener("input", (e) => {
+  const editorBgBlurInput = document.getElementById("envTabEditorBgBlur");
+  const editorBgBlurVal = document.getElementById("envTabEditorBgBlurVal");
+  if (editorBgBlurInput) {
+    editorBgBlurInput.value = state.editorBackground?.blur || 0;
+    editorBgBlurInput.addEventListener("input", (e) => {
       const val = parseFloat(e.target.value);
-      if (bgBlurVal) bgBlurVal.textContent = val.toFixed(2);
-      state.sceneSettings.backgroundBlur = val;
+      if (editorBgBlurVal) editorBgBlurVal.textContent = val.toFixed(2);
+      if (!state.editorBackground) state.editorBackground = {};
+      state.editorBackground.blur = val;
       applyBackgroundSettings();
+      pushHistoryState();
+    });
+  }
+
+  // 2. Exported Viewer Background Listeners
+  const viewerBgTypeSelect = document.getElementById("envTabViewerBgType");
+  const viewerBgColorRow = document.getElementById("envTabViewerBgColorRow");
+  const viewerBgBlurRow = document.getElementById("envTabViewerBgBlurRow");
+  if (viewerBgTypeSelect) {
+    viewerBgTypeSelect.value = state.sceneSettings?.viewerBackground?.type || state.sceneSettings?.backgroundType || "color";
+    viewerBgTypeSelect.addEventListener("change", (e) => {
+      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
+      state.sceneSettings.viewerBackground.type = e.target.value;
+      state.sceneSettings.backgroundType = e.target.value;
+      if (viewerBgColorRow) viewerBgColorRow.style.display = e.target.value === "transparent" ? "none" : "flex";
+      if (viewerBgBlurRow) viewerBgBlurRow.style.display = e.target.value === "environment" ? "block" : "none";
+      pushHistoryState();
+    });
+  }
+
+  const viewerBgColorInput = document.getElementById("envTabViewerBgColor");
+  const viewerBgColorText = document.getElementById("envTabViewerBgColorText");
+  if (viewerBgColorInput) {
+    viewerBgColorInput.value = state.sceneSettings?.viewerBackground?.color || state.sceneSettings?.background || "#ffffff";
+    viewerBgColorInput.addEventListener("input", (e) => {
+      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
+      state.sceneSettings.viewerBackground.color = e.target.value;
+      state.sceneSettings.background = e.target.value;
+      if (viewerBgColorText) viewerBgColorText.value = e.target.value;
+      pushHistoryState();
+    });
+  }
+  if (viewerBgColorText) {
+    viewerBgColorText.value = state.sceneSettings?.viewerBackground?.color || state.sceneSettings?.background || "#ffffff";
+    viewerBgColorText.addEventListener("input", (e) => {
+      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
+      state.sceneSettings.viewerBackground.color = e.target.value;
+      state.sceneSettings.background = e.target.value;
+      if (viewerBgColorInput && e.target.value.startsWith("#")) viewerBgColorInput.value = e.target.value;
+      pushHistoryState();
+    });
+  }
+
+  const viewerBgBlurInput = document.getElementById("envTabViewerBgBlur");
+  const viewerBgBlurVal = document.getElementById("envTabViewerBgBlurVal");
+  if (viewerBgBlurInput) {
+    viewerBgBlurInput.value = state.sceneSettings?.viewerBackground?.blur ?? (state.sceneSettings?.backgroundBlur || 0);
+    viewerBgBlurInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (viewerBgBlurVal) viewerBgBlurVal.textContent = val.toFixed(2);
+      if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
+      state.sceneSettings.viewerBackground.blur = val;
+      state.sceneSettings.backgroundBlur = val;
       pushHistoryState();
     });
   }
@@ -343,6 +448,54 @@ function bindEnvironmentTab() {
   }
 }
 
+function parseColorString(str) {
+  if (!str || typeof str !== "string") {
+    return { hex: "#1e1e24", alpha: 0.92, r: 30, g: 30, b: 36 };
+  }
+  const s = str.trim();
+  if (s.startsWith("#")) {
+    let hex = s;
+    let alpha = 1.0;
+    if (hex.length === 4) {
+      hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+    } else if (hex.length === 5) {
+      const aHex = hex[4];
+      alpha = parseInt(aHex + aHex, 16) / 255;
+      hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+    } else if (hex.length === 9) {
+      alpha = parseInt(hex.slice(7, 9), 16) / 255;
+      hex = hex.slice(0, 7);
+    }
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    return { hex, alpha: Math.min(Math.max(alpha, 0), 1), r, g, b };
+  }
+  const match = s.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+  if (match) {
+    const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
+    const g = Math.min(255, Math.max(0, parseInt(match[2], 10)));
+    const b = Math.min(255, Math.max(0, parseInt(match[3], 10)));
+    const alpha = match[4] !== undefined ? Math.min(1, Math.max(0, parseFloat(match[4]))) : 1.0;
+    const toHex = (n) => n.toString(16).padStart(2, "0");
+    const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return { hex, alpha, r, g, b };
+  }
+  return { hex: "#1e1e24", alpha: 0.92, r: 30, g: 30, b: 36 };
+}
+
+function formatRgbaString(hex, alpha) {
+  const cleanHex = hex.startsWith("#") ? hex.slice(1) : hex;
+  const fullHex = cleanHex.length === 3 
+    ? `${cleanHex[0]}${cleanHex[0]}${cleanHex[1]}${cleanHex[1]}${cleanHex[2]}${cleanHex[2]}` 
+    : cleanHex;
+  const r = parseInt(fullHex.slice(0, 2), 16) || 0;
+  const g = parseInt(fullHex.slice(2, 4), 16) || 0;
+  const b = parseInt(fullHex.slice(4, 6), 16) || 0;
+  const a = Math.round(Math.min(1, Math.max(0, alpha)) * 100) / 100;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 function syncSettingsTabUI() {
   if (!state.sceneSettings) state.sceneSettings = {};
   if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
@@ -358,8 +511,14 @@ function syncSettingsTabUI() {
   const panelColor = hotspots.panelColor || "rgba(30, 30, 35, 0.92)";
   const panelColorInput = document.getElementById("settings_hotspot_panel_color");
   const panelColorText = document.getElementById("settings_hotspot_panel_color_text");
-  if (panelColorInput && panelColor.startsWith("#")) panelColorInput.value = panelColor;
+  const panelOpacitySlider = document.getElementById("settings_hotspot_panel_opacity");
+  const valPanelOpacity = document.getElementById("val_settings_hotspot_panel_opacity");
+
+  const parsedPanel = parseColorString(panelColor);
+  if (panelColorInput) panelColorInput.value = parsedPanel.hex;
   if (panelColorText) panelColorText.value = panelColor;
+  if (panelOpacitySlider) panelOpacitySlider.value = Math.round(parsedPanel.alpha * 100);
+  if (valPanelOpacity) valPanelOpacity.textContent = `${Math.round(parsedPanel.alpha * 100)}%`;
 
   const titleFontColor = hotspots.titleFontColor || "#ffffff";
   const titleFontColorInput = document.getElementById("settings_hotspot_title_font_color");
@@ -401,8 +560,14 @@ function syncSettingsTabUI() {
   const btnBgColor = hotspots.btnBgColor || "rgba(68, 214, 44, 0.28)";
   const btnBgColorInput = document.getElementById("settings_hotspot_btn_bg_color");
   const btnBgColorText = document.getElementById("settings_hotspot_btn_bg_color_text");
-  if (btnBgColorInput && btnBgColor.startsWith("#")) btnBgColorInput.value = btnBgColor;
+  const btnOpacitySlider = document.getElementById("settings_hotspot_btn_opacity");
+  const valBtnOpacity = document.getElementById("val_settings_hotspot_btn_opacity");
+
+  const parsedBtn = parseColorString(btnBgColor);
+  if (btnBgColorInput) btnBgColorInput.value = parsedBtn.hex;
   if (btnBgColorText) btnBgColorText.value = btnBgColor;
+  if (btnOpacitySlider) btnOpacitySlider.value = Math.round(parsedBtn.alpha * 100);
+  if (valBtnOpacity) valBtnOpacity.textContent = `${Math.round(parsedBtn.alpha * 100)}%`;
 
   const btnFontColor = hotspots.btnFontColor || "#ffffff";
   const btnFontColorInput = document.getElementById("settings_hotspot_btn_font_color");
@@ -507,22 +672,44 @@ function syncSettingsTabUI() {
 function bindSettingsTab() {
   window.addEventListener("editorselectionchange", syncSettingsTabUI);
 
-  // Panel background color
+  // Panel background color & opacity
   const panelColorPicker = document.getElementById("settings_hotspot_panel_color");
   const panelColorText = document.getElementById("settings_hotspot_panel_color_text");
+  const panelOpacitySlider = document.getElementById("settings_hotspot_panel_opacity");
+  const valPanelOpacity = document.getElementById("val_settings_hotspot_panel_opacity");
+
   panelColorPicker?.addEventListener("input", (e) => {
     if (!state.sceneSettings) state.sceneSettings = {};
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
-    state.sceneSettings.hotspots.panelColor = e.target.value;
-    if (panelColorText) panelColorText.value = e.target.value;
+    const currentAlpha = panelOpacitySlider ? Number(panelOpacitySlider.value) / 100 : 0.92;
+    const rgba = formatRgbaString(e.target.value, currentAlpha);
+    state.sceneSettings.hotspots.panelColor = rgba;
+    if (panelColorText) panelColorText.value = rgba;
     applyGlobalHotspotSettings();
     pushHistoryState();
   });
+
   panelColorText?.addEventListener("input", (e) => {
     if (!state.sceneSettings) state.sceneSettings = {};
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
     state.sceneSettings.hotspots.panelColor = e.target.value;
-    if (panelColorPicker && e.target.value.startsWith("#")) panelColorPicker.value = e.target.value;
+    const parsed = parseColorString(e.target.value);
+    if (panelColorPicker) panelColorPicker.value = parsed.hex;
+    if (panelOpacitySlider) panelOpacitySlider.value = Math.round(parsed.alpha * 100);
+    if (valPanelOpacity) valPanelOpacity.textContent = `${Math.round(parsed.alpha * 100)}%`;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  panelOpacitySlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const alpha = Number(e.target.value) / 100;
+    const currentHex = panelColorPicker?.value || "#1e1e24";
+    const rgba = formatRgbaString(currentHex, alpha);
+    state.sceneSettings.hotspots.panelColor = rgba;
+    if (panelColorText) panelColorText.value = rgba;
+    if (valPanelOpacity) valPanelOpacity.textContent = `${Math.round(alpha * 100)}%`;
     applyGlobalHotspotSettings();
     pushHistoryState();
   });
@@ -623,6 +810,8 @@ function bindSettingsTab() {
   // Buttons: Background, Font Color, Font Size, Padding, Margin
   const btnBgColorPicker = document.getElementById("settings_hotspot_btn_bg_color");
   const btnBgColorText = document.getElementById("settings_hotspot_btn_bg_color_text");
+  const btnOpacitySlider = document.getElementById("settings_hotspot_btn_opacity");
+  const valBtnOpacity = document.getElementById("val_settings_hotspot_btn_opacity");
   const btnFontColorPicker = document.getElementById("settings_hotspot_btn_font_color");
   const btnFontColorText = document.getElementById("settings_hotspot_btn_font_color_text");
   const btnFontSizeSlider = document.getElementById("settings_hotspot_btn_font_size");
@@ -636,16 +825,35 @@ function bindSettingsTab() {
   btnBgColorPicker?.addEventListener("input", (e) => {
     if (!state.sceneSettings) state.sceneSettings = {};
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
-    state.sceneSettings.hotspots.btnBgColor = e.target.value;
-    if (btnBgColorText) btnBgColorText.value = e.target.value;
+    const currentAlpha = btnOpacitySlider ? Number(btnOpacitySlider.value) / 100 : 0.28;
+    const rgba = formatRgbaString(e.target.value, currentAlpha);
+    state.sceneSettings.hotspots.btnBgColor = rgba;
+    if (btnBgColorText) btnBgColorText.value = rgba;
     applyGlobalHotspotSettings();
     pushHistoryState();
   });
+
   btnBgColorText?.addEventListener("input", (e) => {
     if (!state.sceneSettings) state.sceneSettings = {};
     if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
     state.sceneSettings.hotspots.btnBgColor = e.target.value;
-    if (btnBgColorPicker && e.target.value.startsWith("#")) btnBgColorPicker.value = e.target.value;
+    const parsed = parseColorString(e.target.value);
+    if (btnBgColorPicker) btnBgColorPicker.value = parsed.hex;
+    if (btnOpacitySlider) btnOpacitySlider.value = Math.round(parsed.alpha * 100);
+    if (valBtnOpacity) valBtnOpacity.textContent = `${Math.round(parsed.alpha * 100)}%`;
+    applyGlobalHotspotSettings();
+    pushHistoryState();
+  });
+
+  btnOpacitySlider?.addEventListener("input", (e) => {
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.hotspots) state.sceneSettings.hotspots = {};
+    const alpha = Number(e.target.value) / 100;
+    const currentHex = btnBgColorPicker?.value || "#44D62C";
+    const rgba = formatRgbaString(currentHex, alpha);
+    state.sceneSettings.hotspots.btnBgColor = rgba;
+    if (btnBgColorText) btnBgColorText.value = rgba;
+    if (valBtnOpacity) valBtnOpacity.textContent = `${Math.round(alpha * 100)}%`;
     applyGlobalHotspotSettings();
     pushHistoryState();
   });

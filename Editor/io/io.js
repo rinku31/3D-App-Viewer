@@ -190,15 +190,28 @@ async function importJsonData(rawData, fileName = "scene.json") {
 
   // 1. Restore Scene Settings
   if (data.scene) {
-    Object.assign(state.sceneSettings, data.scene);
+    // Preserve local editor workspace backdrop, restore exported viewer presentation background
+    const importedViewerBg = {
+      color: data.scene.background || "#ffffff",
+      type: data.scene.backgroundType || "color",
+      blur: Number(data.scene.backgroundBlur || 0)
+    };
+    if (!state.sceneSettings) state.sceneSettings = {};
+    if (!state.sceneSettings.viewerBackground) state.sceneSettings.viewerBackground = {};
+    Object.assign(state.sceneSettings.viewerBackground, importedViewerBg);
+    state.sceneSettings.background = importedViewerBg.color;
+    state.sceneSettings.backgroundType = importedViewerBg.type;
+    state.sceneSettings.backgroundBlur = importedViewerBg.blur;
 
     if (data.scene.environment) {
+      if (!state.sceneSettings.environment) state.sceneSettings.environment = {};
       Object.assign(state.sceneSettings.environment, data.scene.environment);
       if (data.scene.environment.preset) {
         loadEnvironment(data.scene.environment.preset);
       }
       applyEnvironmentParams();
     }
+    // Re-apply author's active editor backdrop to the viewport
     applyBackgroundSettings();
 
     if (data.scene.rendering) {
@@ -478,9 +491,9 @@ function serializeSceneDocument() {
       tags: ["3d", "product-viewer", "interactive"]
     },
     scene: {
-      background: state.sceneSettings.background || "#222228",
-      backgroundType: state.sceneSettings.backgroundType || "color",
-      backgroundBlur: Number(state.sceneSettings.backgroundBlur || 0),
+      background: state.sceneSettings.viewerBackground?.color || state.sceneSettings.background || "#ffffff",
+      backgroundType: state.sceneSettings.viewerBackground?.type || state.sceneSettings.backgroundType || "color",
+      backgroundBlur: Number(state.sceneSettings.viewerBackground?.blur ?? (state.sceneSettings.backgroundBlur || 0)),
       environment: {
         preset: state.sceneSettings.environment?.preset || "studio_small_09",
         customHdrUrl: null,
@@ -865,7 +878,7 @@ function renderSaveLoadoutSummary(loadout) {
 
   const lightsSummary = lights.length > 0 
     ? lights.map(l => `${l.name} (${l.type})`).join(", ") 
-    : "Default Studio Sun";
+    : "None (Environment / Ambient Only)";
 
   const safeStr = (v) => String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

@@ -156,10 +156,10 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
 
   // Case 3: No parameters provided -> Try loading demo scene
   const defaultCandidates = [
-    "/Viewer/assets/Products/Viper V4 Pro.json",
-    "../Viewer/assets/Products/Viper V4 Pro.json",
-    "./assets/Products/Viper V4 Pro.json",
-    "/assets/Products/Viper V4 Pro.json"
+    "/Viewer/assets/Products/Cube.json",
+    "../Viewer/assets/Products/Cube.json",
+    "./assets/Products/Cube.json",
+    "/assets/Products/Cube.json"
   ];
 
   for (const path of defaultCandidates) {
@@ -168,7 +168,7 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          loadViewerSceneJson(data, titleParam || "Viper V4 Pro");
+          loadViewerSceneJson(data, titleParam || "Cube");
           return;
         }
       }
@@ -176,7 +176,7 @@ async function ingestQueryParams({ glbParam, jsonParam, titleParam }) {
   }
 
   // Case 4: Procedural fallback
-  loadViewerSceneJson({}, titleParam || "Product Showcase");
+  loadViewerSceneJson({}, titleParam || "Cube");
 }
 
 /**

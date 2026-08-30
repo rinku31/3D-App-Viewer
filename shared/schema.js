@@ -50,7 +50,7 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       tags: ["product", "3d", "interactive"]
     },
     scene: {
-      background: "#222228",
+      background: "#ffffff",
       backgroundType: "color",
       backgroundBlur: 0.0,
       environment: {

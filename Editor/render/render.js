@@ -141,11 +141,20 @@ function loadEnvironment(presetOrUrl) {
 }
 
 /**
- * Applies background type, color, and blur
+ * Applies editor workspace background type, color, and blur to the viewport
  */
 function applyBackgroundSettings() {
   if (envManager) {
-    envManager.applyBackground(state.sceneSettings);
+    const editorBg = state.editorBackground || {
+      color: "#222228",
+      type: "color",
+      blur: 0.0
+    };
+    envManager.applyBackground({
+      background: editorBg.color || "#222228",
+      backgroundType: editorBg.type || "color",
+      backgroundBlur: editorBg.blur ?? 0.0
+    });
   }
 }
 

@@ -409,29 +409,65 @@ class="sidebar-tab-panel scrollable-tab-panel"
 
   <div class="section">
     <div class="section-header">
-      <h3>Background &amp; Skybox</h3>
-      <span class="hierarchy-badge">Backdrop</span>
+      <h3>Editor Workspace Backdrop</h3>
+      <span class="hierarchy-badge">Loadout</span>
+    </div>
+    <div style="font-size:11px; color:var(--text-dim, #888); margin-bottom:8px; line-height:1.4;">
+      Active viewport backdrop while editing. Saved in your Startup Loadout.
     </div>
 
     <div class="param-row">
-      <label>Background Mode</label>
-      <select id="envTabBgType" class="inspector-select">
+      <label>Editor Backdrop Mode</label>
+      <select id="envTabEditorBgType" class="inspector-select">
         <option value="color">Solid Color</option>
         <option value="environment">HDR Skybox</option>
         <option value="transparent">Transparent</option>
       </select>
     </div>
 
-    <div class="param-row-flex" id="envTabBgColorRow">
-      <label>Solid Background Color</label>
+    <div class="param-row-flex" id="envTabEditorBgColorRow">
+      <label>Solid Backdrop Color</label>
       <div style="display:flex; align-items:center; gap:8px;">
-        <input id="envTabBgColor" type="color" value="#222228">
+        <input id="envTabEditorBgColor" type="color" value="#222228">
+        <input id="envTabEditorBgColorText" type="text" value="#222228" style="width:75px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
       </div>
     </div>
 
-    <div class="param-row" id="envTabBgBlurRow" style="display:none;">
-      <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="envTabBgBlurVal">0.00</span></div>
-      <input id="envTabBgBlur" type="range" min="0" max="1" step="0.05" value="0">
+    <div class="param-row" id="envTabEditorBgBlurRow" style="display:none;">
+      <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="envTabEditorBgBlurVal">0.00</span></div>
+      <input id="envTabEditorBgBlur" type="range" min="0" max="1" step="0.05" value="0">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Exported Viewer Background</h3>
+      <span class="hierarchy-badge">Scene JSON</span>
+    </div>
+    <div style="font-size:11px; color:var(--text-dim, #888); margin-bottom:8px; line-height:1.4;">
+      Presentation backdrop rendered in the standalone Viewer and Embed. Saved in scene JSON.
+    </div>
+
+    <div class="param-row">
+      <label>Viewer Background Mode</label>
+      <select id="envTabViewerBgType" class="inspector-select">
+        <option value="color">Solid Color</option>
+        <option value="environment">HDR Skybox</option>
+        <option value="transparent">Transparent</option>
+      </select>
+    </div>
+
+    <div class="param-row-flex" id="envTabViewerBgColorRow">
+      <label>Solid Viewer Color</label>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input id="envTabViewerBgColor" type="color" value="#ffffff">
+        <input id="envTabViewerBgColorText" type="text" value="#ffffff" style="width:75px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+      </div>
+    </div>
+
+    <div class="param-row" id="envTabViewerBgBlurRow" style="display:none;">
+      <div class="slider-header"><label>Skybox Blur</label><span class="value-badge" id="envTabViewerBgBlurVal">0.00</span></div>
+      <input id="envTabViewerBgBlur" type="range" min="0" max="1" step="0.05" value="0">
     </div>
   </div>
 
@@ -525,223 +561,249 @@ id="settingsTab"
 class="sidebar-tab-panel scrollable-tab-panel"
 >
 
-  <div class="section">
-    <div class="section-header">
-      <h3>Hotspots &amp; Connector Line</h3>
-      <span class="hierarchy-badge">Global Style</span>
-    </div>
-
-    <div class="param-row-flex">
-      <label>Panel Background Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_panel_color" type="color" value="#1e1e24">
-        <input id="settings_hotspot_panel_color_text" type="text" value="rgba(30, 30, 35, 0.92)" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+  <!-- Accordion 1: Camera Navigation & Constraints -->
+  <details class="section settings-accordion" open>
+    <summary class="section-header settings-accordion-summary">
+      <div class="settings-accordion-title">
+        <span class="settings-accordion-chevron">▾</span>
+        <h3>Camera Navigation &amp; Constraints</h3>
       </div>
-    </div>
-
-    <div class="param-row-flex">
-      <label>Title Font Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_title_font_color" type="color" value="#ffffff">
-        <input id="settings_hotspot_title_font_color_text" type="text" value="#ffffff" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-    <div class="param-row">
-      <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_title_font_size">14</span></div>
-      <input id="settings_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="14">
-    </div>
-
-    <div class="param-row-flex">
-      <label>Description Font Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_desc_font_color" type="color" value="#e0e0e0">
-        <input id="settings_hotspot_desc_font_color_text" type="text" value="#e0e0e0" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-    <div class="param-row">
-      <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_desc_font_size">12.5</span></div>
-      <input id="settings_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="12.5">
-    </div>
-
-    <div class="param-row-flex">
-      <label>List Font Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_list_font_color" type="color" value="#cccccc">
-        <input id="settings_hotspot_list_font_color_text" type="text" value="#cccccc" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-    <div class="param-row">
-      <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_list_font_size">11</span></div>
-      <input id="settings_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="11">
-    </div>
-
-    <div class="param-row-flex" style="border-top:1px solid rgba(255,255,255,0.08); margin-top:8px; padding-top:8px;">
-      <label>Button Background Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_btn_bg_color" type="color" value="#44D62C">
-        <input id="settings_hotspot_btn_bg_color_text" type="text" value="rgba(68, 214, 44, 0.28)" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-
-    <div class="param-row-flex">
-      <label>Button Font Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_hotspot_btn_font_color" type="color" value="#ffffff">
-        <input id="settings_hotspot_btn_font_color_text" type="text" value="#ffffff" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-
-    <div class="param-row">
-      <div class="slider-header"><label>Button Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_btn_font_size">11</span></div>
-      <input id="settings_hotspot_btn_font_size" type="range" min="8" max="18" step="0.5" value="11">
-    </div>
-
-    <div class="param-row">
-      <div class="slider-header"><label>Button Padding (Vertical / Horizontal)</label><span class="value-badge" id="val_settings_hotspot_btn_padding">5px / 12px</span></div>
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1; display:flex; align-items:center; gap:4px;">
-          <span style="font-size:10px; color:var(--text-dim, #888);">V:</span>
-          <input id="settings_hotspot_btn_padding_v" type="number" min="1" max="24" step="1" value="5" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-        <div style="flex:1; display:flex; align-items:center; gap:4px;">
-          <span style="font-size:10px; color:var(--text-dim, #888);">H:</span>
-          <input id="settings_hotspot_btn_padding_h" type="number" min="1" max="36" step="1" value="12" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-        </div>
-      </div>
-    </div>
-
-    <div class="param-row">
-      <div class="slider-header"><label>Button Margin / Spacing (px)</label><span class="value-badge" id="val_settings_hotspot_btn_margin">5</span></div>
-      <input id="settings_hotspot_btn_margin" type="range" min="0" max="20" step="1" value="5">
-    </div>
-
-    <div class="param-row">
-      <label>Connector Line Style</label>
-      <select id="settings_line_style" class="inspector-select">
-        <option value="dashed">Broken / Dashed Line</option>
-        <option value="solid">Solid Line</option>
-      </select>
-    </div>
-
-    <div class="param-row-flex">
-      <label>Connector Line Color</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_line_color" type="color" value="#44D62C">
-        <input id="settings_line_color_text" type="text" value="#44D62C" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-
-    <div class="param-row">
-      <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_settings_line_width">1.5px</span></div>
-      <input id="settings_line_width" type="range" min="1" max="6" step="0.5" value="1.5">
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <h3>Viewer &amp; Embed Floating Buttons</h3>
-      <span class="hierarchy-badge">Controls</span>
-    </div>
-
-    <div class="param-row-checkbox">
-      <label>
-        <input id="settings_btn_explode" type="checkbox" checked>
-        Enable "Explode" View Button
-      </label>
-    </div>
-
-    <div class="param-row-checkbox">
-      <label>
-        <input id="settings_btn_simulator" type="checkbox" checked>
-        Enable "Simulator" Button
-      </label>
-    </div>
-
-    <div id="settings_simulator_options_box" style="margin-top:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--border, #333);">
-      <div class="param-row">
-        <label>Link URL (optional)</label>
-        <input id="settings_sim_btn_url" type="url" placeholder="https://example.com/simulator">
-      </div>
-
-      <div class="param-row">
-        <label>Parent JS Function Name (optional)</label>
-        <input id="settings_sim_btn_fn" type="text" value="onSimulatorToggle" placeholder="onSimulatorToggle">
-        <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
-          Calls function on parent page outside embed iframe or dispatches message.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <h3>Camera Navigation &amp; Constraints</h3>
       <span class="hierarchy-badge">Orbit Limits</span>
-    </div>
+    </summary>
 
-    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-      <button id="settingsSetDefaultCamBtn" class="primary-btn" style="width:100%; padding:8px 12px; font-size:12px; font-weight:700;">
-        &#9733; Set Current as Default View
-      </button>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-        <button id="settingsResetDefaultCamBtn" class="secondary" style="font-size:11px; padding:6px;">
-          &#8634; Reset to Default
+    <div class="settings-accordion-content">
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+        <button id="settingsSetDefaultCamBtn" class="primary-btn" style="width:100%; padding:8px 12px; font-size:12px; font-weight:700;">
+          &#9733; Set Current as Default View
         </button>
-        <button id="settingsFrameModelBtn" class="secondary" style="font-size:11px; padding:6px;">
-          &#128269; Frame Model
-        </button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button id="settingsResetDefaultCamBtn" class="secondary" style="font-size:11px; padding:6px;">
+            &#8634; Reset to Default
+          </button>
+          <button id="settingsFrameModelBtn" class="secondary" style="font-size:11px; padding:6px;">
+            &#128269; Frame Model
+          </button>
+        </div>
+      </div>
+
+      <div class="param-row-checkbox" style="margin-top:8px;">
+        <label>
+          <input id="settings_cam_autorotate" type="checkbox">
+          Auto-Rotate Preview in Viewport
+        </label>
+      </div>
+
+      <div style="margin-top:12px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Vertical Orbit Pitch Clamping</div>
+      
+      <div class="param-row" style="margin-top:6px;">
+        <div class="slider-header"><label>Lowest Angle (Min Pitch)</label><span class="value-badge" id="val_settings_cam_min_pitch">-82°</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_cam_min_pitch" type="range" min="-89" max="0" step="1" value="-82" style="flex:1;">
+          <input id="settings_cam_min_pitch_num" type="number" min="-89" max="89" step="1" value="-82" style="width:55px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Highest Angle (Max Pitch)</label><span class="value-badge" id="val_settings_cam_max_pitch">+82°</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_cam_max_pitch" type="range" min="0" max="89" step="1" value="82" style="flex:1;">
+          <input id="settings_cam_max_pitch_num" type="number" min="-89" max="89" step="1" value="82" style="width:55px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="button-grid" style="grid-template-columns: repeat(3, 1fr); gap:4px; margin-top:6px;">
+        <button class="secondary settings-pitch-preset-btn" data-min="-82" data-max="82" style="font-size:10px; padding:4px 2px;">Standard (&plusmn;82&deg;)</button>
+        <button class="secondary settings-pitch-preset-btn" data-min="0" data-max="82" style="font-size:10px; padding:4px 2px;">Table Top (0&deg; to +82&deg;)</button>
+        <button class="secondary settings-pitch-preset-btn" data-min="-89" data-max="89" style="font-size:10px; padding:4px 2px;">Full Orbit (&plusmn;89&deg;)</button>
+      </div>
+
+      <div style="margin-top:14px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Zoom Distance Limits</div>
+
+      <div class="param-row" style="margin-top:6px;">
+        <div class="slider-header"><label>Closest Zoom (Min Distance)</label><span class="value-badge" id="val_settings_cam_min_dist">1.35m</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_cam_min_dist" type="range" min="0.1" max="20" step="0.1" value="1.35" style="flex:1;">
+          <input id="settings_cam_min_dist_num" type="number" min="0.01" max="500" step="0.1" value="1.35" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Farthest Zoom (Max Distance)</label><span class="value-badge" id="val_settings_cam_max_dist">16.0m</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_cam_max_dist" type="range" min="1.0" max="100" step="0.5" value="16.0" style="flex:1;">
+          <input id="settings_cam_max_dist_num" type="number" min="0.1" max="2000" step="0.5" value="16.0" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
       </div>
     </div>
+  </details>
 
-    <div class="param-row-checkbox" style="margin-top:8px;">
-      <label>
-        <input id="settings_cam_autorotate" type="checkbox">
-        Auto-Rotate Preview in Viewport
-      </label>
-    </div>
+  <!-- Accordion 2: Viewer & Embed Floating Buttons -->
+  <details class="section settings-accordion" open>
+    <summary class="section-header settings-accordion-summary">
+      <div class="settings-accordion-title">
+        <span class="settings-accordion-chevron">▾</span>
+        <h3>Viewer &amp; Embed Floating Buttons</h3>
+      </div>
+      <span class="hierarchy-badge">Controls</span>
+    </summary>
 
-    <div style="margin-top:12px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Vertical Orbit Pitch Clamping</div>
-    
-    <div class="param-row" style="margin-top:6px;">
-      <div class="slider-header"><label>Lowest Angle (Min Pitch)</label><span class="value-badge" id="val_settings_cam_min_pitch">-82°</span></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_cam_min_pitch" type="range" min="-89" max="0" step="1" value="-82" style="flex:1;">
-        <input id="settings_cam_min_pitch_num" type="number" min="-89" max="89" step="1" value="-82" style="width:55px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+    <div class="settings-accordion-content">
+      <div class="param-row-checkbox">
+        <label>
+          <input id="settings_btn_explode" type="checkbox" checked>
+          Enable "Explode" View Button
+        </label>
+      </div>
+
+      <div class="param-row-checkbox">
+        <label>
+          <input id="settings_btn_simulator" type="checkbox" checked>
+          Enable "Simulator" Button
+        </label>
+      </div>
+
+      <div id="settings_simulator_options_box" style="margin-top:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px solid var(--border, #333);">
+        <div class="param-row">
+          <label>Link URL (optional)</label>
+          <input id="settings_sim_btn_url" type="url" placeholder="https://example.com/simulator">
+        </div>
+
+        <div class="param-row">
+          <label>Parent JS Function Name (optional)</label>
+          <input id="settings_sim_btn_fn" type="text" value="onSimulatorToggle" placeholder="onSimulatorToggle">
+          <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
+            Calls function on parent page outside embed iframe or dispatches message.
+          </div>
+        </div>
       </div>
     </div>
+  </details>
 
-    <div class="param-row">
-      <div class="slider-header"><label>Highest Angle (Max Pitch)</label><span class="value-badge" id="val_settings_cam_max_pitch">+82°</span></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_cam_max_pitch" type="range" min="0" max="89" step="1" value="82" style="flex:1;">
-        <input id="settings_cam_max_pitch_num" type="number" min="-89" max="89" step="1" value="82" style="width:55px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+  <!-- Accordion 3: Hotspots & Connector Line -->
+  <details class="section settings-accordion" open>
+    <summary class="section-header settings-accordion-summary">
+      <div class="settings-accordion-title">
+        <span class="settings-accordion-chevron">▾</span>
+        <h3>Hotspots &amp; Connector Line</h3>
+      </div>
+      <span class="hierarchy-badge">Global Style</span>
+    </summary>
+
+    <div class="settings-accordion-content">
+      <div class="param-row-flex">
+        <label>Panel Background Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_panel_color" type="color" value="#1e1e24">
+          <input id="settings_hotspot_panel_color_text" type="text" value="rgba(30, 30, 35, 0.92)" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Panel Opacity (Glass Blur)</label><span class="value-badge" id="val_settings_hotspot_panel_opacity">92%</span></div>
+        <input id="settings_hotspot_panel_opacity" type="range" min="0" max="100" step="1" value="92">
+      </div>
+
+      <div class="param-row-flex">
+        <label>Title Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_title_font_color" type="color" value="#ffffff">
+          <input id="settings_hotspot_title_font_color_text" type="text" value="#ffffff" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Title Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_title_font_size">14</span></div>
+        <input id="settings_hotspot_title_font_size" type="range" min="10" max="24" step="1" value="14">
+      </div>
+
+      <div class="param-row-flex">
+        <label>Description Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_desc_font_color" type="color" value="#e0e0e0">
+          <input id="settings_hotspot_desc_font_color_text" type="text" value="#e0e0e0" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Description Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_desc_font_size">12.5</span></div>
+        <input id="settings_hotspot_desc_font_size" type="range" min="9" max="20" step="0.5" value="12.5">
+      </div>
+
+      <div class="param-row-flex">
+        <label>List Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_list_font_color" type="color" value="#cccccc">
+          <input id="settings_hotspot_list_font_color_text" type="text" value="#cccccc" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>List Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_list_font_size">11</span></div>
+        <input id="settings_hotspot_list_font_size" type="range" min="8" max="18" step="0.5" value="11">
+      </div>
+
+      <div class="param-row-flex" style="border-top:1px solid rgba(255,255,255,0.08); margin-top:8px; padding-top:8px;">
+        <label>Button Background Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_btn_bg_color" type="color" value="#44D62C">
+          <input id="settings_hotspot_btn_bg_color_text" type="text" value="rgba(68, 214, 44, 0.28)" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+      <div class="param-row">
+        <div class="slider-header"><label>Button Opacity</label><span class="value-badge" id="val_settings_hotspot_btn_opacity">28%</span></div>
+        <input id="settings_hotspot_btn_opacity" type="range" min="0" max="100" step="1" value="28">
+      </div>
+
+      <div class="param-row-flex">
+        <label>Button Font Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_hotspot_btn_font_color" type="color" value="#ffffff">
+          <input id="settings_hotspot_btn_font_color_text" type="text" value="#ffffff" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Font Size (px)</label><span class="value-badge" id="val_settings_hotspot_btn_font_size">11</span></div>
+        <input id="settings_hotspot_btn_font_size" type="range" min="8" max="18" step="0.5" value="11">
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Padding (Vertical / Horizontal)</label><span class="value-badge" id="val_settings_hotspot_btn_padding">5px / 12px</span></div>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; display:flex; align-items:center; gap:4px;">
+            <span style="font-size:10px; color:var(--text-dim, #888);">V:</span>
+            <input id="settings_hotspot_btn_padding_v" type="number" min="1" max="24" step="1" value="5" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+          </div>
+          <div style="flex:1; display:flex; align-items:center; gap:4px;">
+            <span style="font-size:10px; color:var(--text-dim, #888);">H:</span>
+            <input id="settings_hotspot_btn_padding_h" type="number" min="1" max="36" step="1" value="12" style="width:100%; padding:3px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+          </div>
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Button Margin / Spacing (px)</label><span class="value-badge" id="val_settings_hotspot_btn_margin">5</span></div>
+        <input id="settings_hotspot_btn_margin" type="range" min="0" max="20" step="1" value="5">
+      </div>
+
+      <div class="param-row">
+        <label>Connector Line Style</label>
+        <select id="settings_line_style" class="inspector-select">
+          <option value="dashed">Broken / Dashed Line</option>
+          <option value="solid">Solid Line</option>
+        </select>
+      </div>
+
+      <div class="param-row-flex">
+        <label>Connector Line Color</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input id="settings_line_color" type="color" value="#44D62C">
+          <input id="settings_line_color_text" type="text" value="#44D62C" style="width:130px; padding:4px 6px; font-size:11px; font-family:monospace; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="slider-header"><label>Connector Line Width</label><span class="value-badge" id="val_settings_line_width">1.5px</span></div>
+        <input id="settings_line_width" type="range" min="1" max="6" step="0.5" value="1.5">
       </div>
     </div>
-
-    <div class="button-grid" style="grid-template-columns: repeat(3, 1fr); gap:4px; margin-top:6px;">
-      <button class="secondary settings-pitch-preset-btn" data-min="-82" data-max="82" style="font-size:10px; padding:4px 2px;">Standard (&plusmn;82&deg;)</button>
-      <button class="secondary settings-pitch-preset-btn" data-min="0" data-max="82" style="font-size:10px; padding:4px 2px;">Table Top (0&deg; to +82&deg;)</button>
-      <button class="secondary settings-pitch-preset-btn" data-min="-89" data-max="89" style="font-size:10px; padding:4px 2px;">Full Orbit (&plusmn;89&deg;)</button>
-    </div>
-
-    <div style="margin-top:14px; font-size:11px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Zoom Distance Limits</div>
-
-    <div class="param-row" style="margin-top:6px;">
-      <div class="slider-header"><label>Closest Zoom (Min Distance)</label><span class="value-badge" id="val_settings_cam_min_dist">1.35m</span></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_cam_min_dist" type="range" min="0.1" max="20" step="0.1" value="1.35" style="flex:1;">
-        <input id="settings_cam_min_dist_num" type="number" min="0.01" max="500" step="0.1" value="1.35" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-
-    <div class="param-row">
-      <div class="slider-header"><label>Farthest Zoom (Max Distance)</label><span class="value-badge" id="val_settings_cam_max_dist">16.0m</span></div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="settings_cam_max_dist" type="range" min="1.0" max="100" step="0.5" value="16.0" style="flex:1;">
-        <input id="settings_cam_max_dist_num" type="number" min="0.1" max="2000" step="0.5" value="16.0" style="width:70px; padding:4px 6px; font-size:11px; background:var(--bg-input, #1b1b22); color:var(--text, #eee); border:1px solid var(--border, #333); border-radius:4px;">
-      </div>
-    </div>
-  </div>
+  </details>
 
 </div>
 

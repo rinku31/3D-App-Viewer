@@ -403,6 +403,14 @@ export class CameraRig {
     return this.maxPitch !== null ? Math.round(THREE.MathUtils.radToDeg(this.maxPitch)) : 82;
   }
 
+  setMinPitchDeg(degVal) {
+    this.setMinPitch(degVal, true);
+  }
+
+  setMaxPitchDeg(degVal) {
+    this.setMaxPitch(degVal, true);
+  }
+
   setMinPitch(val, inDegrees = false) {
     if (val === null || val === undefined) {
       this.minPitch = null;

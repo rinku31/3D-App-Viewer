@@ -107,11 +107,11 @@ export async function bootstrapViewer() {
 
   // Auto-load default demo showcase if present
   try {
-    const res = await fetch("/Viewer/assets/Products/Viper V4 Pro.json");
+    const res = await fetch("/Viewer/assets/Products/Cube.json");
     if (res.ok) {
       const data = await res.json();
       if (data) {
-        loadViewerSceneJson(data, "Viper V4 Pro");
+        loadViewerSceneJson(data, "Cube");
       }
     }
   } catch (_) {}

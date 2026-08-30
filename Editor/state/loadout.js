@@ -40,6 +40,11 @@ export const FACTORY_DEFAULT_LOADOUT = {
     toneMapping: "AgX",
     look: "None"
   },
+  editorBackground: {
+    type: "color",
+    color: "#222228",
+    blur: 0.0
+  },
   background: {
     type: "color",
     color: "#222228",
@@ -242,10 +247,15 @@ export function captureCurrentLoadout() {
       toneMapping: env.toneMapping || "AgX",
       look: env.look || "None"
     },
+    editorBackground: {
+      type: state.editorBackground?.type || "color",
+      color: state.editorBackground?.color || "#222228",
+      blur: typeof state.editorBackground?.blur === "number" ? state.editorBackground.blur : 0.0
+    },
     background: {
-      type: state.sceneSettings?.backgroundType || "color",
-      color: state.sceneSettings?.background || "#222228",
-      blur: typeof state.sceneSettings?.backgroundBlur === "number" ? state.sceneSettings.backgroundBlur : 0.0
+      type: state.editorBackground?.type || "color",
+      color: state.editorBackground?.color || "#222228",
+      blur: typeof state.editorBackground?.blur === "number" ? state.editorBackground.blur : 0.0
     },
     rendering: {
       shadows: rendering.shadows !== false,
@@ -264,7 +274,7 @@ export function captureCurrentLoadout() {
       grid: helpers.grid !== false,
       axes: Boolean(helpers.axes)
     },
-    lights: lights.length > 0 ? lights : FACTORY_DEFAULT_LOADOUT.lights,
+    lights: lights,
     hotspots: {
       panelColor: hotspots.panelColor || "rgba(30, 30, 36, 0.95)",
       titleFontColor: hotspots.titleFontColor || "#ffffff",
@@ -364,10 +374,12 @@ export function applyLoadout(loadout, syncOptions = {}) {
     applyEnvironmentParams();
   }
 
-  if (loadout.background) {
-    state.sceneSettings.backgroundType = loadout.background.type || "color";
-    state.sceneSettings.background = loadout.background.color || "#222228";
-    state.sceneSettings.backgroundBlur = loadout.background.blur ?? 0.0;
+  const editorBgLoadout = loadout.editorBackground || loadout.background;
+  if (editorBgLoadout) {
+    if (!state.editorBackground) state.editorBackground = {};
+    state.editorBackground.type = editorBgLoadout.type || "color";
+    state.editorBackground.color = editorBgLoadout.color || "#222228";
+    state.editorBackground.blur = editorBgLoadout.blur ?? 0.0;
     applyBackgroundSettings();
   }
 

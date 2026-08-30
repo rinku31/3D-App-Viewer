@@ -1,5 +1,26 @@
+/* Global Custom Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2e2e38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #44D62C;
+}
+
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #2e2e38 transparent;
 }
 
 body {
@@ -445,8 +466,19 @@ canvas {
 
 /* Scrollable container for regular tabs */
 .scrollable-tab-panel {
-  overflow-y: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100%;
+  min-height: 0;
   padding-right: 4px;
+  padding-bottom: 24px;
+  display: none !important;
+  box-sizing: border-box;
+}
+
+.scrollable-tab-panel.active {
+  display: flex !important;
+  flex-direction: column;
 }
 
 /* Split Window Layout inside Scene Tab */
@@ -1729,6 +1761,86 @@ line.dashed-line {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* ==========================================================================
+   Accordion Sections (Settings Tab)
+   ========================================================================== */
+.settings-accordion {
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: transparent;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.settings-accordion:last-child {
+  margin-bottom: 16px;
+}
+
+.settings-accordion-summary {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  list-style: none !important;
+  padding: 8px 10px;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, #27272a);
+  border-radius: 6px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-accordion[open] .settings-accordion-summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(68, 214, 44, 0.25);
+}
+
+.settings-accordion-summary::-webkit-details-marker,
+.settings-accordion-summary::marker {
+  display: none !important;
+}
+
+.settings-accordion-summary:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.settings-accordion-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-accordion-chevron {
+  font-size: 11px;
+  color: var(--text-dim, #888);
+  transition: transform 0.2s ease, color 0.15s ease;
+  display: inline-block;
+  width: 12px;
+  text-align: center;
+}
+
+.settings-accordion:not([open]) .settings-accordion-chevron {
+  transform: rotate(-90deg);
+}
+
+.settings-accordion[open] .settings-accordion-chevron {
+  transform: rotate(0deg);
+  color: #44D62C;
+}
+
+.settings-accordion-content {
+  padding: 12px 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border, #27272a);
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
 
 

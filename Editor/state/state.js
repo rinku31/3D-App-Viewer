@@ -45,8 +45,19 @@ const state = {
 
   bloomManager: null,
 
+  editorBackground: {
+    color: "#222228",
+    type: "color", // "color" | "environment" | "transparent"
+    blur: 0.0,
+  },
+
   sceneSettings: {
-    background: "#222228",
+    viewerBackground: {
+      color: "#ffffff",
+      type: "color", // "color" | "environment" | "transparent"
+      blur: 0.0,
+    },
+    background: "#ffffff",
     backgroundType: "color", // "color" | "environment" | "transparent"
     backgroundBlur: 0.0,
     environment: {

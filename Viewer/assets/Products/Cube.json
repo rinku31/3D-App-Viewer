@@ -1,0 +1,138 @@
+{
+  "version": "2.0.0",
+  "metadata": {
+    "title": "Cube",
+    "author": "3D App Studio",
+    "createdAt": "2026-03-10T12:00:00.000Z",
+    "updatedAt": "2026-08-30T02:00:00.000Z",
+    "generator": "3D App Viewer Editor v2.0.0",
+    "tags": ["cube", "primitive", "3d", "interactive"]
+  },
+  "scene": {
+    "background": "#222228",
+    "backgroundType": "color",
+    "backgroundBlur": 0.0,
+    "environment": {
+      "preset": "studio_small_09",
+      "intensity": 1.4,
+      "exposure": 1.2,
+      "toneMapping": "AgX"
+    },
+    "rendering": {
+      "shadows": true,
+      "shadowType": "pcfsoft",
+      "bloom": {
+        "enabled": false,
+        "strength": 0.6,
+        "radius": 0.4,
+        "threshold": 0.85
+      }
+    },
+    "bloom": {
+      "enabled": false,
+      "strength": 0.6,
+      "radius": 0.4,
+      "threshold": 0.85
+    },
+    "helpers": {
+      "grid": true,
+      "axes": false
+    }
+  },
+  "camera": {
+    "fov": 45,
+    "near": 0.01,
+    "far": 1000,
+    "minDistance": 1.0,
+    "maxDistance": 20.0,
+    "minPitch": -82,
+    "maxPitch": 82,
+    "target": [0.0, 0.0, 0.0],
+    "position": [3.6, 3.2, 3.6],
+    "distance": 6.2,
+    "yaw": 0.7853981633974483,
+    "pitch": -0.6154797086703875,
+    "viewpoints": [
+      {
+        "id": "vp_isometric",
+        "name": "Isometric View",
+        "target": [0, 0, 0],
+        "distance": 6.2,
+        "yaw": 0.7853981633974483,
+        "pitch": -0.6154797086703875,
+        "fov": 45
+      }
+    ]
+  },
+  "model": {
+    "name": "Cube",
+    "filename": "Cube.glb",
+    "position": [0, 0, 0],
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "scale": [1, 1, 1]
+  },
+  "lights": [
+    {
+      "id": "key_sun_light",
+      "name": "Key Light",
+      "type": "directional",
+      "color": "#fffdf8",
+      "intensity": 2.2,
+      "castShadow": true,
+      "position": [4, 6, 4],
+      "target": [0, 0, 0]
+    },
+    {
+      "id": "fill_sky_light",
+      "name": "Fill Light",
+      "type": "directional",
+      "color": "#9ec5f5",
+      "intensity": 0.8,
+      "castShadow": false,
+      "position": [-3, 4, -3],
+      "target": [0, 0, 0]
+    }
+  ],
+  "settings": {
+    "line": {
+      "color": "#44D62C",
+      "style": "dashed",
+      "width": 1.5,
+      "offset": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "hotspots": {
+      "panelColor": "rgba(30, 30, 36, 0.95)",
+      "titleFontColor": "#ffffff",
+      "titleFontSize": 14,
+      "descFontColor": "#e0e0e0",
+      "descFontSize": 12.5,
+      "pulseAnimation": true,
+      "theme": "default",
+      "occlusionTolerance": 0.08
+    },
+    "controls": {
+      "defaultEnabled": true,
+      "explodeEnabled": false,
+      "simulatorEnabled": false
+    }
+  },
+  "hotspots": [
+    {
+      "id": "hotspot_cube_main",
+      "title": "",
+      "description": "This is a cube",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "panelOffset": {
+        "x": 160,
+        "y": -120
+      }
+    }
+  ]
+}
