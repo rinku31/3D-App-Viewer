@@ -140,7 +140,7 @@ function bindUI(){
 
       // Close when clicking outside
       document.addEventListener("click", (e) => {
-        if (fileMenuContainer && !fileMenuContainer.contains(e.target)) {
+        if (!fileDropdown.contains(e.target) && !fileMenuBtn.contains(e.target)) {
           fileDropdown.classList.remove("show");
           fileMenuBtn.classList.remove("active");
         }
