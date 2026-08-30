@@ -171,24 +171,24 @@ When a hotspot has its action button enabled in the scene JSON (`button.enabled:
 
 The Simulator button is located in the middle-right Quick Action stack of the viewer HUD:
 
-- **Trigger**: The user clicks the **Simulator** button to toggle interactive testing mode on or off.
-- **Direct Function Call**: The viewer resolves the configured simulator function name (`controls.simulatorJsFunction` or `onSimulatorToggle`) and invokes `window.parent[funcName]` with a state payload:
+- **Trigger**: The user clicks the **Simulator** button to trigger the interactive testing action.
+- **Direct Function Call**: The viewer resolves the configured simulator function name (`controls.simulatorJsFunction` or `onSimulatorClick`) and invokes `window.parent[funcName]` with a state payload:
   ```javascript
   // In the parent webpage:
-  window.onSimulatorToggle = function(payload) {
-    console.log("Simulator active state:", payload.active);   // true or false
-    console.log("Action:", payload.action);                  // "start" or "stop"
-    console.log("Model:", payload.modelName);
+  window.onSimulatorClick = function(payload) {
+    console.log("Action performed:", payload.action);        // "click"
+    console.log("Scene Title:", payload.sceneTitle);
+    console.log("Model Name:", payload.modelName);
   };
   ```
-- **PostMessage Event**: The viewer emits a `SIMULATOR_TOGGLE` event to `window.parent`:
+- **PostMessage Event**: The viewer emits a `SIMULATOR_ACTION` event to `window.parent`:
   ```javascript
   // In the parent webpage:
   window.addEventListener("message", (event) => {
-    if (event.data?.type === "SIMULATOR_TOGGLE") {
-      console.log("Simulator status:", event.data.active);
+    if (event.data?.type === "SIMULATOR_ACTION") {
+      console.log("Simulator clicked:", event.data.action);
       console.log("Event details:", event.data);
     }
   });
   ```
-- **URL Navigation (Optional)**: If a simulator URL is defined in the scene configuration (`controls.simulatorUrl`), the link opens in a new tab upon activation.
+- **URL Navigation (Optional)**: If a simulator URL is defined in the scene configuration (`controls.simulatorUrl`), the link opens in a new tab upon click.
