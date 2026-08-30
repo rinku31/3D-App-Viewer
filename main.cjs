@@ -6,12 +6,16 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
+    icon: path.join(__dirname, 'favicon/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true
     }
   });
+
+  // Hide the default electron menu bar
+  win.setMenu(null);
 
   // Load the root index.html which routes to Viewer/Editor/Embed
   win.loadFile('index.html');

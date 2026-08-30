@@ -28,7 +28,8 @@
       "!favicon_io.zip"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "favicon/favicon.ico"
     }
   },
   "dependencies": {
