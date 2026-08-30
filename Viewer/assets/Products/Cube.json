@@ -84,30 +84,7 @@
       1
     ]
   },
-  "lights": [
-    {
-      "id": "light_sun_key",
-      "name": "Key Sun Light",
-      "type": "area",
-      "color": "#fffdf5",
-      "intensity": 2.5,
-      "castShadow": false,
-      "visible": true,
-      "locked": false,
-      "position": [
-        3.5,
-        5,
-        3.5
-      ],
-      "target": [
-        0,
-        0,
-        0
-      ],
-      "width": 2.5,
-      "height": 2.5
-    }
-  ],
+  "lights": [],
   "settings": {
     "line": {
       "color": "#ffffff",

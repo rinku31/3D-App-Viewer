@@ -103,28 +103,7 @@ export function createDefaultSceneDocument(modelName = "Product Model") {
       rotation: { x: 0, y: 0, z: 0 },
       scale: [1, 1, 1]
     },
-    lights: [
-      {
-        id: "dir_light_key",
-        name: "Main Key Light",
-        type: "directional",
-        color: "#ffffff",
-        intensity: 2.2,
-        castShadow: true,
-        position: [4, 8, 4],
-        target: [0, 0, 0]
-      },
-      {
-        id: "dir_light_fill",
-        name: "Fill Light",
-        type: "directional",
-        color: "#90c8ff",
-        intensity: 1.0,
-        castShadow: false,
-        position: [-4, 3, -3],
-        target: [0, 0, 0]
-      }
-    ],
+    lights: [],
     settings: {
       line: {
         color: "#44D62C",

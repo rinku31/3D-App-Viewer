@@ -67,21 +67,7 @@ export const FACTORY_DEFAULT_LOADOUT = {
     grid: true,
     axes: false
   },
-  lights: [
-    {
-      id: "light_sun_key",
-      name: "Key Sun Light",
-      type: "directional",
-      color: "#fffdf5",
-      intensity: 2.5,
-      castShadow: true,
-      position: [3.5, 5.0, 3.5],
-      target: [0, 0, 0],
-      radius: 2.0,
-      visible: true,
-      locked: false
-    }
-  ],
+  lights: [],
   hotspots: {
     panelColor: "rgba(30, 30, 36, 0.95)",
     titleFontColor: "#ffffff",
