@@ -628,7 +628,7 @@ function syncSettingsTabUI() {
   if (simUrl) simUrl.value = controls.simulatorUrl || "";
 
   const simFn = document.getElementById("settings_sim_btn_fn");
-  if (simFn) simFn.value = controls.simulatorJsFunction || "onSimulatorToggle";
+  if (simFn) simFn.value = controls.simulatorJsFunction || "onSimulatorClick";
 
   // 3. Camera Navigation & Limits
   if (state.cameraRig) {

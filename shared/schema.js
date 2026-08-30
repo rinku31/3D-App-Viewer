@@ -344,7 +344,7 @@ export function migrateSceneDocument(raw, defaultModelName = "Product Model") {
       defaultEnabled: raw.settings?.controls?.defaultEnabled !== undefined ? Boolean(raw.settings.controls.defaultEnabled) : true,
       explodeEnabled: raw.settings?.controls?.explodeEnabled !== undefined ? Boolean(raw.settings.controls.explodeEnabled) : true,
       simulatorEnabled: raw.settings?.controls?.simulatorEnabled !== undefined ? Boolean(raw.settings.controls.simulatorEnabled) : true,
-      simulatorJsFunction: raw.settings?.controls?.simulatorJsFunction || "onSimulatorToggle",
+      simulatorJsFunction: raw.settings?.controls?.simulatorJsFunction || "onSimulatorClick",
       simulatorUrl: raw.settings?.controls?.simulatorUrl || ""
     }
   };

@@ -18,7 +18,6 @@ export const SPEED_MULTIPLIERS = [
 let currentSpeedIndex = 1; // Default: 1x
 
 let isExploded = false;
-let isSimulating = false;
 const originalMeshTransforms = new Map();
 
 /**
@@ -72,7 +71,7 @@ function createActionStackMarkup() {
     </button>
 
     <!-- 3. Simulator Button (Bottom) -->
-    <button id="hudSimulatorBtn" class="hud-action-btn" type="button" title="Simulator (Interactive Testing)" aria-label="Simulator Mode">
+    <button id="hudSimulatorBtn" class="hud-action-btn" type="button" title="Simulator (Interactive Testing)" aria-label="Simulator Action">
       <svg class="hud-action-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <polygon points="10 8 16 12 10 16 10 8"></polygon>
@@ -519,27 +518,29 @@ export function updateExplodeBtnUI(active) {
 }
 
 /**
- * Toggles interactive Simulator mode and triggers outside function/iframe messaging.
+ * Triggers Simulator action and messages outside iframe.
  */
-export function toggleSimulatorMode() {
-  isSimulating = !isSimulating;
-  updateSimulatorBtnUI(isSimulating);
-
+export function triggerSimulatorAction() {
   const controls = state.sceneDocument?.settings?.controls || state.sceneDocument?.scene?.controls || {};
-  const funcName = (controls.simulatorJsFunction || controls.jsFunction || "onSimulatorToggle").trim();
+  const funcName = (controls.simulatorJsFunction || controls.jsFunction || "onSimulatorClick").trim();
   const url = (controls.simulatorUrl || controls.url || "").trim();
 
+  const btn = document.getElementById("hudSimulatorBtn");
+  if (btn) {
+    btn.classList.add("btn-pulsed");
+    setTimeout(() => btn.classList.remove("btn-pulsed"), 300);
+  }
+
   // If a URL is configured, open on activation
-  if (url && isSimulating) {
+  if (url) {
     try {
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (_) {}
   }
 
   const payload = {
-    type: "SIMULATOR_TOGGLE",
-    action: isSimulating ? "start" : "stop",
-    active: isSimulating,
+    type: "SIMULATOR_ACTION",
+    action: "click",
     functionName: funcName,
     sceneTitle: state.sceneDocument?.metadata?.title || state.currentModel?.name || "Product Showcase",
     modelName: state.currentModel?.name || "",
@@ -565,18 +566,9 @@ export function toggleSimulatorMode() {
   }
 }
 
-/**
- * Updates Simulator button visual state.
- */
-export function updateSimulatorBtnUI(active) {
-  const btn = document.getElementById("hudSimulatorBtn");
-  if (btn) {
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-pressed", String(active));
-    btn.classList.add("btn-pulsed");
-    setTimeout(() => btn.classList.remove("btn-pulsed"), 300);
-  }
-}
+// Backward compatibility
+export const toggleSimulatorMode = triggerSimulatorAction;
+export const updateSimulatorBtnUI = () => {};
 
 /**
  * Binds button click and interaction events for the HUD.
@@ -708,10 +700,6 @@ export function resetViewerCamera() {
     isExploded = false;
     applyExplosion(false);
     updateExplodeBtnUI(false);
-  }
-  if (isSimulating) {
-    isSimulating = false;
-    updateSimulatorBtnUI(false);
   }
 
   // 3. Smoothly reset camera orientation & distance
