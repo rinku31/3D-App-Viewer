@@ -1,125 +1,131 @@
 # 3D App Viewer
 
-3D App Viewer is a lightweight, browser-based toolset for authoring and displaying interactive 3D product showcases. It features a visual **Editor** for creating and positioning interactive hotspots, custom lights, and scene configurations on GLB/glTF 3D models, as well as a standalone **Viewer** and **Embed Viewer** for presenting 3D products with animated annotations, camera turntable controls, exploded views, and external integration hooks.
+3D App Viewer is a lightweight, browser-based toolset for authoring and presenting interactive 3D product showcases. Built on **Three.js** with a zero-build architecture, it includes:
+- **3D Editor**: A visual authoring studio for placing interactive hotspots, configuring custom lighting rigs, and styling 3D models.
+- **Presentation Viewer**: A standalone full-screen showcase viewer with floating HUD controls and model upload capabilities.
+- **Embeddable Viewer**: An optimized, lightweight viewer designed for seamless `<iframe>` embedding in websites, e-commerce stores, and web applications.
 
-## Features
+---
 
-- **Model Compatibility**: Import and display standard and Draco-compressed `.glb` / `.gltf` 3D models.
-- **Hotspot Authoring & Presentation**: Create, drag, and configure 3D hotspots with custom titles, descriptions, feature bullet lists, colors, and actionable buttons.
-- **Dynamic 3D Lighting**: Interactive directional, point, spot, and ambient light authoring and scene synchronization.
-- **Screen-Space Annotation Overlays**: Real-time 2D/3D coordinate projection with animated SVG connector lines and geometric occlusion detection.
-- **Camera Controls & Turntable**: Multi-pivot orbit rig with smooth damping, framing, reset view, and automated 360° turntable rotation with adjustable speed multipliers (0.5x to 3x).
-- **Exploded View Mode**: Interactive animated component separation for inspecting internal parts.
-- **Environment Lighting & Bloom**: HDR environment presets (Studio, Urban, Nature, Industrial) and toggleable post-processing bloom glow.
-- **Schema v2 JSON Import/Export**: Persistent scene document storage and migration.
-- **Standalone Embeddable Viewer**: Optimized `/Embed/` package for `<iframe>` embedding with dynamic URL query parameters and cross-window communication.
-- **Custom JavaScript Callback Hooks**: Trigger custom JavaScript functions and `postMessage` events when users click Hotspot action buttons or the Viewer Simulator button.
+## Key Features
 
-## Folder structure
+- **Model Compatibility**: Loads standard and Draco-compressed `.glb` and `.gltf` 3D assets.
+- **Interactive Hotspots**: Author and present 3D hotspots featuring modular multi-section cards, bullet lists, and actionable buttons.
+- **Screen-Space Annotation Overlays**: Real-time 3D-to-2D projection with animated SVG connector leader lines and geometric occlusion detection.
+- **Camera Controls & Turntable**: Multi-pivot orbit rig with smooth damping, automatic framing, collision-safe positioning, and 360° turntable rotation with adjustable speed multipliers (`0.5x`, `1x`, `1.5x`, `2x`, `3x`).
+- **Exploded View Mode**: One-click animated parts separation for inspecting internal product components.
+- **Environment Lighting & Bloom**: Built-in HDR environment presets (*Studio*, *Urban*, *Nature*, *Industrial*) with toggleable post-processing bloom glow.
+- **Schema v2 JSON**: Standardized, human-readable scene document format with built-in schema migration and validation.
+- **Bidirectional Integration API**: Control the viewer via `postMessage` commands and listen for user interactions (hotspot button clicks, simulator toggles, and custom JavaScript callbacks).
+
+---
+
+## Project Structure
 
 ```text
-.
-├── Editor/                     # Scene authoring tool for hotspots, lighting, and model setup
-│   ├── editor.html             # Editor web interface
-│   ├── editor.js               # Editor main entry point
-│   ├── bootstrap/              # Core initialization and event binding
-│   ├── gizmo/                  # TransformControls for object manipulation
-│   ├── hierarchy/              # Outliner tree and scene hierarchy
-│   ├── hotspots/               # Hotspot creation and editing
-│   ├── inspector/              # Property inspector for selected entities
-│   ├── io/                     # Model and JSON schema import/export
-│   ├── lights/                 # Lighting authoring tools
-│   ├── render/                 # Three.js setup and render loop
-│   ├── selection/              # Universal selection system
-│   ├── state/                  # Shared Editor state
-│   └── ui/                     # UI controls and dialogs
-├── Viewer/                     # Standalone presentation showcase application
-│   ├── viewer.html             # Full-page viewer interface
-│   ├── viewer.js               # Viewer entry point
-│   ├── assets/Products/        # Bundled 3D models (.glb) and scene JSON files
-│   ├── bootstrap/              # Viewer initialization and orchestration
-│   ├── lights/                 # Presentation lighting manager
-│   ├── loading/                # Model loader and JSON parser
-│   ├── overlay/                # 2D hotspot cards and SVG connector lines
-│   ├── render/                 # Three.js rendering and bloom post-processing
-│   ├── state/                  # Viewer state
-│   └── ui/                     # Floating HUD and action stack
-├── Embed/                      # Lightweight embeddable viewer for iframes and CMS integration
-│   ├── index.html              # Clean embed page
-│   ├── embed.js                # Embed entry point and query parameter handler
-│   ├── bootstrap/              # Embed bootstrap and postMessage API
-│   ├── lights/                 # Lighting subsystem
-│   ├── loading/                # Asset and JSON loading
-│   ├── overlay/                # Hotspot overlays and event dispatching
-│   ├── render/                 # WebGL render loop
-│   ├── state/                  # Embed state singleton
-│   ├── style.css               # Embed UI and overlay styling
-│   ├── ui/                     # Floating HUD and Quick Action stack
-│   └── visibility/             # Hotspot occlusion testing
-├── shared/                     # Shared modules across Editor, Viewer, and Embed
-│   ├── bloom.js                # Bloom glow post-processing shader pipeline
-│   ├── CameraRig.js            # Multi-pivot camera orbit and fly-to rig
-│   ├── disposal.js             # Three.js memory and GPU resource cleanup
-│   ├── environment.js          # HDR presets and environment manager
-│   ├── hotspotMath.js          # Coordinate projection and SVG connector calculations
-│   ├── lights.js               # Three.js light factory helpers
-│   └── schema.js               # Schema v2 specification, validation, and migration
-├── libs/                       # Draco decoder binaries and scripts
-│   └── draco/gltf/             # Draco WebAssembly and JS decoders
-├── docs/                       # Project documentation
+├── shared/                     # Single Source of Truth for 3D Engine & Schema
+│   ├── viewerCore.js           # Unified 3D presentation engine (render loop, postMessage, URL params)
+│   ├── viewerLoader.js         # Unified GLTF/Draco loader & Scene JSON ingestion
+│   ├── viewerHUD.js            # Universal HUD (turntable, speed, exploded view, simulator, auto-hide)
+│   ├── hotspotOverlay.js       # 2D screen annotations, multi-section cards & SVG leader lines
+│   ├── hotspotMath.js          # 3D projection, occlusion raycasting & line geometry
+│   ├── CameraRig.js            # Multi-pivot orbit camera with smooth damping & fly-to transitions
+│   ├── schema.js               # Canonical Schema v2.0.0 specification & migration pipeline
+│   ├── environment.js          # HDR environment presets & tone mapping
+│   ├── bloom.js                # Post-processing bloom shader pipeline
+│   ├── lights.js               # 3-point lighting rig generator & scene light synchronization
+│   └── disposal.js             # GPU memory cleanup & leak prevention
+│
+├── Editor/                     # Scene Authoring Studio
+│   ├── editor.html / editor.js # Visual editor interface & bootstrap
+│   ├── hierarchy/              # Scene outliner tree & mesh filter
+│   ├── inspector/              # Property inspector for transforms, materials & lights
+│   ├── gizmo/                  # TransformControls (Translate / Rotate / Scale)
+│   ├── hotspots/               # Hotspot creator & pin placement
+│   ├── selection/              # Raycast object selection
+│   ├── state/                  # Undo/redo history & editor state
+│   └── io/                     # Import & export scene JSON / GLTF packaging
+│
+├── Viewer/                     # Standalone Presentation Showcase
+│   ├── viewer.html / viewer.js # Full-page viewer interface
+│   ├── style.css               # Presentation theme & header styles
+│   └── assets/Products/        # Bundled demo 3D models and companion JSON scenes
+│
+├── Embed/                      # Compact Embeddable Iframe Player
+│   ├── index.html / embed.js   # Zero-overhead embed player
+│   └── style.css               # Compact responsive styling
+│
+├── docs/                       # Architectural and technical documentation
+│   └── Architecture.md         # System architecture and dependency flow
+│
+├── libs/                       # Draco WebAssembly & JS decoders
 ├── metadata.json               # Application metadata
 ├── package.json                # Project configuration
-├── README.md                   # Project documentation
 └── server.js                   # Static development server
 ```
 
-## Requirements
+---
 
-- **Browser**: Modern web browser with WebGL 2 support (Google Chrome, Mozilla Firefox, Apple Safari, Microsoft Edge).
-- **HTTP/HTTPS Web Server**: A static web server (such as Nginx, Apache, Caddy, Node.js, or cloud static hosting/CDN). *Running directly from the filesystem (`file://`) is not supported due to browser ES module and CORS security restrictions.*
-- **Network Access**: Internet connectivity to load CDN resources (Three.js and HDR environment assets).
-- **Zero Build Step**: No bundler, compiler, or Node.js package installation is required.
+## Quick Start & Local Development
 
-## How to host the Embed folder in an existing server
+This project uses native ES modules with CDN import maps and requires **no build step, bundler, or compilation**.
 
-The embeddable viewer in `/Embed/` is a zero-build, static package designed for rapid deployment onto any web server, CDN, or static hosting service.
+### 1. Prerequisites
+- Any modern web browser supporting WebGL 2 (Chrome, Firefox, Safari, Edge).
+- A static HTTP/HTTPS web server. *(Browser security policies block ES modules when loaded via `file://`).*
 
-### 1. Deployment Requirements & Folder Layout
-Because `/Embed/` imports shared modules (math, schema validation, HDR presets, camera rig) from `../shared/`, **both folders must be deployed as siblings in your web directory**:
+### 2. Running Locally
+Run the built-in development server:
+```bash
+npm start
+```
+Or use any standard static server:
+```bash
+npx serve .
+# OR
+python3 -m http.server 3000
+```
+Open `http://localhost:3000` in your browser to access the Hub, Editor, and Viewers.
+
+---
+
+## Hosting the Embed Viewer on Your Server
+
+The `/Embed/` package is designed for easy deployment to any static host, CDN, or web server.
+
+### 1. Sibling Directory Requirement
+Because `/Embed/` imports the shared 3D engine from `/shared/`, **both folders must be deployed together as siblings**:
 
 ```text
 your-web-root/
-├── Embed/                      # Embed viewer files
+├── Embed/                      # Embed player files
 │   ├── index.html              # HTML entry point for iframes
 │   ├── embed.js
 │   ├── style.css
 │   └── ...
-└── shared/                     # Shared Three.js / math / schema dependencies
-    ├── hotspotMath.js
-    ├── schema.js
+└── shared/                     # Shared 3D core engine
+    ├── viewerCore.js
+    ├── viewerLoader.js
+    ├── viewerHUD.js
+    ├── hotspotOverlay.js
     ├── CameraRig.js
-    ├── environment.js
-    ├── bloom.js
+    ├── schema.js
     └── ...
 ```
 
-> **Note**: Three.js is loaded dynamically via CDN import maps (`esm.sh`), and Draco mesh decoders are automatically loaded from Google GStatic CDN. You do not need to install `node_modules` or compile build artifacts.
-
 ### 2. Static Hosting Quick Guides
-
-- **GitHub Pages**: Place `/Embed/` and `/shared/` in your repository root or `docs/` folder, and enable GitHub Pages in Repository Settings.
-- **Vercel / Netlify / Cloudflare Pages**: Deploy the project root directory directly as a static site (leave the build command empty, publish directory as `.`).
+- **Vercel / Netlify / Cloudflare Pages**: Deploy your repository root directory directly as a static site (leave build command empty, publish directory as `.`).
+- **GitHub Pages**: Place `/Embed/` and `/shared/` in your repository root or `docs/` folder, and enable GitHub Pages in your repository settings.
 - **Nginx / Apache / S3 + CloudFront**: Copy `/Embed/` and `/shared/` into your public HTML root.
 
-### 3. Configure MIME Types
-Ensure your web server serves standard file types with correct headers:
+### 3. Server MIME Types & CORS
+Ensure your web server serves standard web assets with appropriate headers:
 - `.js` / `.mjs` &rarr; `application/javascript`
 - `.json` &rarr; `application/json`
 - `.glb` / `.gltf` &rarr; `model/gltf-binary` or `application/octet-stream`
 - `.wasm` &rarr; `application/wasm`
 
-### 4. Enable Cross-Origin Resource Sharing (CORS)
-If your 3D models (`.glb`), scene JSON files, or images are hosted on a different domain or external CDN, the asset server must return CORS headers:
+If your 3D models or JSON scene files are hosted on an external domain or CDN, enable CORS headers on the asset server:
 ```http
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Methods: GET, OPTIONS
@@ -127,9 +133,9 @@ Access-Control-Allow-Methods: GET, OPTIONS
 
 ---
 
-## How to embed viewer in a webpage
+## Embedding the Viewer in a Webpage
 
-Embed the viewer into any HTML page, CMS (WordPress, Shopify, Webflow), or web application using a responsive `<iframe>`:
+Embed the 3D viewer into any website, CMS (WordPress, Shopify, Webflow), or web application using an `<iframe>`:
 
 ```html
 <iframe
@@ -147,38 +153,38 @@ Embed the viewer into any HTML page, CMS (WordPress, Shopify, Webflow), or web a
 
 | Parameter | Aliases | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `glb` | `model`, `gltf` | Absolute or relative URL to the `.glb` 3D model | `?glb=/models/product.glb` |
-| `json` | `scene` | Absolute or relative URL to the Schema v2 scene JSON | `?json=/models/product.json` |
-| `title` | &mdash; | Product/scene title shown on the top-left HUD badge | `?title=Gaming+Headset` |
-| `env` | `preset` | Environment lighting preset (`studio_small_09`, `potsdamer_platz`, `autumn_ground`, `aircraft_workshop`) | `?env=studio_small_09` |
-| `turntable` | `autorotate` | Enable 360° automatic rotation on load (`1` or `true`) | `?turntable=1` |
+| `glb` | `model`, `gltf` | Absolute or relative URL to the `.glb` / `.gltf` 3D model | `?glb=/models/product.glb` |
+| `json` | `scene` | Absolute or relative URL to the Schema v2 scene JSON document | `?json=/models/product.json` |
+| `title` | &mdash; | Product or showcase title displayed in the HUD badge | `?title=Gaming+Headset` |
+| `env` | `preset` | HDR lighting preset (`studio_small_09`, `potsdamer_platz`, `autumn_ground`, `aircraft_workshop`) | `?env=studio_small_09` |
+| `turntable` | `autorotate` | Enable 360° turntable rotation on load (`1` or `true`) | `?turntable=1` |
 | `speed` | &mdash; | Initial turntable rotation speed (`0.5x`, `1x`, `1.5x`, `2x`, `3x`) | `?speed=1.5x` |
-| `bg` | `background` | Viewport background color in hex format | `?bg=%2318181b` |
+| `bg` | `background` | Viewport background color in hex format | `?bg=%2318181c` |
 
 ---
 
-## PostMessage & JavaScript Integration API
+## Bidirectional Integration API (`postMessage`)
 
-The Embed viewer supports full bidirectional communication between the host page and the iframe.
+The Embed viewer supports full two-way communication with the parent host page.
 
-### 1. Controlling the Viewer from the Host Page (Incoming Messages)
+### 1. Sending Commands to the Viewer (Host &rarr; Iframe)
 
 Send messages to the iframe using `iframeElement.contentWindow.postMessage(message, "*")`:
 
 | Message Type | Payload Structure | Description |
 | :--- | :--- | :--- |
-| `RESET_CAMERA` | `{ type: "RESET_CAMERA" }` | Resets camera framing and orientation back to initial default |
-| `TOGGLE_TURNTABLE` | `{ type: "TOGGLE_TURNTABLE", enabled?: boolean, speed?: string }` | Starts, stops, or toggles turntable rotation (optional speed: `"0.5x"` to `"3x"`) |
-| `SET_SPEED` | `{ type: "SET_SPEED", speed: "1.5x" }` | Updates turntable speed multiplier |
-| `SET_ENVIRONMENT` | `{ type: "SET_ENVIRONMENT", preset: "potsdamer_platz" }` | Switches HDR lighting environment |
-| `FLY_TO_HOTSPOT` | `{ type: "FLY_TO_HOTSPOT", index: 0 }` | Smoothly animates camera to focus on a specific hotspot index |
-| `LOAD_MODEL` | `{ type: "LOAD_MODEL", url: "...", companionJson?: object }` | Dynamically swaps the 3D model without reloading the iframe |
-| `LOAD_SCENE` | `{ type: "LOAD_SCENE", json?: object, url?: string }` | Loads new scene metadata, lighting, and hotspots |
-| `SET_TITLE` | `{ type: "SET_TITLE", title: "New Title" }` | Updates the top-left HUD title badge |
+| `RESET_CAMERA` | `{ type: "RESET_CAMERA" }` | Resets camera orientation and auto-frames the current model. |
+| `TOGGLE_TURNTABLE` | `{ type: "TOGGLE_TURNTABLE", enabled?: boolean, speed?: string }` | Starts, stops, or toggles 360° turntable rotation. |
+| `SET_SPEED` | `{ type: "SET_SPEED", speed: "1.5x" }` | Updates the turntable rotation speed multiplier. |
+| `SET_ENVIRONMENT` | `{ type: "SET_ENVIRONMENT", preset: "potsdamer_platz" }` | Switches the HDR lighting preset. |
+| `FLY_TO_HOTSPOT` | `{ type: "FLY_TO_HOTSPOT", index: 0 }` | Smoothly animates the camera to focus on a specific hotspot index. |
+| `LOAD_MODEL` | `{ type: "LOAD_MODEL", url: "...", companionJson?: object }` | Dynamically swaps the 3D model without reloading the iframe. |
+| `LOAD_SCENE` | `{ type: "LOAD_SCENE", json?: object, url?: string }` | Dynamically loads a new scene JSON configuration. |
+| `SET_TITLE` | `{ type: "SET_TITLE", title: "New Title" }` | Updates the title displayed on the HUD badge. |
 
-### 2. Listening to Viewer Events (Outgoing Messages)
+### 2. Listening for Viewer Events (Iframe &rarr; Host)
 
-Listen for events sent from the viewer iframe in your parent window:
+Listen for events sent from the viewer iframe in your host page:
 
 ```javascript
 window.addEventListener("message", (event) => {
@@ -187,13 +193,14 @@ window.addEventListener("message", (event) => {
 
   switch (data.type) {
     case "3D_VIEWER_READY":
-      console.log("3D Viewer is ready. Model loaded:", data.modelName);
+      console.log("3D Viewer loaded successfully:", data.modelName);
       break;
 
     case "HOTSPOT_BUTTON_CLICK":
-      console.log("Hotspot action button clicked:", data.hotspot);
-      console.log("Custom JS function requested:", data.functionName);
-      // Example: Open custom modal, trigger checkout, or track analytics
+      console.log("Hotspot button clicked:", data.hotspot);
+      console.log("Action text:", data.action);
+      console.log("Requested JS function:", data.functionName);
+      // Example: Open a custom modal, trigger checkout, or track analytics
       break;
 
     case "SIMULATOR_TOGGLE":
@@ -205,51 +212,76 @@ window.addEventListener("message", (event) => {
 
 ---
 
-## Hotspot Scene JSON Schema (Multi-Section)
+## Hotspot Scene JSON Schema v2 Reference
 
-Hotspots support modular content blocks through the `sections` array. Each section contains its own description, bullet list, and right-aligned action buttons:
+Hotspots support modular content sections. Each section can define its own description, bullet list items, and actionable buttons with optional custom JavaScript callback names:
 
 ```json
 {
   "version": "2.0.0",
+  "metadata": {
+    "title": "Viper V4 Pro",
+    "created": "2026-08-29T19:00:00.000Z",
+    "generator": "3D App Viewer Editor"
+  },
+  "settings": {
+    "background": "#18181c",
+    "backgroundType": "color",
+    "environment": {
+      "preset": "studio_small_09",
+      "intensity": 1.0,
+      "rotation": 0
+    },
+    "bloom": {
+      "enabled": false,
+      "strength": 0.6,
+      "radius": 0.4,
+      "threshold": 0.85
+    },
+    "hotspots": {
+      "titleFontSize": 14,
+      "titleFontColor": "#ffffff",
+      "descFontSize": 12.5,
+      "descFontColor": "#e0e0e0",
+      "listFontSize": 11,
+      "listFontColor": "#cccccc",
+      "panelColor": "rgba(24, 24, 28, 0.95)",
+      "occlusionTolerance": 0.08
+    },
+    "line": {
+      "style": "dashed",
+      "color": "#44D62C",
+      "width": 1.5
+    }
+  },
   "hotspots": [
     {
-      "id": "hotspot_mic",
-      "title": "Detachable Razer HyperClear Mic",
-      "position": [0.15, 0.42, -0.08],
-      "panelOffset": { "x": 220, "y": -80 },
+      "id": "hotspot_sensor",
+      "title": "Focus Pro 35K Gen-2 Optical Sensor",
+      "position": [0.0, 0.15, -0.05],
+      "panelOffset": { "x": 220, "y": -90 },
       "color": "#44D62C",
       "sections": [
         {
-          "description": "For voice capture and transmission quality.",
+          "description": "Next-generation optical precision with 1-DPI step adjustments.",
           "listItems": [
-            "Noise cancellation",
-            "Wide frequency response"
+            "35,000 max DPI sensitivity",
+            "750 IPS tracking speed",
+            "99.8% resolution accuracy"
           ],
           "buttons": [
             {
               "enabled": true,
-              "text": "View Specs",
+              "text": "View Technical Specs",
               "url": "https://example.com/specs",
-              "jsFunction": "onViewSpecs"
-            }
-          ]
-        },
-        {
-          "description": "Easily clips onto the left earcup.",
-          "listItems": ["Magnetic lock", "Gold-plated 3.5mm jack"],
-          "buttons": [
-            {
-              "enabled": true,
-              "text": "Buy Replacement",
-              "url": "https://example.com/shop",
-              "jsFunction": "onBuyReplacement"
+              "jsFunction": "onViewSensorSpecs"
             }
           ]
         }
       ]
     }
-  ]
+  ],
+  "lights": []
 }
 ```
 
@@ -257,7 +289,7 @@ Hotspots support modular content blocks through the `sections` array. Each secti
 
 ## Complete Parent Page Integration Example
 
-Here is a copy-paste example showing how to embed the viewer, control it with custom UI buttons, and handle user interactions:
+Here is a complete, copy-paste integration example showing how to embed the viewer, control it with host UI buttons, and handle user interactions:
 
 ```html
 <!DOCTYPE html>
@@ -265,38 +297,74 @@ Here is a copy-paste example showing how to embed the viewer, control it with cu
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Product Showcase</title>
+  <title>3D Product Showcase Integration</title>
   <style>
-    body { font-family: sans-serif; background: #0f0f12; color: #fff; margin: 0; padding: 20px; }
-    .viewer-container { max-width: 1000px; margin: 0 auto; }
-    .viewer-frame { width: 100%; height: 600px; border: 1px solid #333; border-radius: 8px; }
-    .controls { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-    button { background: #222; color: #fff; border: 1px solid #444; padding: 8px 14px; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #333; border-color: #44d62c; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f12;
+      color: #f1f1f3;
+      margin: 0;
+      padding: 24px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .viewer-frame {
+      width: 100%;
+      height: 580px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #1c1c22;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    button:hover {
+      background: #282832;
+      border-color: #44d62c;
+    }
   </style>
 </head>
 <body>
-  <div class="viewer-container">
-    <h2>Interactive 3D Showcase</h2>
+  <div class="container">
+    <h2>Interactive 3D Product Showcase</h2>
+    
     <iframe
-      id="myViewer"
+      id="productViewer"
       class="viewer-frame"
-      src="/Embed/index.html?glb=/assets/model.glb&json=/assets/model.json&turntable=1&env=studio_small_09"
+      src="/Embed/index.html?glb=/Viewer/assets/Products/Viper%20V4%20Pro.glb&json=/Viewer/assets/Products/Viper%20V4%20Pro.json&turntable=1&speed=1x&env=studio_small_09"
       allow="fullscreen; xr-spatial-tracking"
     ></iframe>
 
     <div class="controls">
-      <button onclick="sendToViewer({ type: 'RESET_CAMERA' })">Reset View</button>
-      <button onclick="sendToViewer({ type: 'TOGGLE_TURNTABLE' })">Toggle 360° Rotation</button>
-      <button onclick="sendToViewer({ type: 'FLY_TO_HOTSPOT', index: 0 })">Focus Hotspot #1</button>
-      <button onclick="sendToViewer({ type: 'SET_ENVIRONMENT', preset: 'potsdamer_platz' })">Outdoor Lighting</button>
+      <button onclick="sendCommand({ type: 'RESET_CAMERA' })">Reset View</button>
+      <button onclick="sendCommand({ type: 'TOGGLE_TURNTABLE' })">Toggle 360° Turntable</button>
+      <button onclick="sendCommand({ type: 'SET_SPEED', speed: '2x' })">2x Rotation Speed</button>
+      <button onclick="sendCommand({ type: 'FLY_TO_HOTSPOT', index: 0 })">Focus Hotspot #1</button>
+      <button onclick="sendCommand({ type: 'SET_ENVIRONMENT', preset: 'potsdamer_platz' })">Outdoor Lighting</button>
     </div>
   </div>
 
   <script>
-    const iframe = document.getElementById("myViewer");
+    const iframe = document.getElementById("productViewer");
 
-    function sendToViewer(message) {
+    function sendCommand(message) {
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage(message, "*");
       }
@@ -304,7 +372,7 @@ Here is a copy-paste example showing how to embed the viewer, control it with cu
 
     window.addEventListener("message", (event) => {
       if (event.data?.type === "HOTSPOT_BUTTON_CLICK") {
-        alert(`Action clicked: ${event.data.hotspot.title}`);
+        console.log("Hotspot clicked in host page:", event.data);
       }
     });
   </script>
@@ -314,13 +382,13 @@ Here is a copy-paste example showing how to embed the viewer, control it with cu
 
 ---
 
-## Troubleshooting & Common Pitfalls
+## Troubleshooting & FAQ
 
-1. **Viewer is blank or says "Failed to load model" (CORS Issue)**:
-   - If loading assets from S3, GitHub, or another domain, verify that the asset server sends `Access-Control-Allow-Origin: *`.
-2. **"Failed to resolve module specifier" or 404 on `../shared/`**:
-   - Ensure the `/shared/` directory is deployed alongside `/Embed/` in the same relative parent folder.
-3. **Running locally via `file:///`**:
-   - Browsers block ES module imports and fetch requests over `file://`. Always use a local static server (e.g. `npx serve`, `python -m http.server 8000`, or VS Code Live Server).
-4. **Mixed Content Warning**:
-   - If your host website runs on `https://`, all iframe `src` URLs and query parameter asset links must also use `https://`.
+1. **Model fails to load or shows a CORS error**:
+   - Verify that your asset server returns `Access-Control-Allow-Origin: *`.
+2. **ES Module 404 or "Failed to resolve module specifier"**:
+   - Ensure `/shared/` is hosted alongside `/Embed/` in the same relative parent directory.
+3. **Black screen when opening directly from local files (`file:///`)**:
+   - Browsers block local module imports over the `file://` protocol. Use `npm start`, `npx serve`, or `python3 -m http.server`.
+4. **Mixed content security warnings**:
+   - If your main webpage is served over `https://`, all iframe `src` URLs and query parameter assets must also use `https://`.
