@@ -12,6 +12,7 @@ const state = {
   controls: null,
   raycaster: null,
   mouse: null,
+  currentFileHandle: null,
 
   currentModel: null,
   hotspots: [],

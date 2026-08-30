@@ -762,6 +762,10 @@ async function exportWithSaveFilePicker(filename, jsonContent) {
       const writableStream = await fileHandle.createWritable();
       await writableStream.write(jsonContent);
       await writableStream.close();
+      
+      // Update state with new handle
+      state.currentFileHandle = fileHandle;
+      
       hideExportConfirmationDialog();
       return true;
     } catch (err) {
@@ -777,6 +781,66 @@ async function exportWithSaveFilePicker(filename, jsonContent) {
   triggerBrowserDownload(jsonContent, filename);
   hideExportConfirmationDialog();
   return true;
+}
+
+// "Save" button triggers this:
+async function handleSaveAction() {
+  if (state.currentFileHandle) {
+    // Show overwrite confirmation
+    showSaveConfirmDialog();
+  } else {
+    // No handle, so act like Save As
+    handleSaveAsAction();
+  }
+}
+
+function showSaveConfirmDialog() {
+  const modal = document.getElementById("saveConfirmModal");
+  const filenameElem = document.getElementById("saveConfirmFilename");
+  if (modal) {
+    if (filenameElem) filenameElem.textContent = state.currentFileHandle.name;
+    modal.style.display = "flex";
+  }
+}
+
+function hideSaveConfirmDialog() {
+  const modal = document.getElementById("saveConfirmModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function performOverwriteSave() {
+  if (!state.currentFileHandle) return;
+  try {
+    const exportData = serializeSceneDocument();
+    const jsonContent = JSON.stringify(exportData, null, 2);
+    
+    // Write directly to handle without prompting
+    const writableStream = await state.currentFileHandle.createWritable();
+    await writableStream.write(jsonContent);
+    await writableStream.close();
+    
+    hideSaveConfirmDialog();
+    showToast(`Saved to ${state.currentFileHandle.name}`);
+  } catch (err) {
+    console.error("Failed to overwrite save:", err);
+    // Might have lost permission, fallback to Save As
+    handleSaveAsAction();
+    hideSaveConfirmDialog();
+  }
+}
+
+// "Save As" button triggers this:
+async function handleSaveAsAction() {
+  if (typeof window.showSaveFilePicker === "function") {
+    // If native picker is available, use it immediately without modal
+    const exportData = serializeSceneDocument();
+    const jsonContent = JSON.stringify(exportData, null, 2);
+    const filename = getSuggestedFilename();
+    await exportWithSaveFilePicker(filename, jsonContent);
+  } else {
+    // Show the export modal (Save As modal) with download/copy options as fallback
+    showExportConfirmationDialog();
+  }
 }
 
 async function exportJson(requestedFilename) {
@@ -964,9 +1028,33 @@ function bindIO(loader) {
   };
 
   document.getElementById("exportBtn")?.addEventListener("click", triggerExportDialog);
-  document.getElementById("menuExportJsonBtn")?.addEventListener("click", triggerExportDialog);
 
-  // Modal actions for Export
+  // New Save / Save As Actions
+  document.getElementById("menuSaveBtn")?.addEventListener("click", (e) => {
+    if (e) e.preventDefault();
+    handleSaveAction();
+  });
+  
+  document.getElementById("menuSaveAsBtn")?.addEventListener("click", (e) => {
+    if (e) e.preventDefault();
+    handleSaveAsAction();
+  });
+
+  // Save Confirmation Modal (Overwrite)
+  document.getElementById("confirmSaveBtn")?.addEventListener("click", () => {
+    performOverwriteSave();
+  });
+  document.getElementById("cancelSaveConfirmBtn")?.addEventListener("click", hideSaveConfirmDialog);
+  document.getElementById("closeSaveConfirmModalBtn")?.addEventListener("click", hideSaveConfirmDialog);
+
+  const saveConfirmModal = document.getElementById("saveConfirmModal");
+  if (saveConfirmModal) {
+    saveConfirmModal.addEventListener("click", (e) => {
+      if (e.target === saveConfirmModal) hideSaveConfirmDialog();
+    });
+  }
+
+  // Modal actions for Export (Save As Fallback)
   document.getElementById("confirmExportModalBtn")?.addEventListener("click", () => {
     exportJson();
   });

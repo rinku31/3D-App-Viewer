@@ -48,9 +48,13 @@
         <span class="item-text">Import File (.glb, .gltf, .json)...</span>
       </button>
       <div class="dropdown-divider"></div>
-      <button id="menuExportJsonBtn" class="dropdown-item" type="button">
+      <button id="menuSaveBtn" class="dropdown-item" type="button">
         <span class="item-icon">&#128190;</span>
-        <span class="item-text">Export Scene JSON</span>
+        <span class="item-text">Save</span>
+      </button>
+      <button id="menuSaveAsBtn" class="dropdown-item" type="button">
+        <span class="item-icon">&#128190;</span>
+        <span class="item-text">Save As...</span>
       </button>
       <div class="dropdown-divider"></div>
       <button id="menuSaveLoadoutBtn" class="dropdown-item" type="button">
@@ -103,18 +107,42 @@
 <!-- Hidden File Input for 3D Models & Scene JSON (Unified Smart Routing) -->
 <input id="modelInput" type="file" accept=".glb,.gltf,.bin,.json,application/json,image/*" multiple style="display: none;">
 
+<!-- Save Scene Confirmation Modal -->
+<div id="saveConfirmModal" class="editor-modal-backdrop" style="display: none;">
+  <div class="editor-modal-card">
+    <div class="editor-modal-header">
+      <div class="editor-modal-title">
+        <span class="modal-title-icon">&#128190;</span>
+        <h3>Overwrite File</h3>
+      </div>
+      <button id="closeSaveConfirmModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
+    </div>
+    <div class="editor-modal-body">
+      <p class="modal-description">Are you sure you want to overwrite the current file?</p>
+      <div class="modal-info-row" style="margin-top: 10px;">
+        <span class="info-label">File</span>
+        <span id="saveConfirmFilename" class="info-value">unknown</span>
+      </div>
+    </div>
+    <div class="editor-modal-footer">
+      <button id="cancelSaveConfirmBtn" class="secondary" type="button">Cancel</button>
+      <button id="confirmSaveBtn" class="primary-btn" type="button" title="Overwrite current file">Yes, Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Export Scene JSON Confirmation Modal -->
 <div id="exportModal" class="editor-modal-backdrop" style="display: none;">
   <div class="editor-modal-card">
     <div class="editor-modal-header">
       <div class="editor-modal-title">
         <span class="modal-title-icon">&#128190;</span>
-        <h3>Export Scene Document</h3>
+        <h3>Save As</h3>
       </div>
       <button id="closeExportModalBtn" class="modal-close-btn" type="button" title="Close">&times;</button>
     </div>
     <div class="editor-modal-body">
-      <p class="modal-description">Save this scene configuration, camera viewpoints, lighting setup, and interactive hotspots into a JSON document.</p>
+      <p class="modal-description">Save this scene configuration to a new JSON document.</p>
       
       <div id="exportModalWarning" class="modal-warning-banner" style="display: none;">
         <span class="warning-icon">&#9888;&#65039;</span>
