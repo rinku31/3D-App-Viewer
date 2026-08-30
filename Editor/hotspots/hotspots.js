@@ -94,108 +94,135 @@ function updatePanelHTML(h, panel){
   title.textContent = h.title || "";
   children.push(title);
 
-  if (h.description) {
-    const description = document.createElement("div");
-    description.className = "panel-desc";
-    description.style.fontSize = `${descFontSize}px`;
-    description.style.color = descFontColor;
-    description.style.marginBottom = "4px";
-    description.textContent = h.description;
-    children.push(description);
-  }
+  const sections = Array.isArray(h.sections) ? h.sections : [];
 
-  // Hotspot List items
-  const rawItems = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
-  const validItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
+  sections.forEach((sec, secIdx) => {
+    const secContainer = document.createElement("div");
+    secContainer.className = "panel-section-block";
+    secContainer.style.marginTop = secIdx > 0 ? "12px" : "8px";
 
-  if (validItems.length > 0) {
-    const ul = document.createElement("ul");
-    ul.className = "panel-list";
-    ul.style.margin = "6px 0 0 0";
-    ul.style.padding = "0 0 0 16px";
-    ul.style.listStyle = "none";
-    ul.style.listStyleType = "none";
-    ul.style.display = "flex";
-    ul.style.flexDirection = "column";
-    ul.style.gap = "4px";
+    if (sec.description) {
+      const description = document.createElement("div");
+      description.className = "panel-desc";
+      description.style.fontSize = `${descFontSize}px`;
+      description.style.color = descFontColor;
+      description.style.marginBottom = "6px";
+      description.textContent = sec.description;
+      secContainer.appendChild(description);
+    }
 
-    validItems.forEach((itemText) => {
-      const li = document.createElement("li");
-      li.className = "panel-list-item";
-      li.style.listStyle = "none";
-      li.style.listStyleType = "none";
-      li.style.padding = "0";
-      li.style.margin = "0";
-      li.style.fontSize = `${listFontSize}px`;
-      li.style.color = listFontColor;
-      li.style.lineHeight = "1.4";
-      li.textContent = itemText;
-      ul.appendChild(li);
-    });
+    const rawItems = Array.isArray(sec.listItems) ? sec.listItems : (Array.isArray(sec.items) ? sec.items : []);
+    const validItems = rawItems.map((item) => String(item || "").trim()).filter(Boolean);
 
-    children.push(ul);
-  }
+    if (validItems.length > 0) {
+      const ul = document.createElement("ul");
+      ul.className = "panel-list";
+      ul.style.margin = "6px 0 0 0";
+      ul.style.padding = "0 0 0 16px";
+      ul.style.listStyle = "none";
+      ul.style.listStyleType = "none";
+      ul.style.display = "flex";
+      ul.style.flexDirection = "column";
+      ul.style.gap = "4px";
 
-  // Hotspot Action Button
-  if (h.button && h.button.enabled) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "panel-btn";
-    btn.textContent = h.button.text || "Show Article";
-    btn.style.marginTop = "10px";
-    btn.style.display = "inline-flex";
-    btn.style.alignItems = "center";
-    btn.style.justifyContent = "center";
-    btn.style.gap = "6px";
-    btn.style.width = "100%";
-    btn.style.padding = "7px 12px";
-    btn.style.fontSize = "0.8rem";
-    btn.style.fontWeight = "600";
-    btn.style.borderRadius = "6px";
-    btn.style.border = "1px solid rgba(255,255,255,0.2)";
-    btn.style.background = "rgba(68, 214, 44, 0.25)";
-    btn.style.color = "#ffffff";
-    btn.style.cursor = "pointer";
-    btn.style.pointerEvents = "auto";
-    btn.style.transition = "all 0.2s ease";
+      validItems.forEach((itemText) => {
+        const li = document.createElement("li");
+        li.className = "panel-list-item";
+        li.style.listStyle = "none";
+        li.style.listStyleType = "none";
+        li.style.padding = "0";
+        li.style.margin = "0";
+        li.style.fontSize = `${listFontSize}px`;
+        li.style.color = listFontColor;
+        li.style.lineHeight = "1.4";
+        li.textContent = itemText;
+        ul.appendChild(li);
+      });
 
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const url = (h.button?.url || "").trim();
-      const funcName = (h.button?.jsFunction || "").trim();
+      secContainer.appendChild(ul);
+    }
 
-      if (url) {
-        try {
-          window.open(url, "_blank", "noopener,noreferrer");
-        } catch (_) {}
-      }
+    const buttons = Array.isArray(sec.buttons) ? sec.buttons : [];
 
-      if (funcName) {
-        try {
-          if (window.parent && typeof window.parent[funcName] === "function") {
-            window.parent[funcName](h);
-          } else if (typeof window[funcName] === "function") {
-            window[funcName](h);
+    if (buttons.length > 0) {
+      const btnContainer = document.createElement("div");
+      btnContainer.style.display = "flex";
+      btnContainer.style.flexDirection = "column";
+      btnContainer.style.alignItems = "flex-end";
+      btnContainer.style.gap = "6px";
+      btnContainer.style.marginTop = "12px";
+      btnContainer.style.width = "100%";
+
+      buttons.forEach((bData) => {
+        if (!bData.enabled) return;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "panel-btn";
+        btn.textContent = bData.text || "Show Article";
+        btn.style.display = "inline-flex";
+        btn.style.alignItems = "center";
+        btn.style.justifyContent = "center";
+        btn.style.gap = "6px";
+        btn.style.width = "auto";
+        btn.style.padding = "5px 10px";
+        btn.style.fontSize = "0.7rem";
+        btn.style.fontWeight = "600";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "1px solid rgba(255,255,255,0.2)";
+        btn.style.background = "rgba(68, 214, 44, 0.25)";
+        btn.style.color = "#ffffff";
+        btn.style.cursor = "pointer";
+        btn.style.pointerEvents = "auto";
+        btn.style.transition = "all 0.2s ease";
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const url = (bData.url || "").trim();
+          const funcName = (bData.jsFunction || "").trim();
+
+          if (url) {
+            try {
+              window.open(url, "_blank", "noopener,noreferrer");
+            } catch (_) {}
           }
 
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-              type: "HOTSPOT_BUTTON_CLICK",
-              functionName: funcName,
-              hotspot: {
-                id: h.id,
-                title: h.title,
-                description: h.description,
-                position: h.position
+          if (funcName) {
+            try {
+              if (window.parent && typeof window.parent[funcName] === "function") {
+                window.parent[funcName](h);
+              } else if (typeof window[funcName] === "function") {
+                window[funcName](h);
               }
-            }, "*");
-          }
-        } catch (_) {}
-      }
-    });
 
-    children.push(btn);
-  }
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                  type: "HOTSPOT_BUTTON_CLICK",
+                  functionName: funcName,
+                  hotspot: {
+                    id: h.id,
+                    title: h.title,
+                    description: sec.description,
+                    position: h.position
+                  }
+                }, "*");
+              }
+            } catch (_) {}
+          }
+        });
+
+        btnContainer.appendChild(btn);
+      });
+
+      if (btnContainer.children.length > 0) {
+        secContainer.appendChild(btnContainer);
+      }
+    }
+
+    if (secContainer.children.length > 0) {
+      children.push(secContainer);
+    }
+  });
 
   panel.replaceChildren(...children);
 }

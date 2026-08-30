@@ -255,67 +255,80 @@ function buildModelInspector(model) {
 
 function buildHotspotInspector(hotspot) {
   const pos = new THREE.Vector3(hotspot.position[0], hotspot.position[1], hotspot.position[2]);
-  const listItems = Array.isArray(hotspot.listItems) ? hotspot.listItems : [];
-  const btn = hotspot.button || { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+  const sections = Array.isArray(hotspot.sections) ? hotspot.sections : [];
 
   return `
     ${buildHeader("HOTSPOT", hotspot.title || "Hotspot", true)}
-
     <div class="section">
       <label>Title</label>
       <input id="prop_hotspot_title" type="text" value="${escapeHTML(hotspot.title)}" placeholder="Hotspot Title">
-
-      <label>Description</label>
-      <textarea id="prop_hotspot_desc" rows="3" placeholder="Description text">${escapeHTML(hotspot.description)}</textarea>
     </div>
 
     <div class="section-group">
       <div class="section-group-title" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Hotspot List Items</span>
-        <button id="btnAddHotspotListItem" class="secondary" style="font-size:10px; padding:2px 6px;">+ Add Item</button>
+        <span>Hotspot Sections</span>
+        <button id="btnAddHotspotSection" class="secondary" style="font-size:10px; padding:2px 6px;">+ Add Section</button>
       </div>
 
-      <div id="hotspot_list_items_container" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
-        ${listItems.length === 0 ? `
-          <div style="font-size:11px; color:var(--text-dim, #888); font-style:italic; padding:4px 0;">No list items. Click "+ Add Item" to add bullet points below description.</div>
-        ` : listItems.map((item, idx) => `
-          <div class="hotspot-list-item-row" style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:12px; color:var(--accent, #44D62C);">&bull;</span>
-            <input type="text" class="hotspot-list-item-input" data-item-idx="${idx}" value="${escapeHTML(item)}" placeholder="List bullet item..." style="flex:1; font-size:12px; padding:4px 6px;">
-            <button class="delete-btn btn-delete-list-item" data-item-idx="${idx}" title="Remove item" style="padding:2px 6px; font-size:11px;">&#128465;</button>
+      <div id="hotspot_sections_container" style="display:flex; flex-direction:column; gap:16px; margin-top:10px;">
+        ${sections.length === 0 ? `
+          <div style="font-size:11px; color:var(--text-dim, #888); font-style:italic; padding:4px 0;">No sections. Click "+ Add Section" to add content blocks.</div>
+        ` : sections.map((sec, secIdx) => `
+          <div class="hotspot-section-card" style="background:var(--bg-panel, #1e1e24); padding:10px; border:1px solid var(--border, #333); border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05);">
+              <label style="font-size:11px; font-weight:bold; color:var(--text-bright, #fff);">Section ${secIdx + 1}</label>
+              <button class="delete-btn btn-delete-hotspot-section" data-sec-idx="${secIdx}" title="Remove section" style="padding:2px 6px; font-size:11px;">&#128465;</button>
+            </div>
+            
+            <div class="param-row" style="margin-bottom:12px;">
+              <label style="font-size:10px; color:var(--text-dim, #aaa);">Description</label>
+              <textarea class="hotspot-sec-desc-input" data-sec-idx="${secIdx}" rows="2" placeholder="Description text" style="font-size:11px; padding:6px; width:100%; box-sizing:border-box;">${escapeHTML(sec.description || "")}</textarea>
+            </div>
+
+            <div class="sub-section" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:10px; color:var(--text-dim, #aaa);">List Items</span>
+                <button class="secondary btn-add-list-item" data-sec-idx="${secIdx}" style="font-size:9px; padding:2px 4px;">+ Item</button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                ${(!sec.listItems || sec.listItems.length === 0) ? `
+                  <div style="font-size:10px; color:var(--text-dim, #666); font-style:italic;">No items</div>
+                ` : sec.listItems.map((item, itemIdx) => `
+                  <div style="display:flex; align-items:center; gap:4px;">
+                    <span style="font-size:10px; color:var(--accent, #44D62C);">&bull;</span>
+                    <input type="text" class="hotspot-list-item-input" data-sec-idx="${secIdx}" data-item-idx="${itemIdx}" value="${escapeHTML(item)}" placeholder="List item..." style="flex:1; font-size:10px; padding:3px 5px;">
+                    <button class="delete-btn btn-delete-list-item" data-sec-idx="${secIdx}" data-item-idx="${itemIdx}" title="Remove item" style="padding:1px 4px; font-size:10px;">&times;</button>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <div class="sub-section">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:10px; color:var(--text-dim, #aaa);">Action Buttons</span>
+                <button class="secondary btn-add-action-button" data-sec-idx="${secIdx}" style="font-size:9px; padding:2px 4px;">+ Button</button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                ${(!sec.buttons || sec.buttons.length === 0) ? `
+                  <div style="font-size:10px; color:var(--text-dim, #666); font-style:italic;">No buttons</div>
+                ` : sec.buttons.map((btn, btnIdx) => `
+                  <div style="background:rgba(0,0,0,0.2); padding:6px; border:1px solid rgba(255,255,255,0.05); border-radius:4px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <span style="font-size:9px; font-weight:bold;">Button ${btnIdx + 1}</span>
+                      <button class="delete-btn btn-delete-action-button" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" title="Remove button" style="padding:1px 4px; font-size:9px;">&times;</button>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                      <input type="text" class="hotspot-btn-text-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.text || "")}" placeholder="Text" style="font-size:10px; padding:3px 5px;">
+                      <input type="url" class="hotspot-btn-url-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.url || "")}" placeholder="URL (optional)" style="font-size:10px; padding:3px 5px;">
+                      <input type="text" class="hotspot-btn-fn-input" data-sec-idx="${secIdx}" data-btn-idx="${btnIdx}" value="${escapeHTML(btn.jsFunction || "")}" placeholder="JS Function (optional)" style="font-size:10px; padding:3px 5px;">
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
           </div>
         `).join("")}
-      </div>
-    </div>
-
-    <div class="section-group">
-      <div class="section-group-title">Hotspot Action Button</div>
-
-      <div class="param-row-checkbox">
-        <label>
-          <input id="prop_hotspot_btn_enable" type="checkbox" ${btn.enabled ? "checked" : ""}>
-          Enable Button below list items
-        </label>
-      </div>
-
-      <div id="hotspot_btn_options_box" style="${btn.enabled ? '' : 'display:none;'} margin-top:8px;">
-        <div class="param-row">
-          <label>Button Text</label>
-          <input id="prop_hotspot_btn_text" type="text" value="${escapeHTML(btn.text || "Show Article")}" placeholder="Show Article">
-        </div>
-
-        <div class="param-row">
-          <label>Link URL (optional)</label>
-          <input id="prop_hotspot_btn_url" type="url" value="${escapeHTML(btn.url || "")}" placeholder="https://example.com/article">
-        </div>
-
-        <div class="param-row">
-          <label>Parent JS Function Name (optional)</label>
-          <input id="prop_hotspot_btn_fn" type="text" value="${escapeHTML(btn.jsFunction || "")}" placeholder="e.g. onHotspotAction">
-          <div style="font-size:10px; color:var(--text-dim, #888); margin-top:3px;">
-            Calls function on parent page outside embed iframe or dispatches message.
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1077,15 +1090,11 @@ function bindInspectorEvents(type, object, target) {
   // Type specific bindings
   if (type === "hotspot") {
     const titleInput = document.getElementById("prop_hotspot_title");
-    const descInput = document.getElementById("prop_hotspot_desc");
     const panelX = document.getElementById("prop_panel_x");
     const panelY = document.getElementById("prop_panel_y");
 
-    if (!Array.isArray(object.listItems)) {
-      object.listItems = [];
-    }
-    if (!object.button) {
-      object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
+    if (!Array.isArray(object.sections)) {
+      object.sections = [];
     }
 
     titleInput?.addEventListener("input", (e) => {
@@ -1093,70 +1102,126 @@ function bindInspectorEvents(type, object, target) {
       if (object.panel) updatePanelHTML(object, object.panel);
     });
 
-    descInput?.addEventListener("input", (e) => {
-      object.description = e.target.value;
-      if (object.panel) updatePanelHTML(object, object.panel);
-    });
-
-    // List items handlers
-    document.getElementById("btnAddHotspotListItem")?.addEventListener("click", () => {
-      if (!Array.isArray(object.listItems)) object.listItems = [];
-      object.listItems.push("");
+    // Sections handlers
+    document.getElementById("btnAddHotspotSection")?.addEventListener("click", () => {
+      object.sections.push({ description: "", listItems: [], buttons: [] });
       renderInspector();
       if (object.panel) updatePanelHTML(object, object.panel);
     });
 
-    document.querySelectorAll(".hotspot-list-item-input").forEach((input) => {
-      input.addEventListener("input", (e) => {
-        const idx = parseInt(e.target.dataset.itemIdx, 10);
-        if (!isNaN(idx) && object.listItems) {
-          object.listItems[idx] = e.target.value;
-          if (object.panel) updatePanelHTML(object, object.panel);
-        }
-      });
-    });
-
-    document.querySelectorAll(".btn-delete-list-item").forEach((btn) => {
+    document.querySelectorAll(".btn-delete-hotspot-section").forEach(btn => {
       btn.addEventListener("click", (e) => {
-        const idx = parseInt(btn.dataset.itemIdx, 10);
-        if (!isNaN(idx) && object.listItems) {
-          object.listItems.splice(idx, 1);
+        const secIdx = parseInt(btn.dataset.secIdx, 10);
+        if (!isNaN(secIdx)) {
+          object.sections.splice(secIdx, 1);
           renderInspector();
           if (object.panel) updatePanelHTML(object, object.panel);
         }
       });
     });
 
-    // Hotspot button handlers
-    const btnEnable = document.getElementById("prop_hotspot_btn_enable");
-    const btnOptionsBox = document.getElementById("hotspot_btn_options_box");
-    const btnText = document.getElementById("prop_hotspot_btn_text");
-    const btnUrl = document.getElementById("prop_hotspot_btn_url");
-    const btnFn = document.getElementById("prop_hotspot_btn_fn");
-
-    btnEnable?.addEventListener("change", (e) => {
-      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
-      object.button.enabled = Boolean(e.target.checked);
-      if (btnOptionsBox) btnOptionsBox.style.display = object.button.enabled ? "" : "none";
-      if (object.panel) updatePanelHTML(object, object.panel);
+    document.querySelectorAll(".hotspot-sec-desc-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const secIdx = parseInt(e.target.dataset.secIdx, 10);
+        if (!isNaN(secIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].description = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
     });
 
-    btnText?.addEventListener("input", (e) => {
-      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
-      object.button.text = e.target.value || "Show Article";
-      if (object.panel) updatePanelHTML(object, object.panel);
+    // List items inside sections
+    document.querySelectorAll(".btn-add-list-item").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const secIdx = parseInt(btn.dataset.secIdx, 10);
+        if (!isNaN(secIdx) && object.sections[secIdx]) {
+          if (!Array.isArray(object.sections[secIdx].listItems)) object.sections[secIdx].listItems = [];
+          object.sections[secIdx].listItems.push("");
+          renderInspector();
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
     });
 
-    btnUrl?.addEventListener("input", (e) => {
-      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
-      object.button.url = e.target.value;
-      if (object.panel) updatePanelHTML(object, object.panel);
+    document.querySelectorAll(".hotspot-list-item-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const secIdx = parseInt(e.target.dataset.secIdx, 10);
+        const itemIdx = parseInt(e.target.dataset.itemIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(itemIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].listItems[itemIdx] = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
     });
 
-    btnFn?.addEventListener("input", (e) => {
-      if (!object.button) object.button = { enabled: false, text: "Show Article", url: "", jsFunction: "" };
-      object.button.jsFunction = e.target.value;
-      if (object.panel) updatePanelHTML(object, object.panel);
+    document.querySelectorAll(".btn-delete-list-item").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const secIdx = parseInt(btn.dataset.secIdx, 10);
+        const itemIdx = parseInt(btn.dataset.itemIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(itemIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].listItems.splice(itemIdx, 1);
+          renderInspector();
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    // Action buttons inside sections
+    document.querySelectorAll(".btn-add-action-button").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const secIdx = parseInt(btn.dataset.secIdx, 10);
+        if (!isNaN(secIdx) && object.sections[secIdx]) {
+          if (!Array.isArray(object.sections[secIdx].buttons)) object.sections[secIdx].buttons = [];
+          object.sections[secIdx].buttons.push({ enabled: true, text: "Show Article", url: "", jsFunction: "" });
+          renderInspector();
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    document.querySelectorAll(".hotspot-btn-text-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const secIdx = parseInt(e.target.dataset.secIdx, 10);
+        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].buttons[btnIdx].text = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    document.querySelectorAll(".hotspot-btn-url-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const secIdx = parseInt(e.target.dataset.secIdx, 10);
+        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].buttons[btnIdx].url = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    document.querySelectorAll(".hotspot-btn-fn-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const secIdx = parseInt(e.target.dataset.secIdx, 10);
+        const btnIdx = parseInt(e.target.dataset.btnIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].buttons[btnIdx].jsFunction = e.target.value;
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
+    });
+
+    document.querySelectorAll(".btn-delete-action-button").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const secIdx = parseInt(btn.dataset.secIdx, 10);
+        const btnIdx = parseInt(btn.dataset.btnIdx, 10);
+        if (!isNaN(secIdx) && !isNaN(btnIdx) && object.sections[secIdx]) {
+          object.sections[secIdx].buttons.splice(btnIdx, 1);
+          renderInspector();
+          if (object.panel) updatePanelHTML(object, object.panel);
+        }
+      });
     });
 
     panelX?.addEventListener("input", (e) => {

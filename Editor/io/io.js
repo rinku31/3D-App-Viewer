@@ -314,25 +314,21 @@ async function importJsonData(rawData, fileName = "scene.json") {
 
   if (Array.isArray(data.hotspots)) {
     data.hotspots.forEach((h) => {
-      const rawList = Array.isArray(h.listItems) ? h.listItems : (Array.isArray(h.items) ? h.items : []);
       const hotspot = {
         id: h.id || ("hotspot_" + Math.random().toString(36).slice(2)),
         title: h.title ?? "",
-        description: h.description ?? "",
         visible: Boolean(h.visible !== false),
         locked: Boolean(h.locked),
-        listItems: rawList.map((item) => String(item || "")),
-        button: h.button ? {
-          enabled: Boolean(h.button.enabled),
-          text: h.button.text || "Show Article",
-          url: h.button.url || "",
-          jsFunction: h.button.jsFunction || ""
-        } : {
-          enabled: false,
-          text: "Show Article",
-          url: "",
-          jsFunction: ""
-        },
+        sections: Array.isArray(h.sections) ? h.sections.map(sec => ({
+          description: sec.description ?? "",
+          listItems: Array.isArray(sec.listItems) ? sec.listItems.map(item => String(item || "")) : [],
+          buttons: Array.isArray(sec.buttons) ? sec.buttons.map(b => ({
+            enabled: Boolean(b.enabled),
+            text: b.text || "Show Article",
+            url: b.url || "",
+            jsFunction: b.jsFunction || ""
+          })) : []
+        })) : [],
         position: Array.isArray(h.position)
           ? [Number(h.position[0]) || 0, Number(h.position[1]) || 0, Number(h.position[2]) || 0]
           : [0, 0, 0],
@@ -539,21 +535,18 @@ function serializeSceneDocument() {
     hotspots: state.hotspots.map((h) => ({
       id: h.id,
       title: h.title,
-      description: h.description,
       visible: Boolean(h.visible !== false),
       locked: Boolean(h.locked),
-      listItems: Array.isArray(h.listItems) ? [...h.listItems] : [],
-      button: h.button ? {
-        enabled: Boolean(h.button.enabled),
-        text: h.button.text || "Show Article",
-        url: h.button.url || "",
-        jsFunction: h.button.jsFunction || ""
-      } : {
-        enabled: false,
-        text: "Show Article",
-        url: "",
-        jsFunction: ""
-      },
+      sections: Array.isArray(h.sections) ? h.sections.map(sec => ({
+        description: sec.description,
+        listItems: Array.isArray(sec.listItems) ? [...sec.listItems] : [],
+        buttons: Array.isArray(sec.buttons) ? sec.buttons.map(b => ({
+          enabled: Boolean(b.enabled),
+          text: b.text || "Show Article",
+          url: b.url || "",
+          jsFunction: b.jsFunction || ""
+        })) : []
+      })) : [],
       position: h.position,
       panelOffset: h.panelOffset,
       ...(h.color ? { color: h.color } : {}),

@@ -4,7 +4,7 @@
  */
 
 import { state } from "../state/state.js";
-import { testHotspotOcclusion } from "../../shared/hotspotMath.js";
+import { testHotspotOcclusion } from "../shared/hotspotMath.js";
 
 /**
  * Updates the visibility status of all active hotspots.

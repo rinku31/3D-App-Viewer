@@ -5,7 +5,7 @@
 
 import * as THREE from "three";
 import { state } from "../state/state.js";
-import { syncSceneLights } from "../../shared/lights.js";
+import { syncSceneLights } from "../shared/lights.js";
 
 /**
  * Initializes default ambient & directional lighting for the viewer
