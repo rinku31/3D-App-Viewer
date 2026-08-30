@@ -1310,11 +1310,31 @@ function bindIO(loader) {
       state.currentFileHandle = null;
       state.currentFilePath = null;
 
+      // Check for file system handles in modern web browsers (for overwrite support)
+      let jsonHandle = null;
+      if (e.dataTransfer.items) {
+        for (const item of Array.from(e.dataTransfer.items)) {
+          if (item.kind === 'file' && typeof item.getAsFileSystemHandle === 'function') {
+            try {
+              const handle = await item.getAsFileSystemHandle();
+              if (handle && handle.name.toLowerCase().endsWith('.json')) {
+                jsonHandle = handle;
+              }
+            } catch (err) {
+              console.warn("Could not get file system handle from drop", err);
+            }
+          }
+        }
+      }
+
       const glbFile = files.find((f) => /\.(glb|gltf)$/i.test(f.name));
       const jsonFile = files.find((f) => /\.json$/i.test(f.name));
 
       if (jsonFile && jsonFile.path) {
         state.currentFilePath = jsonFile.path;
+      }
+      if (jsonHandle) {
+        state.currentFileHandle = jsonHandle;
       }
 
       if (glbFile) {
