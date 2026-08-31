@@ -886,8 +886,10 @@ export class CameraRig {
 
     this.pointerStart = { x: event.clientX, y: event.clientY };
 
-    this.rotateYaw(-deltaX * this.rotateSpeed);
-    this.rotatePitch(-deltaY * this.rotateSpeed);
+    const speedMultiplier = event.pointerType === "touch" ? 4.0 : 1.0;
+
+    this.rotateYaw(-deltaX * this.rotateSpeed * speedMultiplier);
+    this.rotatePitch(-deltaY * this.rotateSpeed * speedMultiplier);
   }
 
   handlePointerUp(event) {

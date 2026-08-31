@@ -33,6 +33,7 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  touch-action: none;
 }
 
 input, textarea, [contenteditable="true"], .code-editor, pre, code {
