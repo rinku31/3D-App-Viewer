@@ -368,8 +368,9 @@ function makePanelDraggable(panel,hotspot){
   let offsetX = 0;
   let offsetY = 0;
 
-  panel.addEventListener("mousedown", (e)=>{
+  panel.addEventListener("pointerdown", (e)=>{
     dragging = true;
+    panel.setPointerCapture(e.pointerId);
     const vpWidth = state.viewport?.clientWidth || window.innerWidth;
     const vpHeight = state.viewport?.clientHeight || window.innerHeight;
     offsetX = e.clientX - ((vpWidth * 0.5) + (hotspot.panelOffset?.x || 0));
@@ -377,7 +378,7 @@ function makePanelDraggable(panel,hotspot){
     e.stopPropagation();
   });
 
-  window.addEventListener("mousemove", (e)=>{
+  window.addEventListener("pointermove", (e)=>{
     if(!dragging) return;
     const vpWidth = state.viewport?.clientWidth || window.innerWidth;
     const vpHeight = state.viewport?.clientHeight || window.innerHeight;
@@ -388,8 +389,11 @@ function makePanelDraggable(panel,hotspot){
     }
   });
 
-  window.addEventListener("mouseup", ()=>{
-    dragging = false;
+  window.addEventListener("pointerup", (e)=>{
+    if(dragging) {
+      dragging = false;
+      try { panel.releasePointerCapture(e.pointerId); } catch(err) {}
+    }
   });
 }
 
@@ -398,7 +402,7 @@ function makeHotspotDraggable(dot,hotspot){
 let dragging = false;
 
 window.addEventListener(
-"mousemove",
+"pointermove",
 (e)=>{
 
 if(!dragging) return;
@@ -440,7 +444,7 @@ notifySelectionChanged();
 );
 
 window.addEventListener(
-"mouseup",
+"pointerup",
 ()=>{
 
 if(dragging){
@@ -457,7 +461,7 @@ state.controls.enabled = true;
 );
 
 dot.addEventListener(
-"mousedown",
+"pointerdown",
 (e)=>{
 
 if (hotspot.locked) return;

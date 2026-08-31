@@ -34,6 +34,7 @@ body {
   -ms-user-select: none;
   user-select: none;
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 input, textarea, [contenteditable="true"], .code-editor, pre, code {

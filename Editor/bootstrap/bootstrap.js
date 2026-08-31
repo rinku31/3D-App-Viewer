@@ -1181,6 +1181,11 @@ function initializeEditor(loader) {
     pointerDownPos = { x: e.clientX, y: e.clientY };
   });
 
+  // Prevent context menu on long press on mobile
+  renderer.domElement.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
+
   // Universal Click Selection & Hotspot Creation
   renderer.domElement.addEventListener("click", (e) => {
     // If dragging a hotspot or transforming with gizmo, ignore click

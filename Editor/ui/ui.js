@@ -16,13 +16,14 @@ function bindResizers() {
 
   if (horizontalResizer && sidebar) {
     let isResizing = false;
-    horizontalResizer.addEventListener("mousedown", (e) => {
+    horizontalResizer.addEventListener("pointerdown", (e) => {
       isResizing = true;
+      horizontalResizer.setPointerCapture(e.pointerId);
       horizontalResizer.classList.add("dragging");
       document.body.classList.add("navigating-viewport"); // Prevent selection
     });
     
-    window.addEventListener("mousemove", (e) => {
+    window.addEventListener("pointermove", (e) => {
       if (!isResizing) return;
       // Sidebar is on the right, so width is window.innerWidth - e.clientX
       const newWidth = Math.max(280, Math.min(800, window.innerWidth - e.clientX));
@@ -31,9 +32,10 @@ function bindResizers() {
       resizeRenderer();
     });
 
-    window.addEventListener("mouseup", () => {
+    window.addEventListener("pointerup", (e) => {
       if (isResizing) {
         isResizing = false;
+        try { horizontalResizer.releasePointerCapture(e.pointerId); } catch(err) {}
         horizontalResizer.classList.remove("dragging");
         document.body.classList.remove("navigating-viewport");
         resizeRenderer();
@@ -46,24 +48,26 @@ function bindResizers() {
     let startY = 0;
     let startHeight = 0;
 
-    verticalResizer.addEventListener("mousedown", (e) => {
+    verticalResizer.addEventListener("pointerdown", (e) => {
       isResizing = true;
+      verticalResizer.setPointerCapture(e.pointerId);
       startY = e.clientY;
       startHeight = hierarchyWindow.offsetHeight;
       verticalResizer.classList.add("dragging");
       document.body.classList.add("navigating-viewport");
     });
     
-    window.addEventListener("mousemove", (e) => {
+    window.addEventListener("pointermove", (e) => {
       if (!isResizing) return;
       const dy = e.clientY - startY;
       const newHeight = Math.max(100, startHeight + dy);
       hierarchyWindow.style.flex = `0 0 ${newHeight}px`;
     });
 
-    window.addEventListener("mouseup", () => {
+    window.addEventListener("pointerup", (e) => {
       if (isResizing) {
         isResizing = false;
+        try { verticalResizer.releasePointerCapture(e.pointerId); } catch(err) {}
         verticalResizer.classList.remove("dragging");
         document.body.classList.remove("navigating-viewport");
       }
